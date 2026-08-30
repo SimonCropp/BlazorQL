@@ -78,15 +78,15 @@ public abstract class BrowserFixture
         {
             host.UsePathBase(PathBase);
             // Everything else 404s, exactly as GitHub Pages would answer outside the repo path.
-            host.Use(async (context, next) =>
+            host.Use((context, next) =>
             {
                 if (!context.Request.PathBase.HasValue)
                 {
                     context.Response.StatusCode = StatusCodes.Status404NotFound;
-                    return;
+                    return Task.CompletedTask;
                 }
 
-                await next();
+                return next();
             });
         }
 
@@ -115,9 +115,12 @@ public abstract class BrowserFixture
     string RewriteBaseHref(string indexPath)
     {
         var html = File.ReadAllText(indexPath);
-        return PathBase.Length == 0
-            ? html
-            : html.Replace("<base href=\"/\" />", $"<base href=\"{PathBase}/\" />");
+        if (PathBase.Length == 0)
+        {
+            return html;
+        }
+
+        return html.Replace("<base href=\"/\" />", $"<base href=\"{PathBase}/\" />");
     }
 
     [OneTimeTearDown]
@@ -132,7 +135,7 @@ public abstract class BrowserFixture
         // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
         playwright?.Dispose();
 
-        // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (host is not null)
         {
             await host.DisposeAsync();

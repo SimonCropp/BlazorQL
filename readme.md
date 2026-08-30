@@ -50,7 +50,7 @@ public interface IGraphQLFetcher
     IAsyncEnumerable<JsonElement> FetchAsync(
         GraphQLRequest request,
         IReadOnlyDictionary<string, string> headers,
-        CancellationToken cancel);
+        Cancel cancel);
 }
 ```
 <sup><a href='/src/BlazorQL/Fetchers/IGraphQLFetcher.cs#L8-L16' title='Snippet source file'>snippet source</a> | <a href='#snippet-fetcherInterface' title='Start of snippet'>anchor</a></sup>

@@ -15,8 +15,7 @@ public static class VariablesChecker
         var declared = operation.Variables?.ToDictionary(_ => _.Variable.Name.StringValue, _ => _)
                        ?? [];
 
-        if (variables is { } value &&
-            value.ValueKind == JsonValueKind.Object)
+        if (variables is {ValueKind: JsonValueKind.Object} value)
         {
             foreach (var property in value.EnumerateObject())
             {
@@ -32,8 +31,10 @@ public static class VariablesChecker
 
         foreach (var (name, definition) in declared)
         {
-            var provided = variables is { } given &&
-                           given.ValueKind == JsonValueKind.Object &&
+            var provided = variables is
+                           {
+                               ValueKind: JsonValueKind.Object
+                           } given &&
                            given.TryGetProperty(name, out _);
             if (!provided &&
                 definition.Type is GraphQLNonNullType &&
@@ -46,6 +47,7 @@ public static class VariablesChecker
         return errors;
     }
 
+    // ReSharper disable TailRecursiveCall
     static void CheckValue(SchemaIndex schema, string path, JsonElement value, GraphQLType type, List<string> errors)
     {
         switch (type)
@@ -91,6 +93,7 @@ public static class VariablesChecker
                 return;
         }
     }
+    // ReSharper restore TailRecursiveCall
 
     static void CheckNamed(SchemaIndex schema, string path, JsonElement value, string typeName, List<string> errors)
     {
@@ -178,6 +181,7 @@ public static class VariablesChecker
         // Custom scalars accept anything.
     }
 
+    // ReSharper disable TailRecursiveCall
     static void CheckInputValue(SchemaIndex schema, string path, JsonElement value, TypeRef type, List<string> errors)
     {
         switch (type.Kind)
@@ -222,4 +226,5 @@ public static class VariablesChecker
                 return;
         }
     }
+    // ReSharper restore TailRecursiveCall
 }

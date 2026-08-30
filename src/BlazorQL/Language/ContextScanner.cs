@@ -214,7 +214,7 @@ static class ContextScanner
             i++;
         }
 
-        return Resolve(schema, frames, variables, fragments,
+        return Resolve(frames, variables, fragments,
             pendingRoot, afterEllipsis, afterOn, afterAt, afterDollar,
             inVariableDefinitions, variableAwaitingType);
     }
@@ -390,7 +390,6 @@ static class ContextScanner
     }
 
     static ScanResult Resolve(
-        SchemaIndex schema,
         Stack<Frame> frames,
         List<string> variables,
         List<string> fragments,
@@ -453,17 +452,14 @@ static class ContextScanner
                 variables,
                 fragments);
 
-        Frame InputFieldAsArgument(Frame inputFrame)
-        {
+        static Frame InputFieldAsArgument(Frame inputFrame) =>
             // Value completion inside an input object keys off the current input field's type; the
             // resolver reads CurrentArgument, so surface the field through that slot.
-            var surrogate = new Frame(FrameKind.InputObject)
+            new(FrameKind.InputObject)
             {
                 Type = inputFrame.Type,
                 CurrentArgument = inputFrame.CurrentInputField
             };
-            return surrogate;
-        }
     }
 
     static void CollectFragments(string text, List<string> fragments)
@@ -472,13 +468,15 @@ static class ContextScanner
         while ((index = text.IndexOf("fragment", index, StringComparison.Ordinal)) >= 0)
         {
             index += "fragment".Length;
-            while (index < text.Length && char.IsWhiteSpace(text[index]))
+            while (index < text.Length &&
+                   char.IsWhiteSpace(text[index]))
             {
                 index++;
             }
 
             var start = index;
-            while (index < text.Length && (char.IsLetterOrDigit(text[index]) || text[index] == '_'))
+            while (index < text.Length &&
+                   (char.IsLetterOrDigit(text[index]) || text[index] == '_'))
             {
                 index++;
             }
@@ -493,10 +491,16 @@ static class ContextScanner
     static int SkipString(string text, int index, int limit)
     {
         // Block string?
-        if (index + 2 < text.Length && text[index + 1] == '"' && text[index + 2] == '"')
+        if (index + 2 < text.Length &&
+            text[index + 1] == '"' && text[index + 2] == '"')
         {
             var end = text.IndexOf("\"\"\"", index + 3, StringComparison.Ordinal);
-            return end < 0 ? limit : Math.Min(end + 3, limit);
+            if (end < 0)
+            {
+                return limit;
+            }
+
+            return Math.Min(end + 3, limit);
         }
 
         var i = index + 1;

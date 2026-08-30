@@ -14,7 +14,7 @@ public class HttpFetcherTests
     public async Task PlainJsonYieldsOneElement()
     {
         var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, """{"data":{"id":"abc123"}}"""));
-        var fetcher = new HttpFetcher(new HttpClient(handler), url);
+        var fetcher = new HttpFetcher(new(handler), url);
 
         var results = await Collect(fetcher, new("{ id }"));
 
@@ -48,7 +48,7 @@ public class HttpFetcherTests
             response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/mixed; boundary=\"-\"; deferSpec=20220824");
             return response;
         });
-        var fetcher = new HttpFetcher(new HttpClient(handler), url);
+        var fetcher = new HttpFetcher(new(handler), url);
 
         var results = await Collect(fetcher, new("{ deferrable { normalString ... @defer { deferredString } } }"));
 
@@ -62,7 +62,7 @@ public class HttpFetcherTests
     public async Task SendsAcceptAndCustomHeadersAndCamelCaseBody()
     {
         var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, """{"data":null}"""));
-        var fetcher = new HttpFetcher(new HttpClient(handler), url);
+        var fetcher = new HttpFetcher(new(handler), url);
 
         await Collect(
             fetcher,
@@ -86,7 +86,7 @@ public class HttpFetcherTests
     public async Task CapturesStatusAndYieldsErrorsOnNonSuccessJson()
     {
         var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.BadRequest, """{"errors":[{"message":"boom"}]}"""));
-        var fetcher = new HttpFetcher(new HttpClient(handler), url);
+        var fetcher = new HttpFetcher(new(handler), url);
 
         Assert.That(fetcher.LastStatus, Is.Null);
         var results = await Collect(fetcher, new("{ id }"));
@@ -105,7 +105,7 @@ public class HttpFetcherTests
         {
             Content = new StringContent($"<html>gateway fell over {longTail}</html>", Encoding.UTF8, "text/html")
         });
-        var fetcher = new HttpFetcher(new HttpClient(handler), url);
+        var fetcher = new HttpFetcher(new(handler), url);
 
         var exception = Assert.ThrowsAsync<InvalidOperationException>(() => Collect(fetcher, new("{ id }")));
 

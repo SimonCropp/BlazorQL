@@ -18,16 +18,22 @@ public static class SchemaReferenceResolver
         // Context at the START of the word, so the word itself is not consumed as context.
         var scan = ContextScanner.Scan(schema, text, start);
 
-        if (scan.Mode == ScanMode.Selection &&
-            scan.CurrentType is { } parent &&
+        if (scan is
+            {
+                Mode: ScanMode.Selection,
+                CurrentType: { } parent
+            } &&
             parent.Fields?.Any(_ => _.Name == word) is true)
         {
             return new("Field", parent.Name, word);
         }
 
         if (scan.Mode is ScanMode.ArgumentName or ScanMode.ArgumentValue &&
-            scan.CurrentType is { } argumentParent &&
-            scan.CurrentField is { } field &&
+            scan is
+            {
+                CurrentType: { } argumentParent,
+                CurrentField: { } field
+            } &&
             field.Args.Any(_ => _.Name == word))
         {
             return new("Argument", argumentParent.Name, field.Name, word);

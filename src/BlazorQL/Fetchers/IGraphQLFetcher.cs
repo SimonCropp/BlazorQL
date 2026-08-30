@@ -11,6 +11,6 @@ public interface IGraphQLFetcher
     IAsyncEnumerable<JsonElement> FetchAsync(
         GraphQLRequest request,
         IReadOnlyDictionary<string, string> headers,
-        CancellationToken cancel);
+        Cancel cancel);
 }
 // end-snippet

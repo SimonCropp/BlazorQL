@@ -105,12 +105,12 @@ public class HistoryStoreTests
         store.ToggleFavorite(item);
         Assert.That(item.Favorite, Is.True);
         Assert.That(store.Items, Is.Empty);
-        Assert.That(store.Favorites, Is.EqualTo(new[] {item}));
+        Assert.That(store.Favorites, Is.EqualTo([item]));
 
         store.ToggleFavorite(item);
         Assert.That(item.Favorite, Is.False);
         Assert.That(store.Favorites, Is.Empty);
-        Assert.That(store.Items, Is.EqualTo(new[] {item}));
+        Assert.That(store.Items, Is.EqualTo([item]));
     }
 
     [Test]

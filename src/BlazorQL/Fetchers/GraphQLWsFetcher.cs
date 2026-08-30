@@ -43,7 +43,7 @@ public sealed class GraphQLWsFetcher(string url) :
 
         try
         {
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", CancellationToken.None);
+            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", Cancel.None);
         }
         catch (WebSocketException)
         {

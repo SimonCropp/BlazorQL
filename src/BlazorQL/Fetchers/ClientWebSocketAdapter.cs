@@ -23,7 +23,7 @@ sealed class ClientWebSocketAdapter(ClientWebSocket socket) :
             WebSocketReceiveResult result;
             try
             {
-                result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), cancel);
+                result = await socket.ReceiveAsync(new(buffer), cancel);
             }
             catch (WebSocketException)
             {

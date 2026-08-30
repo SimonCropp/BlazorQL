@@ -1,7 +1,3 @@
-using System.Net.Http;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Components.WebAssembly.Http;
-
 namespace BlazorQL;
 
 /// <summary>
@@ -9,7 +5,7 @@ namespace BlazorQL;
 /// <c>multipart/mixed</c> incremental-delivery response (@defer/@stream, per deferSpec 20220824)
 /// yields each part as it streams in.
 /// </summary>
-public sealed class HttpFetcher :
+public sealed class HttpFetcher(HttpClient http, string url) :
     IGraphQLFetcher
 {
     const string accept = "application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8";
@@ -19,21 +15,13 @@ public sealed class HttpFetcher :
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    readonly HttpClient http;
-
-    public HttpFetcher(HttpClient http, string url)
-    {
-        this.http = http;
-        Url = url;
-    }
-
     public HttpFetcher(string url)
-        : this(new HttpClient(), url)
+        : this(new(), url)
     {
     }
 
     /// <summary>The endpoint every request posts to.</summary>
-    public string Url { get; }
+    public string Url { get; } = url;
 
     /// <summary>The current request's response status, set as soon as its headers arrive.</summary>
     public HttpFetchStatus? LastStatus { get; private set; }

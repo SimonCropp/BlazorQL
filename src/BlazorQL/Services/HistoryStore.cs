@@ -1,18 +1,4 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-
 namespace BlazorQL;
-
-/// <summary>One executed operation as the history remembers it.</summary>
-public sealed record HistoryItem
-{
-    public string Query { get; init; } = "";
-    public string? Variables { get; init; }
-    public string? Headers { get; init; }
-    public string? OperationName { get; init; }
-    public string? Label { get; set; }
-    public bool Favorite { get; set; }
-}
 
 /// <summary>
 /// The execution history, mirroring GraphiQL's HistoryStore: capped LRU for ordinary items,
@@ -22,7 +8,7 @@ public sealed class HistoryStore
 {
     // Queries longer than this are noise (a pasted schema, generated documents) and are not
     // worth a history slot — GraphiQL's MAX_QUERY_SIZE.
-    const int MaxQueryLength = 100_000;
+    const int maxQueryLength = 100_000;
 
     readonly StorageService storage;
     readonly Func<string, bool> queryParses;
@@ -100,7 +86,7 @@ public sealed class HistoryStore
     public void Record(string query, string? variables, string? headers, string? operationName)
     {
         if (string.IsNullOrWhiteSpace(query) ||
-            query.Length > MaxQueryLength ||
+            query.Length > maxQueryLength ||
             !queryParses(query))
         {
             return;

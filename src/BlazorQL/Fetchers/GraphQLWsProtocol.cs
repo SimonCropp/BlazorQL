@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>
 /// The client side of the graphql-transport-ws protocol, as a state machine over an abstracted
 /// socket: init, await ack (answering pings, ignoring keep-alives), subscribe as id "1", then yield
@@ -121,7 +119,7 @@ static class GraphQLWsProtocol
     {
         try
         {
-            await socket.SendAsync("""{"id":"1","type":"complete"}""", CancellationToken.None);
+            await socket.SendAsync("""{"id":"1","type":"complete"}""", Cancel.None);
         }
         catch
         {

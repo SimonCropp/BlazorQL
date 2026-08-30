@@ -39,8 +39,11 @@ public sealed class SchemaValidator
             // is registered; validation treats custom scalars as accept-anything, like GraphiQL.
             foreach (var type in index.Types)
             {
-                if (type.Kind == "SCALAR" &&
-                    type.Name is not ("Int" or "Float" or "String" or "Boolean" or "ID"))
+                if (type is
+                    {
+                        Kind: "SCALAR",
+                        Name: not ("Int" or "Float" or "String" or "Boolean" or "ID")
+                    })
                 {
                     schema.RegisterType(new PermissiveScalar(type.Name));
                 }
@@ -110,12 +113,13 @@ public sealed class SchemaValidator
         {
             try
             {
-                var result = await validator.ValidateAsync(new ValidationOptions
-                {
-                    Schema = schema,
-                    Document = document.Document,
-                    Operation = operation
-                });
+                var result = await validator.ValidateAsync(
+                    new()
+                    {
+                        Schema = schema,
+                        Document = document.Document,
+                        Operation = operation
+                    });
 
                 foreach (var error in result.Errors)
                 {

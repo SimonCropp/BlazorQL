@@ -28,7 +28,7 @@ public class DocExplorerTests
     [Test]
     public async Task RootPage()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
         await Verify(cut);
     }
@@ -36,7 +36,7 @@ public class DocExplorerTests
     [Test]
     public async Task TypePage()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
         NavigateToType(cut, "Query");
         await Verify(cut);
@@ -61,7 +61,7 @@ public class DocExplorerTests
     [Test]
     public async Task FieldPage()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
         NavigateToType(cut, "Query");
         NavigateToField(cut, "hasArgs");
@@ -71,14 +71,14 @@ public class DocExplorerTests
     [Test]
     public async Task EnumTypePage()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
         NavigateToType(cut, "Color");
         await Verify(cut);
 
         // The deprecated value sits behind its own toggle.
         Assert.That(cut.Markup, Does.Not.Contain("GRAY"));
-        cut.FindAll(".blazorql-doc-toggle").Single(_ => _.TextContent == "Show Deprecated Values").Click();
+        await cut.FindAll(".blazorql-doc-toggle").Single(_ => _.TextContent == "Show Deprecated Values").ClickAsync();
         Assert.That(cut.Markup, Does.Contain("GRAY"));
         Assert.That(cut.Markup, Does.Contain("Colors are boring."));
     }
@@ -86,7 +86,7 @@ public class DocExplorerTests
     [Test]
     public async Task UnionTypePage()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
         NavigateToType(cut, "SearchResult");
         await Verify(cut);
@@ -95,7 +95,7 @@ public class DocExplorerTests
     [Test]
     public async Task InputObjectTypePage()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
         NavigateToType(cut, "PetInput");
         await Verify(cut);

@@ -5,7 +5,7 @@
 sealed class Debouncer(int delayMs = 500) :
     IDisposable
 {
-    CancellationTokenSource? pending;
+    CancelSource? pending;
 
     public void Run(Func<Task> action)
     {
@@ -15,7 +15,7 @@ sealed class Debouncer(int delayMs = 500) :
         _ = RunAfterDelay(action, pending.Token);
     }
 
-    async Task RunAfterDelay(Func<Task> action, CancellationToken token)
+    async Task RunAfterDelay(Func<Task> action, Cancel token)
     {
         try
         {

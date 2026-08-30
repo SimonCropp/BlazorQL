@@ -15,11 +15,11 @@ static class EditorDefaults
             AutomaticLayout = true,
             FontSize = 15,
             TabSize = 2,
-            Minimap = new EditorMinimapOptions
+            Minimap = new()
             {
                 Enabled = false
             },
-            StickyScroll = new EditorStickyScrollOptions
+            StickyScroll = new()
             {
                 Enabled = false
             },
@@ -28,7 +28,7 @@ static class EditorDefaults
             ScrollBeyondLastLine = false,
             LineNumbersMinChars = 2,
             RoundedSelection = false,
-            Scrollbar = new EditorScrollbarOptions
+            Scrollbar = new()
             {
                 VerticalScrollbarSize = 10
             },

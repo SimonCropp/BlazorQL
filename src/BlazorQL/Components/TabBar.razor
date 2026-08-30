@@ -85,7 +85,7 @@
     void CancelRename() =>
         renamingIndex = -1;
 
-    async Task OnRenameKey(KeyboardEventArgs args, int index)
+    Task OnRenameKey(KeyboardEventArgs args, int index)
     {
         if (args.Key == "Enter")
         {
@@ -93,12 +93,15 @@
             var title = string.IsNullOrWhiteSpace(renameText)
                 ? null
                 : renameText.Trim();
-            await OnRename.InvokeAsync((index, title));
+            return OnRename.InvokeAsync((index, title));
         }
-        else if (args.Key == "Escape")
+
+        if (args.Key == "Escape")
         {
             renamingIndex = -1;
         }
+
+        return Task.CompletedTask;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

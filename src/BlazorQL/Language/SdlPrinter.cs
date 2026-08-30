@@ -54,8 +54,7 @@ public static class SdlPrinter
 
         foreach (var type in schema.Types)
         {
-            if (type.Name is null ||
-                type.Name.StartsWith("__", StringComparison.Ordinal) ||
+            if (type.Name.StartsWith("__", StringComparison.Ordinal) ||
                 (type.Kind == "SCALAR" && builtInScalars.Contains(type.Name)))
             {
                 continue;

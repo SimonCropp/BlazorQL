@@ -26,8 +26,7 @@ public static class FragmentMerger
                 continue;
             }
 
-            if (definition is GraphQLOperationDefinition operation &&
-                operation.SelectionSet is not null)
+            if (definition is GraphQLOperationDefinition operation)
             {
                 operation.SelectionSet = Flatten(operation.SelectionSet, fragments);
             }
@@ -70,8 +69,7 @@ public static class FragmentMerger
     {
         foreach (var selection in selections)
         {
-            if (selection is GraphQLFragmentSpread spread &&
-                spread.Directives is not {Items.Count: > 0})
+            if (selection is GraphQLFragmentSpread {Directives: not {Items.Count: > 0}} spread)
             {
                 var name = spread.FragmentName.Name.StringValue;
                 if (!seenSpreads.Add(name))
@@ -103,7 +101,7 @@ public static class FragmentMerger
         {
             switch (selection)
             {
-                case GraphQLField field when field.Directives is not {Items.Count: > 0}:
+                case GraphQLField {Directives: not {Items.Count: > 0}} field:
                     var key = field.Alias?.Name.StringValue ?? field.Name.StringValue;
                     if (byName.TryGetValue(key, out var existing))
                     {
@@ -126,7 +124,7 @@ public static class FragmentMerger
                     output.Add(field);
                     break;
 
-                case GraphQLInlineFragment inline when inline.Directives is not {Items.Count: > 0} && inline.SelectionSet is not null:
+                case GraphQLInlineFragment {Directives: not {Items.Count: > 0}} inline:
                     inline.SelectionSet = Flatten(inline.SelectionSet, fragments);
                     output.Add(inline);
                     break;

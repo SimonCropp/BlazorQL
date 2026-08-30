@@ -1,7 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
-
 namespace BlazorQL;
 
 /// <summary>Everything one tab remembers while another tab is active.</summary>
@@ -123,8 +119,7 @@ public sealed class TabStore
             return false;
         }
 
-        if (state is null ||
-            state.Tabs is null ||
+        if (state?.Tabs is null ||
             state.Tabs.Count == 0 ||
             state.Tabs.Any(_ => _ is null))
         {

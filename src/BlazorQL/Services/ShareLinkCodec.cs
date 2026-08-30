@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace BlazorQL;
 
 /// <summary>
@@ -14,7 +12,7 @@ public sealed record SharedQuery(string Query, string Variables);
 /// </summary>
 public static class ShareLinkCodec
 {
-    const string FragmentPrefix = "q=";
+    const string fragmentPrefix = "q=";
 
     /// <summary>The fragment (no leading <c>#</c>) for the given content, e.g. <c>q=eyJ…</c>.</summary>
     public static string Encode(SharedQuery shared)
@@ -28,7 +26,7 @@ public static class ShareLinkCodec
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');
-        return FragmentPrefix + payload;
+        return fragmentPrefix + payload;
     }
 
     /// <summary>Decodes a location hash (leading <c>#</c> optional). Null for anything malformed.</summary>
@@ -42,12 +40,12 @@ public static class ShareLinkCodec
         var fragment = hash.StartsWith('#')
             ? hash[1..]
             : hash;
-        if (!fragment.StartsWith(FragmentPrefix, StringComparison.Ordinal))
+        if (!fragment.StartsWith(fragmentPrefix, StringComparison.Ordinal))
         {
             return null;
         }
 
-        var payload = fragment[FragmentPrefix.Length..]
+        var payload = fragment[fragmentPrefix.Length..]
             .Replace('-', '+')
             .Replace('_', '/');
         payload = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
