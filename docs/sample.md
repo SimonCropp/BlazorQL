@@ -1,4 +1,4 @@
-﻿# The sample
+# The sample
 
 The deployed sample is a standalone Blazor WebAssembly app with **no backend**: the schema is executed inside the WASM app by GraphQL.NET through the sample's `LocalSchemaFetcher`.
 
@@ -6,10 +6,12 @@ The deployed sample is a standalone Blazor WebAssembly app with **no backend**: 
 <a id='snippet-sampleFetcher'></a>
 ```razor
 // The whole schema lives in the browser by default: GraphQL.NET executes it inside the WASM
-// app itself, so the sample deploys to static hosting with subscriptions intact.
-IGraphQLFetcher fetcher = new LocalSchemaFetcher();
+// app itself, so the sample deploys to static hosting with subscriptions intact. The sidecar
+// decorator records every request the IDE makes into the debug panel.
+protected override void OnInitialized() =>
+    fetcher = new SidecarFetcher(new LocalSchemaFetcher(), Sidecar);
 ```
-<sup><a href='/samples/BlazorQL.Sample/App.razor#L16-L20' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/BlazorQL.Sample/App.razor#L22-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 The schema itself is a C# port of GraphiQL's own test schema (`samples/BlazorQL.Sample/SampleSchema.cs` — original by GraphQL Contributors, MIT). It exercises the whole language: every scalar and list argument shape, enums and input objects with defaults, interfaces, unions, deprecated fields/values/arguments, markdown descriptions with images, and a real streaming subscription. GraphQL.NET has no incremental delivery, so unlike the graphql-js original the `@defer`/`@stream` directives are not part of the schema.

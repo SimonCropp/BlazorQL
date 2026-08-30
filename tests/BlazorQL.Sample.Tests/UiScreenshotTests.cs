@@ -71,6 +71,32 @@ public class UiScreenshotTests :
     }
 
     [Test]
+    public async Task Sidecar()
+    {
+        var page = await OpenWithQueryRun("light");
+
+        await page.ClickAsync("[data-testid='blazorql-sidecar-toggle']");
+        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
+        await page.ClickAsync("[data-testid='blazorql-sidecar-entries'] li:last-child");
+        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
+        await PinSidecarDurations(page);
+
+        await Verify(page)
+            .PageScreenshotOptions(new(), screenshotOnly: true);
+    }
+
+    // The captured durations differ run to run; pin them so the capture is of the layout.
+    static Task PinSidecarDurations(IPage page) =>
+        page.EvaluateAsync(
+            """
+            () => {
+                for (const cell of document.querySelectorAll('.blazorql-sidecar-duration')) {
+                    cell.textContent = '12 ms';
+                }
+            }
+            """);
+
+    [Test]
     public async Task SettingsDialog()
     {
         var page = await NewSizedPageAsync();

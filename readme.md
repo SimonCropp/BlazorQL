@@ -1,4 +1,4 @@
-﻿# <img src="icon.png" height="40px" alt="icon"> BlazorQL
+# <img src="icon.png" height="40px" alt="icon"> BlazorQL
 
 An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor Class Library. The editors are Monaco via the BlazorMonaco package, and everything else — shell, panes, state, and every language feature (completion, validation, hover, formatting) — is C#.
 
@@ -18,6 +18,7 @@ An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor
 - **Toolbar**: prettify, merge fragments, copy, share links (query + variables in the url fragment — never headers), response copy/download, and a status line.
 - **Transports**: HTTP (including `multipart/mixed` incremental responses), graphql-transport-ws subscriptions, or any custom `IGraphQLFetcher` — the sample executes a GraphQL.NET schema inside the WASM app and runs on GitHub Pages with no server at all.
 - **Theming**: system/light/dark, followed by the editors.
+- **Debug sidecar**: an opt-out panel that logs every request through a wrapped fetcher — query, variables, headers, and each response document — with a deep link that opens any captured query in the IDE.
 
 Dark mode:
 
@@ -32,10 +33,12 @@ Add the `BlazorQL` package to a Blazor WebAssembly app, then render the componen
 <a id='snippet-sampleFetcher'></a>
 ```razor
 // The whole schema lives in the browser by default: GraphQL.NET executes it inside the WASM
-// app itself, so the sample deploys to static hosting with subscriptions intact.
-IGraphQLFetcher fetcher = new LocalSchemaFetcher();
+// app itself, so the sample deploys to static hosting with subscriptions intact. The sidecar
+// decorator records every request the IDE makes into the debug panel.
+protected override void OnInitialized() =>
+    fetcher = new SidecarFetcher(new LocalSchemaFetcher(), Sidecar);
 ```
-<sup><a href='/samples/BlazorQL.Sample/App.razor#L16-L20' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/BlazorQL.Sample/App.razor#L22-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ```razor
@@ -67,6 +70,7 @@ Built-in fetchers: `HttpFetcher(url)` and `GraphQLWsFetcher(url)`. Anything else
 - [Features](docs/features.md)
 - [Fetchers](docs/fetchers.md)
 - [Theming](docs/theming.md)
+- [Debug sidecar](docs/sidecar.md)
 - [Storage](docs/storage.md)
 - [Shortcuts](docs/shortcuts.md)
 - [The sample](docs/sample.md)

@@ -1,0 +1,102 @@
+@namespace BlazorQL
+@inject SidecarStore Store
+@inject IJSRuntime JS
+@inject IServiceProvider Services
+
+@if (!open && toggleButton)
+{
+    <button type="button"
+            class="blazorql-sidecar-launcher"
+            data-testid="blazorql-sidecar-toggle"
+            title="Open the BlazorQL sidecar (@Store.Options.ToggleShortcut)"
+            aria-label="Open the BlazorQL debug sidecar"
+            @onclick="Toggle">GraphQL</button>
+}
+@if (open)
+{
+    <aside class="blazorql-sidecar" data-testid="blazorql-sidecar" role="complementary" aria-label="BlazorQL debug sidecar">
+        <header class="blazorql-sidecar-header">
+            <h2>GraphQL <span class="blazorql-sidecar-count" data-testid="blazorql-sidecar-count">@Store.Entries.Count</span></h2>
+            <button type="button" data-testid="blazorql-sidecar-clear" title="Forget every captured request" @onclick="Clear">Clear</button>
+            <button type="button" data-testid="blazorql-sidecar-close" title="Hide the sidecar (@Store.Options.ToggleShortcut)" @onclick="Toggle">Close</button>
+        </header>
+        <div class="blazorql-sidecar-body">
+            @if (Store.Entries.Count == 0)
+            {
+                <p class="blazorql-sidecar-empty" data-testid="blazorql-sidecar-empty">No GraphQL requests captured yet.</p>
+            }
+            else
+            {
+                <ol class="blazorql-sidecar-entries" data-testid="blazorql-sidecar-entries">
+                    @foreach (var entry in Store.Entries)
+                    {
+                        <li class="@(entry.Id == selectedId ? "blazorql-sidecar-selected" : null)" @key="entry.Id" @onclick="() => Select(entry.Id)">
+                            <span class="blazorql-sidecar-kind">@entry.Kind</span>
+                            <span class="blazorql-sidecar-name">@entry.Name</span>
+                            <span class="@Marker(entry)">@State(entry)</span>
+                            <span class="blazorql-sidecar-duration">@entry.Duration.TotalMilliseconds.ToString("0") ms</span>
+                        </li>
+                    }
+                </ol>
+                @if (Selected is { } selected)
+                {
+                    <div class="blazorql-sidecar-detail" data-testid="blazorql-sidecar-detail">
+                        <div class="blazorql-sidecar-actions">
+                            <button type="button" data-testid="blazorql-sidecar-copy-query" title="Copy the operation text" @onclick="() => Copy(selected.Query)">Copy query</button>
+                            @if (selected.VariablesJson is { } variablesJson)
+                            {
+                                <button type="button" data-testid="blazorql-sidecar-copy-variables" title="Copy the variables JSON" @onclick="() => Copy(variablesJson)">Copy variables</button>
+                            }
+                            @if (IdeHref(selected, Store.Options.IdeRoute) is { } href)
+                            {
+                                <a data-testid="blazorql-sidecar-ide-link" href="@href" target="_blank" rel="noopener" title="Open this query in BlazorQL, in a new tab">Open in BlazorQL</a>
+                            }
+                        </div>
+                        @if (selected.Error is { } error)
+                        {
+                            <p class="blazorql-sidecar-error" data-testid="blazorql-sidecar-error">@error</p>
+                        }
+                        <h3>Query</h3>
+                        <pre data-testid="blazorql-sidecar-query">@selected.Query</pre>
+                        @if (selected.VariablesJson is { } variables)
+                        {
+                            <h3>Variables</h3>
+                            <pre data-testid="blazorql-sidecar-variables">@variables</pre>
+                        }
+                        @if (selected.Headers.Count > 0)
+                        {
+                            <h3>Headers</h3>
+                            <table data-testid="blazorql-sidecar-headers">
+                                <tbody>
+                                @foreach (var header in selected.Headers)
+                                {
+                                    <tr><th>@header.Key</th><td>@header.Value</td></tr>
+                                }
+                                </tbody>
+                            </table>
+                        }
+                        @{
+                            var documents = selected.Documents;
+                        }
+                        @if (documents.Count > 0)
+                        {
+                            <h3>@(documents.Count == 1 ? "Response" : $"Responses ({selected.DocumentCount})")</h3>
+                            @if (selected.DocumentCount > documents.Count)
+                            {
+                                <p class="blazorql-sidecar-note">Showing the first @documents.Count of @selected.DocumentCount documents.</p>
+                            }
+                            @foreach (var document in documents)
+                            {
+                                <pre data-testid="blazorql-sidecar-response">@document</pre>
+                            }
+                        }
+                        else if (!selected.Completed)
+                        {
+                            <p class="blazorql-sidecar-note">Waiting for a response…</p>
+                        }
+                    </div>
+                }
+            }
+        </div>
+    </aside>
+}

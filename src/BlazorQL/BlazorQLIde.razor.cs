@@ -1528,8 +1528,12 @@ public partial class BlazorQLIde :
         finally
         {
             stopwatch.Stop();
+            // The sidecar decorator is transparent for the footer — look through it at the transport.
+            var transport = Fetcher is SidecarFetcher sidecar
+                ? sidecar.Inner
+                : Fetcher;
             // The HTTP status code replaces "OK" outright; error/stopped wording still wins a slot.
-            statusLine = Fetcher is HttpFetcher {LastStatus: { } httpStatus}
+            statusLine = transport is HttpFetcher {LastStatus: { } httpStatus}
                 ? status == "OK"
                     ? $"{httpStatus.StatusCode} · {stopwatch.ElapsedMilliseconds} ms"
                     : $"{httpStatus.StatusCode} · {status} · {stopwatch.ElapsedMilliseconds} ms"
