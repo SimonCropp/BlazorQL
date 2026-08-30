@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/execution/buildResolveInfo */
-function p(n,e,t,a,o,r,i){let{schema:s,fragmentDefinitions:u,rootValue:l,operation:m,variableValues:f}=n;return{fieldName:e.name,fieldNodes:t,returnType:e.type,parentType:a,path:o,schema:s,fragments:u,rootValue:l,operation:m,variableValues:f,getAbortSignal:r,getAsyncHelpers:i}}export{p as buildResolveInfo};
-//# sourceMappingURL=buildResolveInfo.mjs.map

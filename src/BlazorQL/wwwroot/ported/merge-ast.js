@@ -3,13 +3,15 @@
  * Copyright (c) GraphQL Contributors. MIT licensed.
  * https://github.com/graphql/graphiql/blob/main/packages/graphiql-toolkit/src/graphql-helpers/merge-ast.ts
  */
-import {
+// Like the vendored test schema, this takes the graphql module by injection: graphql-js relies on
+// instanceof across its types, so the instance used here must be the page bundle's own.
+export function createMergeAst({
   TypeInfo,
   getNamedType,
   visit,
   visitWithTypeInfo,
   Kind,
-} from '../vendor/graphql.js';
+}) {
 
 function uniqueBy(array, iteratee) {
   const FilteredMap = new Map();
@@ -99,7 +101,7 @@ function inlineRelevantFragmentSpreads(
 /**
  * Given a document AST, inline all named fragment definitions.
  */
-export function mergeAst(documentAST, schema) {
+function mergeAst(documentAST, schema) {
   // If we're given the schema, we can simplify even further by resolving object
   // types vs unions/interfaces
   const typeInfo = schema ? new TypeInfo(schema) : null;
@@ -157,4 +159,7 @@ export function mergeAst(documentAST, schema) {
   };
 
   return visit(flattenedAST, deduplicateVisitors);
+}
+
+return mergeAst;
 }

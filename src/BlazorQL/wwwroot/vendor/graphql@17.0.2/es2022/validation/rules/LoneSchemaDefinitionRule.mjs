@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/LoneSchemaDefinitionRule */
-import{GraphQLError as r}from"../../error/GraphQLError.mjs";function s(n){let e=n.getSchema(),t=e?.astNode??e?.getQueryType()??e?.getMutationType()??e?.getSubscriptionType(),i=0;return{SchemaDefinition(o){if(t){n.reportError(new r("Cannot define a new schema within a schema extension.",{nodes:o}));return}i>0&&n.reportError(new r("Must provide only one schema definition.",{nodes:o})),++i}}}export{s as LoneSchemaDefinitionRule};
-//# sourceMappingURL=LoneSchemaDefinitionRule.mjs.map

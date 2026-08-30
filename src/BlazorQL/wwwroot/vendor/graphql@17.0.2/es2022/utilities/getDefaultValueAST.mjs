@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/utilities/getDefaultValueAST */
-import{invariant as f}from"../jsutils/invariant.mjs";import{astFromValue as n}from"./astFromValue.mjs";import{valueToLiteral as i}from"./valueToLiteral.mjs";function s(l){let a=l.type,t=l.default;if(t){let e=t.literal??i(t.value,a);return e==null&&f(!1,"Invalid default value"),e}let u=l.defaultValue;if(u!==void 0){let e=n(u,a);return e==null&&f(!1,"Invalid default value"),e}}export{s as getDefaultValueAST};
-//# sourceMappingURL=getDefaultValueAST.mjs.map

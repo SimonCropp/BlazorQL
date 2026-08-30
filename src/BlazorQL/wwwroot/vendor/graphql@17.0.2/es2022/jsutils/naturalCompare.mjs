@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/jsutils/naturalCompare */
-function C(e,u){let l=0,r=0;for(;l<e.length&&r<u.length;){let t=e.charCodeAt(l),n=u.charCodeAt(r);if(a(t)&&a(n)){let i=0;do++l,i=i*10+t-o,t=e.charCodeAt(l);while(a(t)&&i>0);let h=0;do++r,h=h*10+n-o,n=u.charCodeAt(r);while(a(n)&&h>0);if(i<h)return-1;if(i>h)return 1}else{if(t<n)return-1;if(t>n)return 1;++l,++r}}return e.length-u.length}var o=48,f=57;function a(e){return!isNaN(e)&&o<=e&&e<=f}export{C as naturalCompare};
-//# sourceMappingURL=naturalCompare.mjs.map

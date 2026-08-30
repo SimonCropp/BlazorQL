@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/execution/getVariableSignature */
-import{GraphQLError as i}from"../error/GraphQLError.mjs";import{print as o}from"../language/printer.mjs";import{isInputType as u}from"../type/definition.mjs";import{typeFromAST as l}from"../utilities/typeFromAST.mjs";function f(p,t){let e=t.variable.name.value,r=l(p,t.type);if(!u(r)){let n=o(t.type);return new i(`Variable "$${e}" expected value of type "${n}" which cannot be used as an input type.`,{nodes:t.type})}let a=t.defaultValue;return{name:e,type:r,default:a&&{literal:a}}}export{f as getVariableSignature};
-//# sourceMappingURL=getVariableSignature.mjs.map

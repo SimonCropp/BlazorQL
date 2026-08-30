@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/execution/cancellablePromise */
-import{promiseWithResolvers as m}from"../jsutils/promiseWithResolvers.mjs";function v(n){let{promise:e,resolve:t,reject:r}=m(),s=!1,c=o=>{s||(s=!0,t(o))},i=o=>{s||(s=!0,r(o))};return n.then(c,i),{promise:e,abort(o){i(o)}}}function p(n,e){let t=v(n);if(e.aborted)return t.abort(e.reason),t.promise;let r=()=>{e.removeEventListener("abort",r),t.abort(e.reason)};return e.addEventListener("abort",r),t.promise.then(()=>{e.removeEventListener("abort",r)},()=>{e.removeEventListener("abort",r)}),t.promise}export{p as cancellablePromise,v as withCancellation};
-//# sourceMappingURL=cancellablePromise.mjs.map

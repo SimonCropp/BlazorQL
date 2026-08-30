@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/KnownOperationTypesRule */
-import{GraphQLError as n}from"../../error/GraphQLError.mjs";function i(o){let t=o.getSchema();return{OperationDefinition(e){let r=e.operation;t.getRootType(r)||o.reportError(new n(`The ${r} operation is not supported by the schema.`,{nodes:e}))}}}export{i as KnownOperationTypesRule};
-//# sourceMappingURL=KnownOperationTypesRule.mjs.map

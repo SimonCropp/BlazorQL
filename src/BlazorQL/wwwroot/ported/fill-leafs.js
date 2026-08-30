@@ -3,7 +3,9 @@
  * Copyright (c) GraphQL Contributors. MIT licensed.
  * https://github.com/graphql/graphiql/blob/main/packages/graphiql-toolkit/src/graphql-helpers/auto-complete.ts
  */
-import {
+// Like the vendored test schema, this takes the graphql module by injection: graphql-js relies on
+// instanceof across its types, so the instance used here must be the page bundle's own.
+export function createFillLeafs({
   getNamedType,
   isLeafType,
   Kind,
@@ -11,7 +13,7 @@ import {
   print,
   TypeInfo,
   visit,
-} from '../vendor/graphql.js';
+}) {
 
 /**
  * Given a document string which may not be valid due to terminal fields not
@@ -23,7 +25,7 @@ import {
  * Note that there is no guarantee that the result will be a valid query, this
  * utility represents a "best effort" which may be useful within IDE tools.
  */
-export function fillLeafs(schema, docString, getDefaultFieldNames) {
+function fillLeafs(schema, docString, getDefaultFieldNames) {
   const insertions = [];
 
   if (!schema || !docString) {
@@ -177,4 +179,7 @@ function getIndentation(str, index) {
     }
   }
   return str.slice(indentStart, indentEnd);
+}
+
+return fillLeafs;
 }

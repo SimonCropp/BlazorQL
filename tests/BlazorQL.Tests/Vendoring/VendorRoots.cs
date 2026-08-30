@@ -1,35 +1,42 @@
 /// <summary>
-/// The pinned esm.sh entry points the vendored JS layer is built from. These are the version pins
-/// of the whole editor stack — monaco-editor 0.52.2 is the ceiling monaco-graphql 1.8.0 supports
-/// (peer &lt; 0.53), and graphql must be a single version per JS graph (the page graph externals it;
-/// the worker graph bundles its own copy, deliberately). Change entries only in lockstep and
-/// re-run <c>VendorTests.RefreshVendoredAssets</c>.
+/// The pinned npm packages the vendored JS layer is bundled from, and the entry files that become
+/// the vendored bundles. These are the version pins of the whole editor stack — monaco-editor
+/// 0.52.2 is the ceiling monaco-graphql 1.8.0 supports (peer &lt; 0.53), and graphql is one version
+/// everywhere (the page bundle carries one instance; each worker bundle carries its own, which is
+/// fine — separate graphs). Change entries only in lockstep and re-run
+/// <c>VendorTests.RefreshVendoredAssets</c>.
 /// </summary>
 static class VendorRoots
 {
-    /// <summary>Entry files fetched and BFS-walked, keyed by the local file name they land as.</summary>
-    public static IReadOnlyDictionary<string, string> Modules { get; } = new Dictionary<string, string>
+    /// <summary>npm package → exact version, downloaded as tarballs into the bundler's node_modules.</summary>
+    public static IReadOnlyDictionary<string, string> Packages { get; } = new Dictionary<string, string>
     {
-        // The one graphql instance of the page graph; everything else marks it external.
-        ["graphql.js"] = "https://esm.sh/graphql@17.0.2?target=es2022",
-        // monaco-graphql's trimmed monaco entry (graphql + json languages + edcore) — the one true
-        // Monaco instance the host module publishes as globalThis.monaco.
-        ["monaco-editor.js"] = "https://esm.sh/monaco-graphql@1.8.0/monaco-editor?target=es2022&deps=monaco-editor@0.52.2",
-        ["monaco-graphql.js"] = "https://esm.sh/monaco-graphql@1.8.0/initializeMode?target=es2022&deps=monaco-editor@0.52.2&external=graphql",
-        ["graphql-language-service.js"] = "https://esm.sh/graphql-language-service@5.6.0?target=es2022&external=graphql",
-        ["editor.worker.js"] = "https://esm.sh/monaco-editor@0.52.2/esm/vs/editor/editor.worker.js?target=es2022",
-        ["json.worker.js"] = "https://esm.sh/monaco-editor@0.52.2/esm/vs/language/json/json.worker.js?target=es2022",
-        // Self-contained: a worker cannot share the page's modules, so this graph carries its own
-        // graphql, pinned to the same version.
-        ["graphql.worker.js"] = "https://esm.sh/monaco-graphql@1.8.0/esm/graphql.worker.js?target=es2022&deps=monaco-editor@0.52.2,graphql@17.0.2",
-        ["prettier-standalone.js"] = "https://esm.sh/prettier@3.3.2/standalone?target=es2022",
-        ["prettier-graphql.js"] = "https://esm.sh/prettier@3.3.2/plugins/graphql?target=es2022",
-        ["prettier-estree.js"] = "https://esm.sh/prettier@3.3.2/plugins/estree?target=es2022",
-        ["prettier-babel.js"] = "https://esm.sh/prettier@3.3.2/plugins/babel?target=es2022",
-        ["jsonc-parser.js"] = "https://esm.sh/jsonc-parser@3.3.1?target=es2022",
+        ["monaco-editor"] = "0.52.2",
+        ["monaco-graphql"] = "1.8.0",
+        ["graphql"] = "17.0.2",
+        ["graphql-language-service"] = "5.6.0",
+        ["picomatch-browser"] = "2.2.6",
+        ["debounce-promise"] = "3.1.2",
+        ["nullthrows"] = "1.1.1",
+        ["vscode-languageserver-types"] = "3.17.5",
+        ["prettier"] = "3.3.2",
+        ["jsonc-parser"] = "3.3.1",
     };
 
-    /// <summary>Fetched raw, no import walking.</summary>
+    /// <summary>The esbuild binary used to produce the bundles (win32-x64 — the refresh runs on dev machines).</summary>
+    public const string EsbuildVersion = "0.25.5";
+
+    /// <summary>Entry file (in src/BlazorQL/js) → vendored output name (in wwwroot/vendor).</summary>
+    public static IReadOnlyDictionary<string, string> Entries { get; } = new Dictionary<string, string>
+    {
+        ["page-entry.js"] = "page.js",
+        ["editor-worker-entry.js"] = "editor.worker.js",
+        ["json-worker-entry.js"] = "json.worker.js",
+        ["graphql-worker-entry.js"] = "graphql.worker.js",
+        ["prettier-entry.js"] = "prettier.js",
+    };
+
+    /// <summary>Fetched raw, no bundling.</summary>
     public static IReadOnlyDictionary<string, string> RawFiles { get; } = new Dictionary<string, string>
     {
         // Fira Code with the font data embedded as data URIs (OFL licensed).

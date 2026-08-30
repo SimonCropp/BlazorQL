@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/utilities/stripIgnoredCharacters */
-import{printBlockString as u}from"../language/blockString.mjs";import{isPunctuatorTokenKind as m,Lexer as f}from"../language/lexer.mjs";import{isSource as l,Source as p}from"../language/source.mjs";import{TokenKind as e}from"../language/tokenKind.mjs";function B(t){let r=l(t)?t:new p(t),c=r.body,i=new f(r),o="",d=!1;for(;i.advance().kind!==e.EOF;){let n=i.token,a=n.kind,s=!m(n.kind);d&&(s||n.kind===e.SPREAD)&&(o+=" ");let k=c.slice(n.start,n.end);a===e.BLOCK_STRING?o+=u(n.value,{minimize:!0}):o+=k,d=s}return o}export{B as stripIgnoredCharacters};
-//# sourceMappingURL=stripIgnoredCharacters.mjs.map

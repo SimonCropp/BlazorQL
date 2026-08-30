@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/ValuesOfCorrectTypeRule */
-import{validateInputLiteral as r}from"../../utilities/validateInputValue.mjs";function g(e){return{NullValue:u=>l(e,u,e.getInputType()),ListValue:u=>l(e,u,e.getParentInputType()),ObjectValue:u=>l(e,u,e.getInputType()),EnumValue:u=>l(e,u,e.getInputType()),IntValue:u=>l(e,u,e.getInputType()),FloatValue:u=>l(e,u,e.getInputType()),StringValue:u=>l(e,u,e.getInputType()),BooleanValue:u=>l(e,u,e.getInputType())}}function l(e,u,p){return p&&r(u,p,a=>{e.reportError(a)},void 0,void 0,e.hideSuggestions),!1}export{g as ValuesOfCorrectTypeRule};
-//# sourceMappingURL=ValuesOfCorrectTypeRule.mjs.map

@@ -1,7 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/validate */
-import{mapValue as y}from"../jsutils/mapValue.mjs";import{GraphQLError as v}from"../error/GraphQLError.mjs";import{QueryDocumentKeys as w}from"../language/ast.mjs";import{visit as f,visitInParallel as d}from"../language/visitor.mjs";import{assertValidSchema as g}from"../type/validate.mjs";import{TypeInfo as V,visitWithTypeInfo as E}from"../utilities/TypeInfo.mjs";import{shouldTrace as D,validateChannel as m}from"../diagnostics.mjs";import{specifiedRules as L,specifiedSDLRules as I}from"./specifiedRules.mjs";import{SDLValidationContext as S,ValidationContext as C}from"./ValidationContext.mjs";var Q=y(w,r=>r.filter(o=>o!=="description")),l=new v("Too many validation errors, error limit reached. Validation aborted.");function k(r,o,t=L,e){return D(m)?m.traceSync(()=>c(r,o,t,e),{schema:r,document:o}):c(r,o,t,e)}function c(r,o,t,e){let s=e?.maxErrors??100,a=e?.hideSuggestions??!1;g(r);let i=[],p=new V(r),h=new C(r,o,p,n=>{if(i.length>=s)throw l;i.push(n)},a),x=d(t.map(n=>n(h)));try{f(o,E(p,x),Q)}catch(n){if(n===l)i.push(l);else throw n}return i}function u(r,o,t=I){let e=[],s=new S(r,o,i=>{e.push(i)}),a=t.map(i=>i(s));return f(r,d(a)),e}function q(r){let o=u(r);if(o.length!==0)throw new Error(o.map(t=>t.message).join(`
-
-`))}function z(r,o){let t=u(r,o);if(t.length!==0)throw new Error(t.map(e=>e.message).join(`
-
-`))}export{q as assertValidSDL,z as assertValidSDLExtension,k as validate,u as validateSDL};
-//# sourceMappingURL=validate.mjs.map

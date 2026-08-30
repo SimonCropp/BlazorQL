@@ -1,5 +1,10 @@
 @namespace BlazorQL
+@inject IJSRuntime JS
 
-<div class="blazorql" data-testid="blazorql">
-    <!-- The IDE shell lands here milestone by milestone; this placeholder proves the packaging. -->
+<div class="blazorql" data-testid="blazorql" data-ready="@(ready ? "true" : null)">
+    <div class="blazorql-editors">
+        <section class="blazorql-editor-host" aria-label="Operation Editor">
+            <div id="@OperationElementId" class="blazorql-editor"></div>
+        </section>
+    </div>
 </div>

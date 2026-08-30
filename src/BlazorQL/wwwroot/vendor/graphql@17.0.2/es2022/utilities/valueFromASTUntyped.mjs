@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/utilities/valueFromASTUntyped */
-import{keyValMap as s}from"../jsutils/keyValMap.mjs";import{Kind as r}from"../language/kinds.mjs";function t(e,a){switch(e.kind){case r.NULL:return null;case r.INT:return parseInt(e.value,10);case r.FLOAT:return parseFloat(e.value);case r.STRING:case r.ENUM:case r.BOOLEAN:return e.value;case r.LIST:return e.values.map(n=>t(n,a));case r.OBJECT:return s(e.fields,n=>n.name.value,n=>t(n.value,a));case r.VARIABLE:return a?.[e.name.value]}}export{t as valueFromASTUntyped};
-//# sourceMappingURL=valueFromASTUntyped.mjs.map

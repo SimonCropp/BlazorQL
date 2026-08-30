@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/NoUnusedFragmentsRule */
-import{GraphQLError as o}from"../../error/GraphQLError.mjs";function s(n){let t=new Set,a=[];return{OperationDefinition(e){for(let r of n.getRecursivelyReferencedFragments(e))t.add(r.name.value);return!1},FragmentDefinition(e){return a.push(e),!1},Document:{leave(){for(let e of a){let r=e.name.value;t.has(r)||n.reportError(new o(`Fragment "${r}" is never used.`,{nodes:e}))}}}}}export{s as NoUnusedFragmentsRule};
-//# sourceMappingURL=NoUnusedFragmentsRule.mjs.map

@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/jsutils/toObjMap */
-function c(t){if(t==null)return Object.create(null);if(Object.getPrototypeOf(t)===null)return t;let e=Object.create(null);for(let[r,n]of Object.entries(t))e[r]=n;return e}function l(t){if(t==null)return Object.create(null);if(Object.getPrototypeOf(t)===null)return t;let e=Object.create(null);for(let[r,n]of Object.entries(t))e[r]=n;for(let r of Object.getOwnPropertySymbols(t))e[r]=t[r];return e}export{c as toObjMap,l as toObjMapWithSymbols};
-//# sourceMappingURL=toObjMap.mjs.map

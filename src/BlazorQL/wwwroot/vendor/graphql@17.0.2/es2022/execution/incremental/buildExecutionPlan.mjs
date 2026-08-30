@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/execution/incremental/buildExecutionPlan */
-import{getBySet as d}from"../../jsutils/getBySet.mjs";import{isSameSet as a}from"../../jsutils/isSameSet.mjs";function p(f,t=new Set){let n=new Map,e=new Map;for(let[o,s]of f){let i=l(s);if(a(i,t)){n.set(o,s);continue}let r=d(e,i);r===void 0&&(r=new Map,e.set(i,r)),r.set(o,s)}return{groupedFieldSet:n,newGroupedFieldSets:e}}function l(f){let t=new Set;for(let n of f){let e=n.deferUsage;if(e===void 0)return t.clear(),t;t.add(e)}for(let n of t){let e=n.parentDeferUsage;for(;e!==void 0;){if(t.has(e)){t.delete(n);break}e=e.parentDeferUsage}}return t}export{p as buildExecutionPlan};
-//# sourceMappingURL=buildExecutionPlan.mjs.map

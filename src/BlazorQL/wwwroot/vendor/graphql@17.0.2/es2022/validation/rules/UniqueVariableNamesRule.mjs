@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/UniqueVariableNamesRule */
-import{groupBy as l}from"../../jsutils/groupBy.mjs";import{GraphQLError as b}from"../../error/GraphQLError.mjs";function s(a){return{OperationDefinition(i){let n=i.variableDefinitions??[],o=l(n,e=>e.variable.name.value);for(let[e,r]of o)r.length>1&&a.reportError(new b(`There can be only one variable named "$${e}".`,{nodes:r.map(t=>t.variable.name)}))}}}export{s as UniqueVariableNamesRule};
-//# sourceMappingURL=UniqueVariableNamesRule.mjs.map

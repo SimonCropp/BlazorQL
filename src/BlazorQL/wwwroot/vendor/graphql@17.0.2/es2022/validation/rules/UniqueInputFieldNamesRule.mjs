@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/UniqueInputFieldNamesRule */
-import{invariant as l}from"../../jsutils/invariant.mjs";import{GraphQLError as m}from"../../error/GraphQLError.mjs";function s(o){let r=[],n=new Map;return{ObjectValue:{enter(){r.push(n),n=new Map},leave(){let e=r.pop();e==null&&l(!1),n=e}},ObjectField(e){let a=e.name.value,t=n.get(a);t!=null?o.reportError(new m(`There can be only one input field named "${a}".`,{nodes:[t,e.name]})):n.set(a,e.name)}}}export{s as UniqueInputFieldNamesRule};
-//# sourceMappingURL=UniqueInputFieldNamesRule.mjs.map

@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/LoneAnonymousOperationRule */
-import{GraphQLError as i}from"../../error/GraphQLError.mjs";import{Kind as t}from"../../language/kinds.mjs";function a(e){let n=0;return{Document(o){n=o.definitions.filter(r=>r.kind===t.OPERATION_DEFINITION).length},OperationDefinition(o){!o.name&&n>1&&e.reportError(new i("This anonymous operation must be the only defined operation.",{nodes:o}))}}}export{a as LoneAnonymousOperationRule};
-//# sourceMappingURL=LoneAnonymousOperationRule.mjs.map

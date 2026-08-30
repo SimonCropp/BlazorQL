@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/validation/rules/UniqueOperationNamesRule */
-import{GraphQLError as t}from"../../error/GraphQLError.mjs";function l(r){let n=new Map;return{OperationDefinition(a){let e=a.name;if(e!=null){let o=n.get(e.value);o!=null?r.reportError(new t(`There can be only one operation named "${e.value}".`,{nodes:[o,e]})):n.set(e.value,e)}return!1},FragmentDefinition:()=>!1}}export{l as UniqueOperationNamesRule};
-//# sourceMappingURL=UniqueOperationNamesRule.mjs.map

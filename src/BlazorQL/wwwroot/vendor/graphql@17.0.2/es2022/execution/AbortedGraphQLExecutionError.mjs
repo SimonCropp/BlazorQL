@@ -1,3 +1,0 @@
-/* esm.sh - graphql@17.0.2/execution/AbortedGraphQLExecutionError */
-var r=class extends Error{constructor(e,s){super(g(e),{cause:e}),this.name="AbortedGraphQLExecutionError",this.abortedResult=s}get[Symbol.toStringTag](){return"AbortedGraphQLExecutionError"}};function g(t){return t instanceof Error||typeof t=="object"&&t!==null&&"message"in t&&typeof t.message=="string"?t.message:String(t)}export{r as AbortedGraphQLExecutionError};
-//# sourceMappingURL=AbortedGraphQLExecutionError.mjs.map
