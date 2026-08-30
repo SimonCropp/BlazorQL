@@ -22,7 +22,7 @@
                         History="history"
                         OnHistorySelect="LoadHistoryItem" />
         }
-        <PaneResizer Id="@PluginResizerId" Direction="x" Hidden="visiblePlugin is null" OnReset="() => ResetPane(pluginPane)" />
+        <PaneResizer Id="@pluginResizerId" Direction="x" Hidden="visiblePlugin is null" OnReset="() => ResetPane(pluginPane)" />
         <div class="blazorql-sessions" style="@Grow(visiblePlugin is null ? 1 : 1 - pluginPane.Ratio)">
             <header class="blazorql-session-header">
                 <TabBar Store="tabs"
@@ -129,7 +129,7 @@
                             @ToolbarContent
                         </div>
                     </div>
-                    <PaneResizer Id="@ToolsResizerId" Direction="y" OnReset="ResetToolsPane" />
+                    <PaneResizer Id="@toolsResizerId" Direction="y" OnReset="ResetToolsPane" />
                     <EditorTools @ref="editorTools"
                                  Expanded="toolsExpanded"
                                  ActiveTool="activeTool"
@@ -144,7 +144,7 @@
                                  OnSelectTool="SelectTool"
                                  OnToggle="ToggleTools" />
                 </div>
-                <PaneResizer Id="@SessionResizerId" Direction="x" OnReset="() => ResetPane(sessionPane)" />
+                <PaneResizer Id="@sessionResizerId" Direction="x" OnReset="() => ResetPane(sessionPane)" />
                 <div class="blazorql-response" style="@Grow(1 - sessionPane.Ratio)">
                     <section class="blazorql-editor-host" aria-label="Result Window" aria-live="polite" aria-atomic="true">
                         @if (hydrated)

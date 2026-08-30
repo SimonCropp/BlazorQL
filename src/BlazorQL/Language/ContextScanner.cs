@@ -143,7 +143,7 @@ static class ContextScanner
             switch (ch)
             {
                 case '{':
-                    OpenBrace(schema, frames, ref pendingRoot, ref afterOn);
+                    OpenBrace(schema, frames, ref pendingRoot, out afterOn);
                     break;
 
                 case '}':
@@ -341,7 +341,7 @@ static class ContextScanner
         }
     }
 
-    static void OpenBrace(SchemaIndex schema, Stack<Frame> frames, ref string? pendingRoot, ref bool afterOn)
+    static void OpenBrace(SchemaIndex schema, Stack<Frame> frames, ref string? pendingRoot, out bool afterOn)
     {
         afterOn = false;
         if (frames.Count == 0)

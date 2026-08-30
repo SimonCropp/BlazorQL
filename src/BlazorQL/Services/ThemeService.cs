@@ -1,13 +1,5 @@
 namespace BlazorQL;
 
-/// <summary>The IDE's theme preference. System defers to the OS via prefers-color-scheme.</summary>
-public enum Theme
-{
-    System,
-    Light,
-    Dark
-}
-
 /// <summary>
 /// Holds the theme preference and resolves it to a concrete light/dark mode. Persistence arrives
 /// in M6 — for now the preference lives for the component's lifetime.
@@ -26,8 +18,13 @@ public sealed class ThemeService
         };
 
     /// <summary>The concrete mode, given what the OS prefers.</summary>
-    public string Resolve(bool systemDark) =>
-        Current == Theme.Dark || (Current == Theme.System && systemDark)
-            ? "dark"
-            : "light";
+    public string Resolve(bool systemDark)
+    {
+        if (Current == Theme.Dark || (Current == Theme.System && systemDark))
+        {
+            return "dark";
+        }
+
+        return "light";
+    }
 }

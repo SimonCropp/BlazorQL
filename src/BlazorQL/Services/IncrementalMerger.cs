@@ -20,9 +20,9 @@ public sealed class IncrementalMerger
 
     /// <summary>The accumulated response, serialized.</summary>
     public string Render() =>
-        result?.ToJsonString(RenderOptions) ?? "";
+        result?.ToJsonString(renderOptions) ?? "";
 
-    static readonly JsonSerializerOptions RenderOptions = new()
+    static readonly JsonSerializerOptions renderOptions = new()
     {
         WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -219,7 +219,14 @@ public sealed class IncrementalMerger
         JsonNode? current = result;
         foreach (var segment in path)
         {
-            current = segment is int index ? current?[index] : current?[(string) segment];
+            if (segment is int index)
+            {
+                current = current?[index];
+            }
+            else
+            {
+                current = current?[(string) segment];
+            }
         }
 
         return current;

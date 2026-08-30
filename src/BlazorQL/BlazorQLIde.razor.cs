@@ -16,14 +16,14 @@ public partial class BlazorQLIde :
 {
     internal const string OperationElementId = "blazorql-operation-editor";
     internal const string ResponseElementId = "blazorql-response-editor";
-    const string OperationModelUri = "inmemory://model/blazorql-operation.graphql";
-    const string VariablesModelUri = "inmemory://model/blazorql-variables.json";
-    const string HeadersModelUri = "inmemory://model/blazorql-request-headers.json";
-    const string ResponseModelUri = "inmemory://model/blazorql-response.json";
-    const string PluginResizerId = "blazorql-plugin-resizer";
-    const string SessionResizerId = "blazorql-session-resizer";
-    const string ToolsResizerId = "blazorql-tools-resizer";
-    const double CollapseThreshold = 100;
+    const string operationModelUri = "inmemory://model/blazorql-operation.graphql";
+    const string variablesModelUri = "inmemory://model/blazorql-variables.json";
+    const string headersModelUri = "inmemory://model/blazorql-request-headers.json";
+    const string responseModelUri = "inmemory://model/blazorql-response.json";
+    const string pluginResizerId = "blazorql-plugin-resizer";
+    const string sessionResizerId = "blazorql-session-resizer";
+    const string toolsResizerId = "blazorql-tools-resizer";
+    const double collapseThreshold = 100;
 
     /// <summary>Transports requests — including the introspection the schema is built from.</summary>
     [Parameter]
@@ -200,9 +200,9 @@ public partial class BlazorQLIde :
         }
 
         domWired = true;
-        await module!.Invoke("trackPointer", PluginResizerId, "plugin", "x");
-        await module.Invoke("trackPointer", SessionResizerId, "session", "x");
-        await module.Invoke("trackPointer", ToolsResizerId, "tools", "y");
+        await module!.Invoke("trackPointer", pluginResizerId, "plugin", "x");
+        await module.Invoke("trackPointer", sessionResizerId, "session", "x");
+        await module.Invoke("trackPointer", toolsResizerId, "tools", "y");
 
         // Document-level shortcuts for commands that live outside any editor.
         await module.Invoke(
@@ -271,7 +271,7 @@ public partial class BlazorQLIde :
 
     async Task OnOperationInit()
     {
-        operationModel = await SwapModel(operationEditor!, tabs.Active.Query, "graphql", OperationModelUri);
+        operationModel = await SwapModel(operationEditor!, tabs.Active.Query, "graphql", operationModelUri);
 
         await operationEditor!.AddAction(new ActionDescriptor
         {
@@ -305,21 +305,21 @@ public partial class BlazorQLIde :
 
     async Task OnVariablesInit()
     {
-        variablesModel = await SwapModel(editorTools!.VariablesEditor!, tabs.Active.Variables, "json", VariablesModelUri);
+        variablesModel = await SwapModel(editorTools!.VariablesEditor!, tabs.Active.Variables, "json", variablesModelUri);
         await AddPrettifyAction(editorTools.VariablesEditor!);
         await EditorReady();
     }
 
     async Task OnHeadersInit()
     {
-        headersModel = await SwapModel(editorTools!.HeadersEditor!, tabs.Active.Headers, "json", HeadersModelUri);
+        headersModel = await SwapModel(editorTools!.HeadersEditor!, tabs.Active.Headers, "json", headersModelUri);
         await AddPrettifyAction(editorTools.HeadersEditor!);
         await EditorReady();
     }
 
     async Task OnResponseInit()
     {
-        responseModel = await SwapModel(responseEditor!, tabs.Active.Response, "json", ResponseModelUri);
+        responseModel = await SwapModel(responseEditor!, tabs.Active.Response, "json", responseModelUri);
         await EditorReady();
     }
 
@@ -940,7 +940,7 @@ public partial class BlazorQLIde :
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
             JsonElement? introspection = null;
-            await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery), EmptyHeaders, cts.Token))
+            await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery), emptyHeaders, cts.Token))
             {
                 introspection = payload;
                 break;
@@ -1095,7 +1095,7 @@ public partial class BlazorQLIde :
             switch (resizerId)
             {
                 case "plugin":
-                    if (pixels < CollapseThreshold)
+                    if (pixels < collapseThreshold)
                     {
                         // Collapsing the plugin pane closes the plugin.
                         visiblePlugin = null;
@@ -1112,7 +1112,7 @@ public partial class BlazorQLIde :
                     sessionPane.Ratio = Math.Clamp(fraction, 0.1, 0.9);
                     break;
                 case "tools":
-                    if (size - pixels < CollapseThreshold)
+                    if (size - pixels < collapseThreshold)
                     {
                         toolsExpanded = false;
                     }
@@ -1456,7 +1456,7 @@ public partial class BlazorQLIde :
             return;
         }
 
-        var headers = EmptyHeaders;
+        var headers = emptyHeaders;
         if (IsHeadersEditorEnabled)
         {
             var parsedHeaders = await ParseEditorJson(editorTools?.HeadersEditor, "Request headers");
@@ -1703,7 +1703,7 @@ public partial class BlazorQLIde :
     void CloseShortKeys() =>
         shortKeysOpen = false;
 
-    static readonly Dictionary<string, string> EmptyHeaders = [];
+    static readonly Dictionary<string, string> emptyHeaders = [];
 
     // ---- Coordinate helpers (Monaco is 1-based line/column; the language services use offsets) ----
 

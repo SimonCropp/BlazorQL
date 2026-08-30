@@ -1,4 +1,4 @@
-namespace BlazorQL;
+﻿namespace BlazorQL;
 
 /// <summary>Everything one tab remembers while another tab is active.</summary>
 public sealed record TabState
@@ -67,6 +67,9 @@ public sealed class TabStore
     // absent: results are never persisted.
     sealed record PersistedTab(
         Guid Id,
+        // Write-only: GraphiQL's shape carries the title, but restoring recomputes it from the
+        // tab, so what was written is never read back.
+        // ReSharper disable once NotAccessedPositionalProperty.Local
         string? Title,
         string? Query,
         string? Variables,
