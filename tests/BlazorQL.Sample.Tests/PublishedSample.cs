@@ -41,7 +41,8 @@ public class PublishedSample
         info.ArgumentList.Add(project);
         info.ArgumentList.Add("-c");
         info.ArgumentList.Add(configuration);
-        info.ArgumentList.Add("--no-build");
+        // Not --no-build: on Release, packing-on-build makes publish invoke the Build target, and
+        // NoBuild=true turns that into NETSDK1085. An incremental build costs a few seconds.
         info.ArgumentList.Add("-o");
         info.ArgumentList.Add(publishDirectory);
 
