@@ -1,4 +1,4 @@
-# The sample
+﻿# The sample
 
 The deployed sample is a standalone Blazor WebAssembly app with **no backend**: the schema is executed inside the WASM app by GraphQL.NET through the sample's `LocalSchemaFetcher`.
 
@@ -13,6 +13,8 @@ IGraphQLFetcher fetcher = new LocalSchemaFetcher();
 <!-- endSnippet -->
 
 The schema itself is a C# port of GraphiQL's own test schema (`samples/BlazorQL.Sample/SampleSchema.cs` — original by GraphQL Contributors, MIT). It exercises the whole language: every scalar and list argument shape, enums and input objects with defaults, interfaces, unions, deprecated fields/values/arguments, markdown descriptions with images, and a real streaming subscription. GraphQL.NET has no incremental delivery, so unlike the graphql-js original the `@defer`/`@stream` directives are not part of the schema.
+
+The first tab opens on a `Demo` query that exercises most of that schema — variables with defaults, an alias, several argument shapes, nested lists, and a union spread through a fragment — under a short comment explaining the page. It runs as-is.
 
 Worth trying:
 

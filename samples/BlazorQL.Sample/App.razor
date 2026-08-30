@@ -8,7 +8,7 @@
                @bind="endpoint" />
         <button type="button" data-testid="endpoint-apply" @onclick="Apply">Apply</button>
     </div>
-    <BlazorQLIde Fetcher="fetcher" />
+    <BlazorQLIde Fetcher="fetcher" DefaultQuery="@DemoQuery.Text" />
 </div>
 
 @code {

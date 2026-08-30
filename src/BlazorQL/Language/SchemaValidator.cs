@@ -1,12 +1,4 @@
-using GraphQL.Types;
-using GraphQL.Validation;
-using GraphQLParser;
-using GraphQLParser.AST;
-
 namespace BlazorQL;
-
-/// <summary>One diagnostic against the operation text, in one-based line/column coordinates.</summary>
-public sealed record OperationDiagnostic(string Message, bool IsError, int Line, int Column);
 
 /// <summary>
 /// Validates documents against the introspected schema using GraphQL.NET's spec rules, plus a
@@ -15,9 +7,9 @@ public sealed record OperationDiagnostic(string Message, bool IsError, int Line,
 /// </summary>
 public sealed class SchemaValidator
 {
-    readonly ISchema schema;
-    readonly SchemaIndex index;
-    readonly DocumentValidator validator = new();
+    ISchema schema;
+    SchemaIndex index;
+    DocumentValidator validator = new();
 
     SchemaValidator(ISchema schema, SchemaIndex index)
     {
@@ -33,7 +25,7 @@ public sealed class SchemaValidator
             // The schema exists to validate documents, never to execute them, so every execution
             // hook is stubbed: abstract types resolve to nothing, and subscription roots stream
             // nothing.
-            var schema = Schema.For(sdl, options => options.Types.ForAll(typeConfig => typeConfig.ResolveType = _ => null!));
+            var schema = Schema.For(sdl, _ => _.Types.ForAll(_ => _.ResolveType = _ => null!));
 
             // Schema.For only materializes a custom scalar declaration when a matching CLR scalar
             // is registered; validation treats custom scalars as accept-anything, like GraphiQL.
@@ -95,20 +87,21 @@ public sealed class SchemaValidator
             throw new NotSupportedException("The validation schema never executes.");
     }
 
-    public async Task<IReadOnlyList<OperationDiagnostic>> Validate(DocumentInfo document)
+    public async Task<IReadOnlyList<OperationDiagnostic>> Validate(DocumentInfo info)
     {
-        if (document.SyntaxError is not null)
+        if (info.SyntaxError is not null)
         {
-            return [new($"Syntax Error: {document.SyntaxError}", IsError: true, document.SyntaxErrorLine, document.SyntaxErrorColumn)];
+            return [new($"Syntax Error: {info.SyntaxError}", IsError: true, info.SyntaxErrorLine, info.SyntaxErrorColumn)];
         }
 
-        if (document.Document is null)
+        var document = info.Document;
+        if (document is null)
         {
             return [];
         }
 
         var diagnostics = new List<OperationDiagnostic>();
-        var operation = document.Document.Definitions.OfType<GraphQLOperationDefinition>().FirstOrDefault();
+        var operation = document.Definitions.OfType<GraphQLOperationDefinition>().FirstOrDefault();
         if (operation is not null)
         {
             try
@@ -117,16 +110,21 @@ public sealed class SchemaValidator
                     new()
                     {
                         Schema = schema,
-                        Document = document.Document,
+                        Document = document,
                         Operation = operation
                     });
 
                 foreach (var error in result.Errors)
                 {
-                    var location = error.Locations is {Count: > 0} locations
-                        ? locations[0]
-                        : new(1, 1);
-                    diagnostics.Add(new(error.Message, IsError: true, location.Line, location.Column));
+                    if (error.Locations is {Count: > 0} locations)
+                    {
+                        var location = locations[0];
+                        diagnostics.Add(new(error.Message, IsError: true, location.Line, location.Column));
+                    }
+                    else
+                    {
+                        diagnostics.Add(new(error.Message, IsError: true, 1, 1));
+                    }
                 }
             }
             catch (Exception)
@@ -135,7 +133,7 @@ public sealed class SchemaValidator
             }
         }
 
-        DeprecationWarnings(document, diagnostics);
+        DeprecationWarnings(info, diagnostics);
         return diagnostics;
     }
 
@@ -143,10 +141,11 @@ public sealed class SchemaValidator
     /// Walks fields, arguments, and enum values against the introspection model and warns on
     /// deprecated usage. Best-effort: unknown names are validation's problem, not this walker's.
     /// </summary>
-    void DeprecationWarnings(DocumentInfo document, List<OperationDiagnostic> diagnostics)
+    void DeprecationWarnings(DocumentInfo info, List<OperationDiagnostic> diagnostics)
     {
-        var walker = new DeprecationWalker(index, document.Text, diagnostics);
-        foreach (var definition in document.Document!.Definitions)
+        var walker = new DeprecationWalker(index, info.Text, diagnostics);
+        var document = info.Document!;
+        foreach (var definition in document.Definitions)
         {
             switch (definition)
             {
@@ -205,14 +204,14 @@ public sealed class SchemaValidator
             }
         }
 
-        void WalkArguments(GraphQLField field, IntrospectionField definition)
+        void WalkArguments(GraphQLField field, IntrospectionField introspection)
         {
             foreach (var argument in field.Arguments?.Items ?? [])
             {
-                var argumentDefinition = definition.Args.FirstOrDefault(_ => _.Name == argument.Name.StringValue);
-                if (argumentDefinition is {IsDeprecated: true})
+                var definition = introspection.Args.FirstOrDefault(_ => _.Name == argument.Name.StringValue);
+                if (definition is {IsDeprecated: true})
                 {
-                    Warn(argument.Name, $"The argument {argumentDefinition.Name} is deprecated. {argumentDefinition.DeprecationReason}".TrimEnd());
+                    Warn(argument.Name, $"The argument {definition.Name} is deprecated. {definition.DeprecationReason}".TrimEnd());
                 }
             }
         }

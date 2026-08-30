@@ -1,5 +1,3 @@
-using GraphQLParser;
-using GraphQLParser.AST;
 using GraphQLParser.Exceptions;
 
 namespace BlazorQL;

@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The M6 storage layer over the published sample: history recording and restoring, tab/query
 /// survival across a reload, theme persistence, and the settings dialog's clear-storage.
 /// </summary>
@@ -132,10 +132,10 @@ public class PersistenceTests :
             await page.EvaluateAsync<int>("() => Object.keys(localStorage).filter(k => k.startsWith('blazorql:')).length"),
             Is.Zero);
 
-        // A reload boots fresh: one default tab carrying the welcome text.
+        // A reload boots fresh: one default tab carrying the sample's demo query.
         await page.ReloadAsync();
         await page.GoToAppAsync(BaseUrl);
-        await WaitForOperationTextAsync(page, "Welcome to BlazorQL");
+        await WaitForOperationTextAsync(page, "query Demo");
         Assert.That(await page.Locator(".blazorql-tab").CountAsync(), Is.EqualTo(1));
 
         Assert.That(ConsoleErrors(), Is.Empty);
