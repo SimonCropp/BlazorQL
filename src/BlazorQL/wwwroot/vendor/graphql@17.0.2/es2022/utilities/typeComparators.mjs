@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/utilities/typeComparators */
+import{isAbstractType as t,isInterfaceType as T,isListType as n,isNonNullType as o,isObjectType as x}from"../type/definition.mjs";function l(f,r){return f===r?!0:o(f)&&o(r)||n(f)&&n(r)?l(f.ofType,r.ofType):!1}function u(f,r,i){return r===i?!0:o(i)?o(r)?u(f,r.ofType,i.ofType):!1:o(r)?u(f,r.ofType,i):n(i)?n(r)?u(f,r.ofType,i.ofType):!1:n(r)?!1:t(i)&&(T(r)||x(r))&&f.isSubType(i,r)}function N(f,r,i){return r===i?!0:t(r)?t(i)?f.getPossibleTypes(r).some(s=>f.isSubType(i,s)):f.isSubType(r,i):t(i)?f.isSubType(i,r):!1}export{N as doTypesOverlap,l as isEqualType,u as isTypeSubTypeOf};
+//# sourceMappingURL=typeComparators.mjs.map

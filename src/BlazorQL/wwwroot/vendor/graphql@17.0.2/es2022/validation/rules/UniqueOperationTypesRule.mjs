@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/validation/rules/UniqueOperationTypesRule */
+import{GraphQLError as s}from"../../error/GraphQLError.mjs";function T(r){let n=r.getSchema(),t=new Map,a=n?{query:n.getQueryType(),mutation:n.getMutationType(),subscription:n.getSubscriptionType()}:{};return{SchemaDefinition:i,SchemaExtension:i};function i(c){let y=c.operationTypes??[];for(let o of y){let e=o.operation,p=t.get(e);a[e]?r.reportError(new s(`Type for ${e} already defined in the schema. It cannot be redefined.`,{nodes:o})):p?r.reportError(new s(`There can be only one ${e} type in schema.`,{nodes:[p,o]})):t.set(e,o)}return!1}}export{T as UniqueOperationTypesRule};
+//# sourceMappingURL=UniqueOperationTypesRule.mjs.map

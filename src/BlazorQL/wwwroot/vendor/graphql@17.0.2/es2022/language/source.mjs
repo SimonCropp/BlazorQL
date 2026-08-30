@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/language/source */
+import{devAssert as o}from"../jsutils/devAssert.mjs";import{instanceOf as f}from"../jsutils/instanceOf.mjs";var e=Symbol("Source"),t=class{constructor(s,n="GraphQL request",r={line:1,column:1}){this.__kind=e,this.body=s,this.name=n,this.locationOffset=r,this.locationOffset.line>0||o(!1,"line in locationOffset is 1-indexed and must be positive."),this.locationOffset.column>0||o(!1,"column in locationOffset is 1-indexed and must be positive.")}get[Symbol.toStringTag](){return"Source"}};function a(i){return f(i,e,t)}export{t as Source,a as isSource};
+//# sourceMappingURL=source.mjs.map

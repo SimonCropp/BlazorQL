@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/utilities/typeFromAST */
+import{Kind as t}from"../language/kinds.mjs";import{GraphQLList as p,GraphQLNonNull as T}from"../type/definition.mjs";function i(e,r){switch(r.kind){case t.LIST_TYPE:{let n=i(e,r.type);return n&&new p(n)}case t.NON_NULL_TYPE:{let n=i(e,r.type);return n&&new T(n)}case t.NAMED_TYPE:return e.getType(r.name.value)}}export{i as typeFromAST};
+//# sourceMappingURL=typeFromAST.mjs.map

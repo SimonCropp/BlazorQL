@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/validation/rules/ExecutableDefinitionsRule */
+import{GraphQLError as t}from"../../error/GraphQLError.mjs";import{Kind as i}from"../../language/kinds.mjs";import{isExecutableDefinitionNode as f}from"../../language/predicates.mjs";function s(n){return{Document(o){for(let e of o.definitions)if(!f(e)){let r=e.kind===i.SCHEMA_DEFINITION||e.kind===i.SCHEMA_EXTENSION?"schema":'"'+e.name.value+'"';n.reportError(new t(`The ${r} definition is not executable.`,{nodes:e}))}return!1}}}export{s as ExecutableDefinitionsRule};
+//# sourceMappingURL=ExecutableDefinitionsRule.mjs.map

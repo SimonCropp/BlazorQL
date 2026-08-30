@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/type/assertName */
+import{GraphQLError as r}from"../error/GraphQLError.mjs";import{isNameContinue as e,isNameStart as n}from"../language/characterClasses.mjs";function s(t){if(t.length===0)throw new r("Expected name to be a non-empty string.");for(let o=1;o<t.length;++o)if(!e(t.charCodeAt(o)))throw new r(`Names must only contain [_a-zA-Z0-9] but "${t}" does not.`);if(!n(t.charCodeAt(0)))throw new r(`Names must start with [_a-zA-Z] but "${t}" does not.`);return t}function a(t){if(t==="true"||t==="false"||t==="null")throw new r(`Enum values cannot be named: ${t}`);return s(t)}export{a as assertEnumValueName,s as assertName};
+//# sourceMappingURL=assertName.mjs.map

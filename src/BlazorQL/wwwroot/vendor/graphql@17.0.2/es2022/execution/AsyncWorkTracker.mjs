@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/execution/AsyncWorkTracker */
+import{isPromiseLike as t}from"../jsutils/isPromise.mjs";var s=class{constructor(){this.pendingAsyncWork=new Set}add(n){let e=this.pendingAsyncWork,i=n.then(()=>{e.delete(i)},()=>{e.delete(i)});e.add(i)}addValues(n){for(let e of n)t(e)&&this.add(e)}wait(){if(this.pendingAsyncWork.size!==0)return this.waitForPendingAsyncWork()}promiseAllTrackOnReject(n){let e=Promise.all(n);return e.then(void 0,()=>{this.addValues(n)}),e}async waitForPendingAsyncWork(){for(;this.pendingAsyncWork.size>0;)await Promise.allSettled(Array.from(this.pendingAsyncWork))}};export{s as AsyncWorkTracker};
+//# sourceMappingURL=AsyncWorkTracker.mjs.map

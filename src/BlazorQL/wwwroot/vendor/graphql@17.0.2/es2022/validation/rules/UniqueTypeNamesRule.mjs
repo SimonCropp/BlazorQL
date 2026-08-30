@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/validation/rules/UniqueTypeNamesRule */
+import{GraphQLError as a}from"../../error/GraphQLError.mjs";function m(t){let r=new Map,p=t.getSchema();return{ScalarTypeDefinition:e,ObjectTypeDefinition:e,InterfaceTypeDefinition:e,UnionTypeDefinition:e,EnumTypeDefinition:e,InputObjectTypeDefinition:e};function e(i){let n=i.name.value;if(p?.getType(n)){t.reportError(new a(`Type "${n}" already exists in the schema. It cannot also be defined in this type definition.`,{nodes:i.name}));return}let o=r.get(n);return o!=null?t.reportError(new a(`There can be only one type named "${n}".`,{nodes:[o,i.name]})):r.set(n,i.name),!1}}export{m as UniqueTypeNamesRule};
+//# sourceMappingURL=UniqueTypeNamesRule.mjs.map

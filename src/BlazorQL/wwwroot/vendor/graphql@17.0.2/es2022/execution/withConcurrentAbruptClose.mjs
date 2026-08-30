@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/execution/withConcurrentAbruptClose */
+import{isPromise as a}from"../jsutils/isPromise.mjs";var e=Symbol.asyncDispose??Symbol.for("Symbol.asyncDispose");function f(t,r,u=r){let o=!1,c=!1,s=n=>{if(!(o||c))return c=!0,l(n)};return{[Symbol.asyncIterator](){return this},next(){let n=t.next();return n.then(i=>{i.done&&(o=!0)}).catch(()=>{}),n},async return(){return await s(r),t.return()},async throw(n){return await s(()=>u(n)),t.throw(n)},async[e](){await s(r),typeof t[e]=="function"&&await t[e]()}}}function l(t){try{let r=t();if(a(r))return r.catch(()=>{})}catch{}}export{f as withConcurrentAbruptClose};
+//# sourceMappingURL=withConcurrentAbruptClose.mjs.map

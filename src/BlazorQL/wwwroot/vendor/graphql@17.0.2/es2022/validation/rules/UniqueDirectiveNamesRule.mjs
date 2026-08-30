@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/validation/rules/UniqueDirectiveNamesRule */
+import{GraphQLError as a}from"../../error/GraphQLError.mjs";function s(n){let i=new Map,o=n.getSchema();return{DirectiveDefinition(r){let e=r.name.value;if(o?.getDirective(e)){n.reportError(new a(`Directive "@${e}" already exists in the schema. It cannot be redefined.`,{nodes:r.name}));return}let t=i.get(e);return t?n.reportError(new a(`There can be only one directive named "@${e}".`,{nodes:[t,r.name]})):i.set(e,r.name),!1}}}export{s as UniqueDirectiveNamesRule};
+//# sourceMappingURL=UniqueDirectiveNamesRule.mjs.map

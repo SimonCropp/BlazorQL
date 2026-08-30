@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/validation/rules/UniqueFragmentNamesRule */
+import{GraphQLError as m}from"../../error/GraphQLError.mjs";function i(t){let r=new Map;return{OperationDefinition:()=>!1,FragmentDefinition(e){let n=e.name.value,a=r.get(n);return a!=null?t.reportError(new m(`There can be only one fragment named "${n}".`,{nodes:[a,e.name]})):r.set(n,e.name),!1}}}export{i as UniqueFragmentNamesRule};
+//# sourceMappingURL=UniqueFragmentNamesRule.mjs.map

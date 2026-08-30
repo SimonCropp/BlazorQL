@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/execution/legacyIncremental/legacyExecuteIncrementally */
+import{validateExecutionArgs as r}from"../execute.mjs";import{BranchingIncrementalExecutor as n}from"./BranchingIncrementalExecutor.mjs";function u(e){let t=r(e);return"schema"in t?o(t):{errors:t}}function o(e){return new n(e).executeRootSelectionSet()}export{u as legacyExecuteIncrementally,o as legacyExecuteRootSelectionSet};
+//# sourceMappingURL=legacyExecuteIncrementally.mjs.map

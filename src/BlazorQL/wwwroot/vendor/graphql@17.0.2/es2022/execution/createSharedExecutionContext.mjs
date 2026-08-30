@@ -1,0 +1,3 @@
+/* esm.sh - graphql@17.0.2/execution/createSharedExecutionContext */
+import{AsyncWorkTracker as c}from"./AsyncWorkTracker.mjs";function a(n){let e=new c,o,t=r=>e.promiseAllTrackOnReject(r);return{asyncWorkTracker:e,getAbortSignal:()=>n,getAsyncHelpers:()=>o??={promiseAll:t,track:r=>e.addValues(r)},promiseAll:t}}export{a as createSharedExecutionContext};
+//# sourceMappingURL=createSharedExecutionContext.mjs.map

@@ -1,0 +1,878 @@
+{
+  "editor.worker.js": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/esm/vs/editor/editor.worker.js?target=es2022",
+    "Sha256": "14d272025bb0b7bba2aeffd7e4f27cc45f8abf13ce80d1fc6f565423be599f84"
+  },
+  "fira-code.css": {
+    "Url": "https://esm.sh/@graphiql/react@0.38.0/font/fira-code.css",
+    "Sha256": "c6fb05fbbeeaa5d1bb732ba64f4878f99d081583d48d413e5c7ed2e4f72f938f"
+  },
+  "graphql-language-service.js": {
+    "Url": "https://esm.sh/graphql-language-service@5.6.0?target=es2022\u0026external=graphql",
+    "Sha256": "384d624a4381e65ced82ba0a076fedff1a8c75ab4d9016ab2d381ed32628f045"
+  },
+  "graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/esm/interface.mjs": {
+    "Url": "https://esm.sh/graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/esm/interface.mjs",
+    "Sha256": "8848243afa76762b15e5d688cf63b7389439cc965e7689127b24c5bdf3f1441f"
+  },
+  "graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/esm/parser.mjs": {
+    "Url": "https://esm.sh/graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/esm/parser.mjs",
+    "Sha256": "feb33b4837061c1c34674b1f8850feed6d5f71c85218803743f52f581d81bf87"
+  },
+  "graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/esm/parser/index.mjs": {
+    "Url": "https://esm.sh/graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/esm/parser/index.mjs",
+    "Sha256": "8009a07d0c66bd6a3d936975ed00a32ebacbea6a11015ebdde131912be28de14"
+  },
+  "graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/graphql-language-service.mjs": {
+    "Url": "https://esm.sh/graphql-language-service@5.6.0/X-ZWdyYXBocWw/es2022/graphql-language-service.mjs",
+    "Sha256": "43f17570e87452dbc015402b6ff8a2b25d1c25db97082c54b155b002b42f4b65"
+  },
+  "graphql.js": {
+    "Url": "https://esm.sh/graphql@17.0.2?target=es2022",
+    "Sha256": "17dd119c499802507ad3dded9f7997f4691d85cf29af24c4fcf8563122fa6077"
+  },
+  "graphql.worker.js": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/esm/graphql.worker.js?target=es2022\u0026deps=monaco-editor@0.52.2,graphql@17.0.2",
+    "Sha256": "fc5a5716d79048ab761e4a88d617971ff50e30d5c953eb35205bc18923cbf8e9"
+  },
+  "graphql@17.0.2/es2022/__graphql.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/__graphql.mjs",
+    "Sha256": "de3e9aa8901ba15453d6831afaffbda5f9188bdc7a2f16afcdc38bcf6157165f"
+  },
+  "graphql@17.0.2/es2022/devMode.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/devMode.mjs",
+    "Sha256": "d41e91b8d7746ee0f3e81737dd73a0d4d4b65331ec5bb2f2ef016bbbe25f1c2c"
+  },
+  "graphql@17.0.2/es2022/diagnostics.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/diagnostics.mjs",
+    "Sha256": "728c39dea8e3de13f3257e490147334c9f9e63111e993b205ca981dd70be1967"
+  },
+  "graphql@17.0.2/es2022/error.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/error.mjs",
+    "Sha256": "84a6bc7b3e2dafa14134345f94505b9dac76eda75a83ed61410542c912dae5ab"
+  },
+  "graphql@17.0.2/es2022/error/GraphQLError.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/error/GraphQLError.mjs",
+    "Sha256": "adc45f6e057850d3dab8f14540c6ad555a4b1dcbd6fca54c23de45b7ec75bca5"
+  },
+  "graphql@17.0.2/es2022/error/ensureGraphQLError.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/error/ensureGraphQLError.mjs",
+    "Sha256": "ade064b33da75f7ebfac06b9ba53dfe021c72658e14e867babd913d500817702"
+  },
+  "graphql@17.0.2/es2022/error/locatedError.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/error/locatedError.mjs",
+    "Sha256": "21abefe6e93a48219cf4b95fae5d22e47f347e4cea1644ab2c3cf745ca1e0d0a"
+  },
+  "graphql@17.0.2/es2022/error/syntaxError.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/error/syntaxError.mjs",
+    "Sha256": "ae984b464f1f4347ef610065892f140e2d0545c74b42d34ec36847adbd6188d0"
+  },
+  "graphql@17.0.2/es2022/execution.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution.mjs",
+    "Sha256": "b0de778fa809e71c1fadf93b6028f51962d8d66785b05a9c4238d441d017c613"
+  },
+  "graphql@17.0.2/es2022/execution/AbortedGraphQLExecutionError.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/AbortedGraphQLExecutionError.mjs",
+    "Sha256": "a86a6da8a77e7c572b8fd82a50d0ff5a3a9e397b1d8afe80df3cf2804b86afe8"
+  },
+  "graphql@17.0.2/es2022/execution/AsyncWorkTracker.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/AsyncWorkTracker.mjs",
+    "Sha256": "84219834982b872b36bd844108e2106ff7401bd24b9b8ed9c8fe5907fda0aad4"
+  },
+  "graphql@17.0.2/es2022/execution/Executor.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/Executor.mjs",
+    "Sha256": "792f979e4c64db5c8b3c409e7e576e5dc201e67953bc3ec7125b8624e4ebf2cd"
+  },
+  "graphql@17.0.2/es2022/execution/ExecutorThrowingOnIncremental.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/ExecutorThrowingOnIncremental.mjs",
+    "Sha256": "33d31863bd91c3029feae56d2394140eabf6e047d08fbbf4365ff45030d119ef"
+  },
+  "graphql@17.0.2/es2022/execution/buildResolveInfo.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/buildResolveInfo.mjs",
+    "Sha256": "73fd6837a60ac2d424d554f1655168264588ce7ff3c5ed562df9ad3283a1c1cf"
+  },
+  "graphql@17.0.2/es2022/execution/cancellablePromise.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/cancellablePromise.mjs",
+    "Sha256": "3312adc76284f0a8a8c692f202691af6a6284bb672d6f0581dbf275dcad747d0"
+  },
+  "graphql@17.0.2/es2022/execution/collectFields.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/collectFields.mjs",
+    "Sha256": "f5c95675e69c719988b2b87305bd9fb6eb5142216d31feb19e32ed4fb3a2ae99"
+  },
+  "graphql@17.0.2/es2022/execution/collectIteratorPromises.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/collectIteratorPromises.mjs",
+    "Sha256": "b1285ee0ba25521901dedd600a910e49517c0a602a3f8b2ef3c924f38d94531c"
+  },
+  "graphql@17.0.2/es2022/execution/createSharedExecutionContext.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/createSharedExecutionContext.mjs",
+    "Sha256": "16ed086742c5f55ef20f7ba200fdacc828d76ba0f9b4aee1e0b96309fc05ea14"
+  },
+  "graphql@17.0.2/es2022/execution/execute.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/execute.mjs",
+    "Sha256": "b86f7331f96fb43aa2627a4fdd1d439d03fe43e4a1f687078b727d96a58d509b"
+  },
+  "graphql@17.0.2/es2022/execution/getStreamUsage.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/getStreamUsage.mjs",
+    "Sha256": "21b6ac28ac908bf5ea05dd11216ff0fef06862d9fb20e96bb38c0e97a2bc5b8a"
+  },
+  "graphql@17.0.2/es2022/execution/getVariableSignature.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/getVariableSignature.mjs",
+    "Sha256": "3c22c28f16ade92af49bc70736ef714d4710412a32119369062c07a714a2c5bc"
+  },
+  "graphql@17.0.2/es2022/execution/hooks.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/hooks.mjs",
+    "Sha256": "d4deec8622cd70bd5e5c003acc2a0bbe9c9b3258cf86cd1bc14c48916a91952f"
+  },
+  "graphql@17.0.2/es2022/execution/incremental/Computation.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/incremental/Computation.mjs",
+    "Sha256": "6cb8ea7de9e56949c23334aa919620309bdb79c5f0f39991922658319dae89b3"
+  },
+  "graphql@17.0.2/es2022/execution/incremental/IncrementalExecutor.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/incremental/IncrementalExecutor.mjs",
+    "Sha256": "20bc3f88f4fd2b564c165b1b6d86a98143d11419e4267d827a61dffd6d889018"
+  },
+  "graphql@17.0.2/es2022/execution/incremental/IncrementalPublisher.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/incremental/IncrementalPublisher.mjs",
+    "Sha256": "85ef104a458148bf6aae2c9d79de63f0a8e26cafb4c212d1c50069a136307317"
+  },
+  "graphql@17.0.2/es2022/execution/incremental/Queue.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/incremental/Queue.mjs",
+    "Sha256": "cc2c078a64694d25bfd3d343a770887254b33bf6ea13652f8f3f897e267c7425"
+  },
+  "graphql@17.0.2/es2022/execution/incremental/WorkQueue.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/incremental/WorkQueue.mjs",
+    "Sha256": "f7da3ad095bb0b051bce5ec927c7816ff2ff3e98110693e96891cf2377886e82"
+  },
+  "graphql@17.0.2/es2022/execution/incremental/buildExecutionPlan.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/incremental/buildExecutionPlan.mjs",
+    "Sha256": "00cb65b01560d20c8e91f103c6b9fe79ff78aec08564bc8d564df6ee9d0c3374"
+  },
+  "graphql@17.0.2/es2022/execution/legacyIncremental/BranchingIncrementalExecutor.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/legacyIncremental/BranchingIncrementalExecutor.mjs",
+    "Sha256": "e356664c773085013fb10936b1568130a66890e5a94efb172b9b77f5719bb174"
+  },
+  "graphql@17.0.2/es2022/execution/legacyIncremental/BranchingIncrementalPublisher.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/legacyIncremental/BranchingIncrementalPublisher.mjs",
+    "Sha256": "0745f8945ee25140ea2f90ac2c4d4739340a9114b12f02f9744f4a3d15a497e0"
+  },
+  "graphql@17.0.2/es2022/execution/legacyIncremental/legacyExecuteIncrementally.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/legacyIncremental/legacyExecuteIncrementally.mjs",
+    "Sha256": "5a1bc77efa0ed9507f134a34f5217f45279a0634a175dac93ffee49938832815"
+  },
+  "graphql@17.0.2/es2022/execution/mapAsyncIterable.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/mapAsyncIterable.mjs",
+    "Sha256": "f651d8d3d247df9b4d782a01cabd34e69cf4daf64a4d8108cfa22c3624871c86"
+  },
+  "graphql@17.0.2/es2022/execution/returnIteratorCatchingErrors.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/returnIteratorCatchingErrors.mjs",
+    "Sha256": "fca5bc26921c62a408c1f9a4163707621ebdc069391d43d1c51d432d9c4f779c"
+  },
+  "graphql@17.0.2/es2022/execution/values.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/values.mjs",
+    "Sha256": "8f3030a203ee5509fe23a1111bc495db57114cff45badc825cce723aed78a5e5"
+  },
+  "graphql@17.0.2/es2022/execution/withConcurrentAbruptClose.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/execution/withConcurrentAbruptClose.mjs",
+    "Sha256": "2022fbc9e801e15ba126342ebe6a1c61674098c253a850243eb2c03807a95aa2"
+  },
+  "graphql@17.0.2/es2022/graphql.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/graphql.mjs",
+    "Sha256": "a9fefab110b8528aaa7c07d68109c45b7c55051d0d5fec479d7cac595ebbbd67"
+  },
+  "graphql@17.0.2/es2022/harness.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/harness.mjs",
+    "Sha256": "d8f8afb15176c5bca139c8e0d534ee34635b5f97cb13768b9bd3fc1cf454e8dc"
+  },
+  "graphql@17.0.2/es2022/jsutils/AccumulatorMap.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/AccumulatorMap.mjs",
+    "Sha256": "de10d53b31266743bb1eca0b70f0230fe8e0a5b3323667307a4892d0cdd7b816"
+  },
+  "graphql@17.0.2/es2022/jsutils/Path.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/Path.mjs",
+    "Sha256": "2f5e04bdbc85781a1ec86c2228c569990a844a461e33c26da7e49a654611ffb1"
+  },
+  "graphql@17.0.2/es2022/jsutils/capitalize.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/capitalize.mjs",
+    "Sha256": "83fd60e02fc45df0e11cad3d633c0afaa7a2f78f91cfd7e8559192d237b3329b"
+  },
+  "graphql@17.0.2/es2022/jsutils/devAssert.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/devAssert.mjs",
+    "Sha256": "01750d011f36713bc09840f3ba60cddb3d14e3f816bb1e8f624deca417b5b703"
+  },
+  "graphql@17.0.2/es2022/jsutils/didYouMean.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/didYouMean.mjs",
+    "Sha256": "a3a8cb4d1005bcf63f4f7269802b3dd4e64334bc6e525d83c72adc7793225ed3"
+  },
+  "graphql@17.0.2/es2022/jsutils/formatList.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/formatList.mjs",
+    "Sha256": "bd7a979ff5a7a062f9e7357283e2e78604acbe01d6e8c367c8cf53b9e81c8fdd"
+  },
+  "graphql@17.0.2/es2022/jsutils/getBySet.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/getBySet.mjs",
+    "Sha256": "8bb0f5a82e4aa72f66bebd3d31000c118e3671885bc7649890c6ed6497e92932"
+  },
+  "graphql@17.0.2/es2022/jsutils/groupBy.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/groupBy.mjs",
+    "Sha256": "a3d64ecf76bc99fc1e807af70ec33486921f79db4ff2166b54b4a505ae2706f9"
+  },
+  "graphql@17.0.2/es2022/jsutils/identityFunc.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/identityFunc.mjs",
+    "Sha256": "2e374b2cc9fb27636a5d030c501f6f7895765740332faef3d1fda7ed903c3d8f"
+  },
+  "graphql@17.0.2/es2022/jsutils/inspect.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/inspect.mjs",
+    "Sha256": "681357702c669bb76b086e131df19dbd78a7ffc1d380f080f918548ce6b8a0d2"
+  },
+  "graphql@17.0.2/es2022/jsutils/instanceOf.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/instanceOf.mjs",
+    "Sha256": "75099556b7d62737d9cd1c967cb79425f6668c004a0f98776f5f307c1f8ab0ba"
+  },
+  "graphql@17.0.2/es2022/jsutils/invariant.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/invariant.mjs",
+    "Sha256": "b649791fe86eaf86b1fd4c048c9e505ec93e81e614030904f76f3fdf2f347917"
+  },
+  "graphql@17.0.2/es2022/jsutils/isAsyncIterable.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/isAsyncIterable.mjs",
+    "Sha256": "5d92c1c40c7d8f6244e80dca9f359a3f3e8a3570a2da8f19aee40d70d355b7e4"
+  },
+  "graphql@17.0.2/es2022/jsutils/isIterableObject.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/isIterableObject.mjs",
+    "Sha256": "c6d7d0006653b88d1060cfb4cc6daba9f20b0c0ec99dcf8a2db36be57b028492"
+  },
+  "graphql@17.0.2/es2022/jsutils/isObjectLike.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/isObjectLike.mjs",
+    "Sha256": "0603539c07c2c2066d6b7c300b5415f63ed72adbd74a22b0cd03902ab7d6fa2e"
+  },
+  "graphql@17.0.2/es2022/jsutils/isPromise.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/isPromise.mjs",
+    "Sha256": "2899bb91e2dd77424b2ed7f91af428c3e356ca15eca45b2232f56a27fd7fc711"
+  },
+  "graphql@17.0.2/es2022/jsutils/isSameSet.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/isSameSet.mjs",
+    "Sha256": "b29d040c37475fbcf2024796b19dbc24b366c25dbfe480ce74d384f092e61a5b"
+  },
+  "graphql@17.0.2/es2022/jsutils/keyMap.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/keyMap.mjs",
+    "Sha256": "bf38482d732b11739afa1848fad8f7bee654a613e841ff13ca92acc4c371c048"
+  },
+  "graphql@17.0.2/es2022/jsutils/keyValMap.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/keyValMap.mjs",
+    "Sha256": "8908c906aac8803088c59d65e32e72d052513bb4451e631d15ccca1e19b6a407"
+  },
+  "graphql@17.0.2/es2022/jsutils/mapValue.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/mapValue.mjs",
+    "Sha256": "df6218a135e4887979b67b3a8211c6f2eddc9c48869164050e4e81e33b8b34da"
+  },
+  "graphql@17.0.2/es2022/jsutils/memoize1.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/memoize1.mjs",
+    "Sha256": "fc52d460d91b7fecfcff27db56b8f2584c68076da766cee4aafadd2401b2b129"
+  },
+  "graphql@17.0.2/es2022/jsutils/memoize2.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/memoize2.mjs",
+    "Sha256": "8d9b658da6ba24d6de94613de4b66f2a876ba6523fae0340aa5bdf7f8509a90e"
+  },
+  "graphql@17.0.2/es2022/jsutils/memoize3.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/memoize3.mjs",
+    "Sha256": "4ee6934e196a01db400bc95ccdd63f493b57921395273908a88d4ea4c38678c3"
+  },
+  "graphql@17.0.2/es2022/jsutils/naturalCompare.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/naturalCompare.mjs",
+    "Sha256": "1eea9f3541c0a865a08c74b2565b7308772af79fc1fd28af8da270b4876d8e03"
+  },
+  "graphql@17.0.2/es2022/jsutils/printPathArray.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/printPathArray.mjs",
+    "Sha256": "ff3e1a9bc8715ad1434b282f513e27c3690e531bccc78c6dbeca5f80cf94de9e"
+  },
+  "graphql@17.0.2/es2022/jsutils/promiseForObject.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/promiseForObject.mjs",
+    "Sha256": "f740bba46bf90dbedd65ba749b433b550f3db6367bafe24a2c956533c8db9774"
+  },
+  "graphql@17.0.2/es2022/jsutils/promiseReduce.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/promiseReduce.mjs",
+    "Sha256": "830fcbddf8910bcc39a328b63eb67e57a70f6b2d8d94851900fbcbe3e107774a"
+  },
+  "graphql@17.0.2/es2022/jsutils/promiseWithResolvers.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/promiseWithResolvers.mjs",
+    "Sha256": "1552af0e6db0b3075bd73e7ee80328cbc4b3ae03820490d8487103f3a5ec0fea"
+  },
+  "graphql@17.0.2/es2022/jsutils/suggestionList.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/suggestionList.mjs",
+    "Sha256": "71a0601e0424bc949b0d96e09b3753fadfbaa2149f401ba146b134b43e3d5d01"
+  },
+  "graphql@17.0.2/es2022/jsutils/toError.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/toError.mjs",
+    "Sha256": "f58c38c887acb7f7566de1cab0188b01c81a3e17b79f933f28d47f76fcb333af"
+  },
+  "graphql@17.0.2/es2022/jsutils/toObjMap.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/jsutils/toObjMap.mjs",
+    "Sha256": "e713ce4b0fba4a29fd39f5232125492e468a7d4815e8cef4e87a29b5ec6674b9"
+  },
+  "graphql@17.0.2/es2022/language.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language.mjs",
+    "Sha256": "940796f7bf3715db4a28d7cfe51579c4f1251d8388ce01c1444ccd1570944fef"
+  },
+  "graphql@17.0.2/es2022/language/ast.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/ast.mjs",
+    "Sha256": "ebc804f7a767047e7e804b7b17be3009dd4b5bf94839f5290444fdb7a47a0ee3"
+  },
+  "graphql@17.0.2/es2022/language/blockString.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/blockString.mjs",
+    "Sha256": "9677daf1afd69a19be2679418a2ef5f823ee35b02e8b4f79a9bea9f0711362ae"
+  },
+  "graphql@17.0.2/es2022/language/characterClasses.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/characterClasses.mjs",
+    "Sha256": "f024e43134173e382a1f44f8dde10b5d08b99f6ee47fa7b6d9f80286e7e23424"
+  },
+  "graphql@17.0.2/es2022/language/directiveLocation.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/directiveLocation.mjs",
+    "Sha256": "c76a6772c82bab202199a9599764f3a048b43240995cad73b6275b827b6ae160"
+  },
+  "graphql@17.0.2/es2022/language/kinds.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/kinds.mjs",
+    "Sha256": "dd2b2ea32ee50c5a4e06a61a35e18fef59dae76fa28860efce7eb2f17cb4019b"
+  },
+  "graphql@17.0.2/es2022/language/kinds_.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/kinds_.mjs",
+    "Sha256": "cc6aed39b78167720f3b2b818cd8b6ae725eefd08004783e917c6e2106ccb2df"
+  },
+  "graphql@17.0.2/es2022/language/lexer.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/lexer.mjs",
+    "Sha256": "0da4d57140137c737bbf6af3c7d3fd5c3e3b1f18fbd3cda726bacb73ade4db72"
+  },
+  "graphql@17.0.2/es2022/language/location.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/location.mjs",
+    "Sha256": "9257c362cde5b78ab52e17de62f95915a851bdc92bba6ebe2e967b68f87d24eb"
+  },
+  "graphql@17.0.2/es2022/language/parser.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/parser.mjs",
+    "Sha256": "71f383b4b03a81b6dde7ff1a2b26f9c00ae57e19208895407d831cd66f29d0b1"
+  },
+  "graphql@17.0.2/es2022/language/predicates.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/predicates.mjs",
+    "Sha256": "26ce68e2a3ecd3bcaeed5a869ce9408ef76595f20df46e5021c0329e7b458511"
+  },
+  "graphql@17.0.2/es2022/language/printLocation.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/printLocation.mjs",
+    "Sha256": "94457d34915d77fb5d57e04019d2f5a3730a4bb1c6e2aaba2c5e56e1b64f590f"
+  },
+  "graphql@17.0.2/es2022/language/printString.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/printString.mjs",
+    "Sha256": "ef33ee69e614e0110cee9d73d1c6186e01b4cb6cb4877f426979097f8cdab99f"
+  },
+  "graphql@17.0.2/es2022/language/printer.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/printer.mjs",
+    "Sha256": "c89a7e43f14917fa1d8c5e4f72a5a5e1c8be44f04fd219285937a929cc79b8ad"
+  },
+  "graphql@17.0.2/es2022/language/schemaCoordinateLexer.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/schemaCoordinateLexer.mjs",
+    "Sha256": "7046dc05971122654d22dceb2b7fc277d71199cb30962b6bc2bf07e150114e18"
+  },
+  "graphql@17.0.2/es2022/language/source.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/source.mjs",
+    "Sha256": "bf1507eb2bdd0611e25f7add92cfddf6d6ae97fdf75996932af426baf6cd5c59"
+  },
+  "graphql@17.0.2/es2022/language/tokenKind.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/tokenKind.mjs",
+    "Sha256": "873be77812681ba77d0482e3e56214b08ba0209530a647eacd61f69385721f71"
+  },
+  "graphql@17.0.2/es2022/language/visitor.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/language/visitor.mjs",
+    "Sha256": "4b652da0dcb349a6e52fa230ae64181da88d3f682a7168ff0dad9a68627bff02"
+  },
+  "graphql@17.0.2/es2022/type.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type.mjs",
+    "Sha256": "ae4aa1f0dd6fb741f5b16d720c76e72cd2f93f16c585d4549746d39efbd234f1"
+  },
+  "graphql@17.0.2/es2022/type/assertName.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/assertName.mjs",
+    "Sha256": "fb5471b76ecc25e81f3b7711770ac93ece52263e62c0213e9f07fc5279b3756b"
+  },
+  "graphql@17.0.2/es2022/type/definition.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/definition.mjs",
+    "Sha256": "784ddffccd9fdfcaa8beb2d7030b6289e94f5abccbfad05bfef828a7c309040a"
+  },
+  "graphql@17.0.2/es2022/type/directives.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/directives.mjs",
+    "Sha256": "9b1de7ace869baa2661fa6031b1787d3b6961bf37bc057f97a9cfe47726d7843"
+  },
+  "graphql@17.0.2/es2022/type/introspection.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/introspection.mjs",
+    "Sha256": "2ab042034959d74f8b27ad8e204ad8155b277447413a3083fb128c5b42f523df"
+  },
+  "graphql@17.0.2/es2022/type/scalars.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/scalars.mjs",
+    "Sha256": "8d7ac6cf65112b8a927754916ba3916a081794747f98dbdf136dacc49d46e272"
+  },
+  "graphql@17.0.2/es2022/type/schema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/schema.mjs",
+    "Sha256": "c6e8dfe76be5b17cfe7652b4b24c22d62e65470958f35876a66dfddee412ec2c"
+  },
+  "graphql@17.0.2/es2022/type/validate.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/type/validate.mjs",
+    "Sha256": "b9bb6f530314ecc3cadabe91df8f6e081fbec81eb54840c7cb12e857cab77524"
+  },
+  "graphql@17.0.2/es2022/utilities.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities.mjs",
+    "Sha256": "c84e27579559b7140f09b0ee93e6d096f5fad8b9268723917738aba874572e03"
+  },
+  "graphql@17.0.2/es2022/utilities/TypeInfo.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/TypeInfo.mjs",
+    "Sha256": "8f24037d5fab86775f7645f3538e1701b5345c220f9e4c8ad3fb4affb3f67762"
+  },
+  "graphql@17.0.2/es2022/utilities/astFromValue.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/astFromValue.mjs",
+    "Sha256": "c154c53f388424b9dcea0c4c1130c45a8108ab3e762063e43107be4208140c47"
+  },
+  "graphql@17.0.2/es2022/utilities/buildASTSchema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/buildASTSchema.mjs",
+    "Sha256": "da728b6657be24f7da964aa17b4337fbd3f16e5149a0cf2cf03866d7b1953465"
+  },
+  "graphql@17.0.2/es2022/utilities/buildClientSchema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/buildClientSchema.mjs",
+    "Sha256": "c3b27026fc9e517def67285c6f9e4354961926e71db453acf42454c15c330b47"
+  },
+  "graphql@17.0.2/es2022/utilities/coerceInputValue.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/coerceInputValue.mjs",
+    "Sha256": "7bfd9edf0b8eefa5d8ddc75273a84c7fd3593256dc9fc02303a7750a8baf8af8"
+  },
+  "graphql@17.0.2/es2022/utilities/concatAST.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/concatAST.mjs",
+    "Sha256": "cd2499778632b64be3f3c0792923ca7f3dd057d440b41e7d984ea560f8b96b8d"
+  },
+  "graphql@17.0.2/es2022/utilities/extendSchema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/extendSchema.mjs",
+    "Sha256": "d96371ec6e9eb566204be5211daeaa20bda1865b0893257bfd0d73f0aaa0e45b"
+  },
+  "graphql@17.0.2/es2022/utilities/findSchemaChanges.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/findSchemaChanges.mjs",
+    "Sha256": "e6e69081c93227f5984a8efcbd6a20d39ab100b5baa28327471bb69d93be0ae8"
+  },
+  "graphql@17.0.2/es2022/utilities/getDefaultValueAST.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/getDefaultValueAST.mjs",
+    "Sha256": "7bb9fdbd768479f20019cd7ca4cdbe1e6963b3499589d109fdf4753530b9d4f2"
+  },
+  "graphql@17.0.2/es2022/utilities/getIntrospectionQuery.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/getIntrospectionQuery.mjs",
+    "Sha256": "69a37d4537c2a77da4b5dabdf243191b98abe7c2cc41e87979acbd3fcfd973d5"
+  },
+  "graphql@17.0.2/es2022/utilities/getOperationAST.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/getOperationAST.mjs",
+    "Sha256": "fb221f67f043c0f5dc19b7fbfef2cabc4bc91e2b4cea51cbffb85b94b1453858"
+  },
+  "graphql@17.0.2/es2022/utilities/introspectionFromSchema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/introspectionFromSchema.mjs",
+    "Sha256": "4c5f0b1b9fa402312f3a32bff03154a93e9e72fb1d2106a45b7474815139b2a8"
+  },
+  "graphql@17.0.2/es2022/utilities/lexicographicSortSchema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/lexicographicSortSchema.mjs",
+    "Sha256": "5017c77833b4d71afbb7aba084d3715a5304662368d90cc77915698548beb116"
+  },
+  "graphql@17.0.2/es2022/utilities/mapSchemaConfig.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/mapSchemaConfig.mjs",
+    "Sha256": "5098771197638f8c84a9f7420a2d3d5960804d3efd9dee9041c6b3933853b5b2"
+  },
+  "graphql@17.0.2/es2022/utilities/printSchema.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/printSchema.mjs",
+    "Sha256": "2f150c8d0d4d110dd4639ac3cce578a11cdff2bbf3b99882ff9c7a25bb7bef96"
+  },
+  "graphql@17.0.2/es2022/utilities/replaceVariables.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/replaceVariables.mjs",
+    "Sha256": "ddf2816f56c36912f7cb7226f895e97a82a5baf15abbdfe90f4b20e0028fbaf5"
+  },
+  "graphql@17.0.2/es2022/utilities/resolveSchemaCoordinate.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/resolveSchemaCoordinate.mjs",
+    "Sha256": "8e49cd9ac2a7181f9c8c70309a65d383a4cc22939988a9f0c2eddafb532ff3c3"
+  },
+  "graphql@17.0.2/es2022/utilities/separateOperations.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/separateOperations.mjs",
+    "Sha256": "82797b8fc8e8fc8de00100134b26ab848494e639145987a762d74b69ac961cfa"
+  },
+  "graphql@17.0.2/es2022/utilities/sortValueNode.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/sortValueNode.mjs",
+    "Sha256": "f16a62c283c9262cc9775f75514e5e72015fcf09f1bc46d4754727d6a92766e9"
+  },
+  "graphql@17.0.2/es2022/utilities/stripIgnoredCharacters.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/stripIgnoredCharacters.mjs",
+    "Sha256": "670c182c1f93243bd2ae82d5bef1ba8ecb7c385b618374d5a67fb580efba02fd"
+  },
+  "graphql@17.0.2/es2022/utilities/typeComparators.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/typeComparators.mjs",
+    "Sha256": "ed149e30279f10f3d11133fa0e9e6075ec9039a4a680acf18e49e2ce75383ac7"
+  },
+  "graphql@17.0.2/es2022/utilities/typeFromAST.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/typeFromAST.mjs",
+    "Sha256": "e51dbf50830969eb0243e357c4376e54406671b4bc8bf41e73082f18e5cf9381"
+  },
+  "graphql@17.0.2/es2022/utilities/validateInputValue.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/validateInputValue.mjs",
+    "Sha256": "96728dcfb9f611616e79ba998439f0d90462a38f32fdf2eee8de1cc2cc65ff8a"
+  },
+  "graphql@17.0.2/es2022/utilities/valueFromAST.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/valueFromAST.mjs",
+    "Sha256": "a88e1ffff024e706bafe0432e55938f2eb9ebe2e543063d1e963a0d4424dbb08"
+  },
+  "graphql@17.0.2/es2022/utilities/valueFromASTUntyped.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/valueFromASTUntyped.mjs",
+    "Sha256": "00c7eddada8d5c75e2a5c051c47d0d3cb201e8b0c703c8cf9d1492f26fc28a83"
+  },
+  "graphql@17.0.2/es2022/utilities/valueToLiteral.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/utilities/valueToLiteral.mjs",
+    "Sha256": "05b62b018f1da8c314866aaf63d147ce5e86d31782524937a171e391bd75afd4"
+  },
+  "graphql@17.0.2/es2022/validation.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation.mjs",
+    "Sha256": "fd1b88542274ef91096e8f01f501ecde0c984c3db3c59f1018315c55c25da0c1"
+  },
+  "graphql@17.0.2/es2022/validation/ValidationContext.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/ValidationContext.mjs",
+    "Sha256": "0677dd7ebcecac33f0370e9d08ad64fd48cf69d4ebce2b5610d9e56213de5bd2"
+  },
+  "graphql@17.0.2/es2022/validation/rules/DeferStreamDirectiveLabelRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/DeferStreamDirectiveLabelRule.mjs",
+    "Sha256": "fa598e11661d984db223bb58eba8edd333f2fef4e083edcb73a213283ee28956"
+  },
+  "graphql@17.0.2/es2022/validation/rules/DeferStreamDirectiveOnRootFieldRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/DeferStreamDirectiveOnRootFieldRule.mjs",
+    "Sha256": "d5dc9c98942dc160c317e403c8298f55026c9b301fb718a793cd080008f72166"
+  },
+  "graphql@17.0.2/es2022/validation/rules/DeferStreamDirectiveOnValidOperationsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/DeferStreamDirectiveOnValidOperationsRule.mjs",
+    "Sha256": "6ae6035e22d325a9a38937a2a77e93539be6eee5d2764509003241b5512b5616"
+  },
+  "graphql@17.0.2/es2022/validation/rules/ExecutableDefinitionsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/ExecutableDefinitionsRule.mjs",
+    "Sha256": "b7452f94b7507d17659c1858519b68ce34a66c3c10686e01b65ab541d56d9f80"
+  },
+  "graphql@17.0.2/es2022/validation/rules/FieldsOnCorrectTypeRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/FieldsOnCorrectTypeRule.mjs",
+    "Sha256": "9082c5228747b3909eacb31d278a22742a9f7a68dcd8f8147fc24660a52856f1"
+  },
+  "graphql@17.0.2/es2022/validation/rules/FragmentsOnCompositeTypesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/FragmentsOnCompositeTypesRule.mjs",
+    "Sha256": "e3e16fed2a6f0bfb27529ef0189a2b75ef40595a0c1801b255df0d633b2eed65"
+  },
+  "graphql@17.0.2/es2022/validation/rules/KnownArgumentNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/KnownArgumentNamesRule.mjs",
+    "Sha256": "87f55880a9f13b932da2d0d4c200d8e07115f1b6aeeb4fbc08d72a1b23cc5dd4"
+  },
+  "graphql@17.0.2/es2022/validation/rules/KnownDirectivesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/KnownDirectivesRule.mjs",
+    "Sha256": "905cc4e8704bee2fc522cfb4603204c5238470996c8a9882ac283b92c06f76ac"
+  },
+  "graphql@17.0.2/es2022/validation/rules/KnownFragmentNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/KnownFragmentNamesRule.mjs",
+    "Sha256": "eff2a385245559bfdfa8b847f65ccfd900b37e78bc6d9a39eb5d90f92ae7915b"
+  },
+  "graphql@17.0.2/es2022/validation/rules/KnownOperationTypesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/KnownOperationTypesRule.mjs",
+    "Sha256": "2d59dfbc2d255b1507cc5257b46f982eae85dba7aee28b87665023d544979189"
+  },
+  "graphql@17.0.2/es2022/validation/rules/KnownTypeNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/KnownTypeNamesRule.mjs",
+    "Sha256": "0be61039e60f8ab9ca0d8b31786c12eddd4af69c066bb2374171d099c3afc7d6"
+  },
+  "graphql@17.0.2/es2022/validation/rules/LoneAnonymousOperationRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/LoneAnonymousOperationRule.mjs",
+    "Sha256": "ca11a040ee9da562a9f5398d16f22982268cd262d6af267d4ee8b3e273b6fe78"
+  },
+  "graphql@17.0.2/es2022/validation/rules/LoneSchemaDefinitionRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/LoneSchemaDefinitionRule.mjs",
+    "Sha256": "d44be4608ac0bce8b35d00dd16c560327f6848c98b9b3c9040397b1feb51d7d8"
+  },
+  "graphql@17.0.2/es2022/validation/rules/MaxIntrospectionDepthRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/MaxIntrospectionDepthRule.mjs",
+    "Sha256": "31dc26be7bb73954690b5d2a5aad2df8827e49debdee1477b11d2f438a9a7b3e"
+  },
+  "graphql@17.0.2/es2022/validation/rules/NoFragmentCyclesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/NoFragmentCyclesRule.mjs",
+    "Sha256": "a8e1fc3852a2edbfc210e793b3f1d9c84f604de6964ac515ccb6b3e2928316f7"
+  },
+  "graphql@17.0.2/es2022/validation/rules/NoUndefinedVariablesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/NoUndefinedVariablesRule.mjs",
+    "Sha256": "d9351ac2d60c30a467dbcda0370d6548c1f257a025776ed998e9795525c127a7"
+  },
+  "graphql@17.0.2/es2022/validation/rules/NoUnusedFragmentsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/NoUnusedFragmentsRule.mjs",
+    "Sha256": "d773f9a14a48212f5cfc7e3ff3b9a12f2ed237d9fae3a09f05fb1917ddc3dde7"
+  },
+  "graphql@17.0.2/es2022/validation/rules/NoUnusedVariablesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/NoUnusedVariablesRule.mjs",
+    "Sha256": "70946820d586be96ad1ffef2f3898231a47950f6a0a30116113d78f478e016ed"
+  },
+  "graphql@17.0.2/es2022/validation/rules/OverlappingFieldsCanBeMergedRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/OverlappingFieldsCanBeMergedRule.mjs",
+    "Sha256": "4ef7e7b06a99496be02f1d700c8577a70b025cf0b60533ec0965a40a73515a12"
+  },
+  "graphql@17.0.2/es2022/validation/rules/PossibleFragmentSpreadsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/PossibleFragmentSpreadsRule.mjs",
+    "Sha256": "a45bc5b6f58941bec6761c34df6c71767d1b457dd93b1f2dba065d428d504893"
+  },
+  "graphql@17.0.2/es2022/validation/rules/PossibleTypeExtensionsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/PossibleTypeExtensionsRule.mjs",
+    "Sha256": "c4e6f349a7edf5e15ca486e88d0a4da2e7b95d62781a8989682a573ed757b36e"
+  },
+  "graphql@17.0.2/es2022/validation/rules/ProvidedRequiredArgumentsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/ProvidedRequiredArgumentsRule.mjs",
+    "Sha256": "a7e3f54eee7c32e010ebeddfe0f5a3653545791807e1dc0a37ab51cdba2ff803"
+  },
+  "graphql@17.0.2/es2022/validation/rules/ScalarLeafsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/ScalarLeafsRule.mjs",
+    "Sha256": "d5ad800cc00c84c86e1f6facf96efaa8e26613541d4e510d96b985c576df3894"
+  },
+  "graphql@17.0.2/es2022/validation/rules/SingleFieldSubscriptionsRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/SingleFieldSubscriptionsRule.mjs",
+    "Sha256": "0367f4c6800aebfadaf9f8f97e4f9ee73f1c484d96dd22f9af652a28872525e6"
+  },
+  "graphql@17.0.2/es2022/validation/rules/StreamDirectiveOnListFieldRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/StreamDirectiveOnListFieldRule.mjs",
+    "Sha256": "7c6fcc944428482473bf46cbd278092134444f32187c14f4c2173cb8b847957b"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueArgumentDefinitionNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueArgumentDefinitionNamesRule.mjs",
+    "Sha256": "0706f05874c80568423b6efc68b338a2c8f25ce2aa37e75721b02772def31445"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueArgumentNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueArgumentNamesRule.mjs",
+    "Sha256": "de61bff2adf8727e5369241000ba0c98602a126743dc596858b7b70792461e05"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueDirectiveNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueDirectiveNamesRule.mjs",
+    "Sha256": "01c714217b2fcb7e2fd8cf3f5b3d07496b37a02d1d7fb940e420273a3b68bd5a"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueDirectivesPerLocationRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueDirectivesPerLocationRule.mjs",
+    "Sha256": "27c0ecba2d982a3ccb843bded05ffe8620b1dd65b2752504ecd1f376a2a09e46"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueEnumValueNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueEnumValueNamesRule.mjs",
+    "Sha256": "18314b9e991c728e8b938ec3e49080e548b37fd0be866b497435c8db489496b3"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueFieldDefinitionNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueFieldDefinitionNamesRule.mjs",
+    "Sha256": "68a915e242e5a961deab8262b8ba804541b967f4dca73e051bb9ab281563e2e1"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueFragmentNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueFragmentNamesRule.mjs",
+    "Sha256": "ebc59d101cf2d2ba71a2c74a83a6ed16c85a66c1b68142ad655f3502e2a23494"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueInputFieldNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueInputFieldNamesRule.mjs",
+    "Sha256": "c7868e2bb9d577fd223411ff48ad1b653117b7c75eef88435793c8f3746a9e86"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueOperationNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueOperationNamesRule.mjs",
+    "Sha256": "8d92fcf8f2738cceb6b39b192255a51a92b4e32eed2cc68cffd2548169d36f7d"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueOperationTypesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueOperationTypesRule.mjs",
+    "Sha256": "775bd6d53dd786090b552570323d81ff27e18b0fddefc85e401b44e6ea23ac14"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueTypeNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueTypeNamesRule.mjs",
+    "Sha256": "d3acbd2c8aeda26c317f59240aab8a358d89548f06df2396c2f7dfe3b5d874dc"
+  },
+  "graphql@17.0.2/es2022/validation/rules/UniqueVariableNamesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/UniqueVariableNamesRule.mjs",
+    "Sha256": "e1043f5f8dad68a82b6e14343b880b7e862538eeee12feeca31c32eef3272c99"
+  },
+  "graphql@17.0.2/es2022/validation/rules/ValuesOfCorrectTypeRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/ValuesOfCorrectTypeRule.mjs",
+    "Sha256": "0d6a85735051be72759c1d8de34b101003b9e1967036a784896fe2d178ba6891"
+  },
+  "graphql@17.0.2/es2022/validation/rules/VariablesAreInputTypesRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/VariablesAreInputTypesRule.mjs",
+    "Sha256": "92a04a320cd39757907d6b3e79ff7992d3441296d05713c565a37e5aa5a0257e"
+  },
+  "graphql@17.0.2/es2022/validation/rules/VariablesInAllowedPositionRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/VariablesInAllowedPositionRule.mjs",
+    "Sha256": "dc1c82c17143d746326d4bec77a12416ecabc3dcf92e7814e779901c3139359b"
+  },
+  "graphql@17.0.2/es2022/validation/rules/custom/NoDeprecatedCustomRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/custom/NoDeprecatedCustomRule.mjs",
+    "Sha256": "9b9e4080970465be16bf3ed7ac403c78d468e5abb6e7c42e2af1b4a699db5189"
+  },
+  "graphql@17.0.2/es2022/validation/rules/custom/NoSchemaIntrospectionCustomRule.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/rules/custom/NoSchemaIntrospectionCustomRule.mjs",
+    "Sha256": "d39d9cd4c6b469d4a0ac423192cd3e1e948190e9f91b92a0ded207854665ec88"
+  },
+  "graphql@17.0.2/es2022/validation/specifiedRules.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/specifiedRules.mjs",
+    "Sha256": "d739340c77c8851b412f07f6aa5f0d423491f041594018cee8e79cdd3c2590cd"
+  },
+  "graphql@17.0.2/es2022/validation/validate.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/validation/validate.mjs",
+    "Sha256": "5dd56b876af5a7e585fdb57faa2d27c8d8a0e1399aaa1ee7a8fd854a85a1c044"
+  },
+  "graphql@17.0.2/es2022/version.mjs": {
+    "Url": "https://esm.sh/graphql@17.0.2/es2022/version.mjs",
+    "Sha256": "6df7b003f8bab9b5fc41cfd4d02e17578ae81f49b76a8692b259cb737706f4da"
+  },
+  "json.worker.js": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/esm/vs/language/json/json.worker.js?target=es2022",
+    "Sha256": "38930f09978bd67b2fdb5bd0709b8e39ff054c17a553551fbfd2070147cba7ce"
+  },
+  "jsonc-parser.js": {
+    "Url": "https://esm.sh/jsonc-parser@3.3.1?target=es2022",
+    "Sha256": "ccc51a681396b4093970d1ae0c6696306c011914f1a40b958582a5c7babba62b"
+  },
+  "jsonc-parser@3.3.1/es2022/jsonc-parser.mjs": {
+    "Url": "https://esm.sh/jsonc-parser@3.3.1/es2022/jsonc-parser.mjs",
+    "Sha256": "6d668a3c23ee9ba4e7d351a615ac1e80cad70080f60daa9dcb3e711ef831e515"
+  },
+  "monaco-editor.js": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/monaco-editor?target=es2022\u0026deps=monaco-editor@0.52.2",
+    "Sha256": "31f0a5a0082add0c24ca8484b0bbca23425cb0b37a83524c4723d0b8f82e7578"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/basic-languages/graphql/graphql.contribution.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/basic-languages/graphql/graphql.contribution.mjs",
+    "Sha256": "cf18bce1e2cf3e2db355d6a2e908f88c836a4150d4dd36f6b269c3bb7c4e8741"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/basic-languages/graphql/graphql.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/basic-languages/graphql/graphql.mjs",
+    "Sha256": "e3ec8681e21e4046a7edfe27a250c595ff8762ed35c3f9629adc1f607dd4a485"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/browser/coreCommands.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/browser/coreCommands.mjs",
+    "Sha256": "d09bb4814f5f3cc3e4c8d4a30fb592542e749251539b36976e823de65afda2c6"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/common/standalone/standaloneEnums.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/common/standalone/standaloneEnums.mjs",
+    "Sha256": "874468b158e583db952a62c77225e58cb308a76983df1c142202eaa9c7cad5af"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/bracketMatching/browser/bracketMatching.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/bracketMatching/browser/bracketMatching.mjs",
+    "Sha256": "b37ff3579fad45a1c9ff8473b04584bef8b29c8a3193013649baf3daaf15af53"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/clipboard/browser/clipboard.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/clipboard/browser/clipboard.mjs",
+    "Sha256": "c7c28f480eb5ae0150d85b32b44ee197393535b84dffba274739d89fda567a1a"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/contextmenu/browser/contextmenu.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/contextmenu/browser/contextmenu.mjs",
+    "Sha256": "f32078409e52135c143bedcb8fe03583e69b58b5d712f33b0cd6e081174fa9e2"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/cursorUndo/browser/cursorUndo.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/cursorUndo/browser/cursorUndo.mjs",
+    "Sha256": "af584bcffa1b9dd9bc328c2a0d11340b42c923de849aec7df2e2a9d95f1ff159"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/find/browser/findController.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/find/browser/findController.mjs",
+    "Sha256": "1c5aed2fa43143b015c949fb81d5499284ccabcf5ec6e8b3625bdde0885e0931"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/format/browser/formatActions.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/format/browser/formatActions.mjs",
+    "Sha256": "4a25f08c430732b5391d45b49649d98cf8ef6314764871b9dc89093c7f3413be"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/inlineCompletions/browser/inlineCompletions.contribution.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/contrib/inlineCompletions/browser/inlineCompletions.contribution.mjs",
+    "Sha256": "9a629efc8b366dc58a5699a83256f6e92097bd39dc79191a88bf4c57aeaf9bce"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/edcore.main.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/edcore.main.mjs",
+    "Sha256": "c327224a244ddc539c257d183c9d8fc279cad0eeccb4ca22196c1399f3e3a47e"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/editor.api.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/editor.api.mjs",
+    "Sha256": "4e9c61bc2608e40865a823d59a53967f9251edb20aa2e8e13fdfa39827f985f2"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/editor/editor.worker.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/editor/editor.worker.mjs",
+    "Sha256": "c7b9637977fe9396b42181eec80e5e94c9db08b7599711d96bdb3d6e60f1b32f"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/language/json/json.worker.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/language/json/json.worker.mjs",
+    "Sha256": "5978abf8c0b2d85b2b0d7462ee59dc97f85a881457dea65d5d4c743cb0672cb9"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/language/json/jsonMode.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/language/json/jsonMode.mjs",
+    "Sha256": "596fefe76b94fcc51b64852aec9d4a2c63f212d36ad9364e158316be8a82a5fd"
+  },
+  "monaco-editor@0.52.2/es2022/esm/vs/language/json/monaco.contribution.mjs": {
+    "Url": "https://esm.sh/monaco-editor@0.52.2/es2022/esm/vs/language/json/monaco.contribution.mjs",
+    "Sha256": "d52185a716e0aec16feb8931726c113722c697a2868da29abd2a5809fd82ba4c"
+  },
+  "monaco-graphql.js": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/initializeMode?target=es2022\u0026deps=monaco-editor@0.52.2\u0026external=graphql",
+    "Sha256": "b5bd0d7293f964a10e1e4604511dba95a6daa7d5ba2bbfec783906bdd5b806c2"
+  },
+  "monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4y/es2022/monaco-editor.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4y/es2022/monaco-editor.mjs",
+    "Sha256": "405d52103b3948c0858bc6da0e30d9304c8fc4cf91a5386311672e49221559e0"
+  },
+  "monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/esm/api.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/esm/api.mjs",
+    "Sha256": "32c9c285b5a1a186f823268207dc59004c646fbf646a6ce7e6276ae6565b7747"
+  },
+  "monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/esm/graphqlMode.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/esm/graphqlMode.mjs",
+    "Sha256": "956fe0c979dce0ce098294512e175d19cf5d916c07abbbcd2e71142125ba98b5"
+  },
+  "monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/esm/initialize.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/esm/initialize.mjs",
+    "Sha256": "d401fc159776d546167dd13d60ec3948be38af709689b44e6dce40a0a665af1c"
+  },
+  "monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/initializeMode.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/initializeMode.mjs",
+    "Sha256": "f4a36ec0b36e9b68974f661a8f55b04f2b4014bd74bb9808b9b6e3e973602a70"
+  },
+  "monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/monaco-editor.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZG1vbmFjby1lZGl0b3JAMC41Mi4yCmVncmFwaHFs/es2022/monaco-editor.mjs",
+    "Sha256": "405d52103b3948c0858bc6da0e30d9304c8fc4cf91a5386311672e49221559e0"
+  },
+  "monaco-graphql@1.8.0/X-ZGdyYXBocWxAMTcuMC4yLG1vbmFjby1lZGl0b3JAMC41Mi4y/es2022/esm/graphql.worker.mjs": {
+    "Url": "https://esm.sh/monaco-graphql@1.8.0/X-ZGdyYXBocWxAMTcuMC4yLG1vbmFjby1lZGl0b3JAMC41Mi4y/es2022/esm/graphql.worker.mjs",
+    "Sha256": "78a1aae8df54cc3e830386688b8006d5cfd055abf6724b705f075714ce3e2184"
+  },
+  "node/async_hooks.mjs": {
+    "Url": "https://esm.sh/node/async_hooks.mjs",
+    "Sha256": "b7862dbfba8bbbca956f19e4e08280b529e4b27468779775a9093aef8c92dc1d"
+  },
+  "node/buffer.mjs": {
+    "Url": "https://esm.sh/node/buffer.mjs",
+    "Sha256": "64fb61aa5f48644d685f9ceabedba60ea6b5d6ce03dac1943e863d00d9e574f3"
+  },
+  "node/events.mjs": {
+    "Url": "https://esm.sh/node/events.mjs",
+    "Sha256": "1283706bbf95f2c545f1623df66cfcc309ae2902ad266c7f96bd55dfce019e18"
+  },
+  "node/process.mjs": {
+    "Url": "https://esm.sh/node/process.mjs",
+    "Sha256": "981e47d1d8121380c2db5704163f22aa03804b4d147dd44a99a6582dfeddd548"
+  },
+  "node/tty.mjs": {
+    "Url": "https://esm.sh/node/tty.mjs",
+    "Sha256": "c66ff4b406bad449bfb2ced355f15badf16f4d9e035d2d300e33b5aeee64e3be"
+  },
+  "prettier-babel.js": {
+    "Url": "https://esm.sh/prettier@3.3.2/plugins/babel?target=es2022",
+    "Sha256": "fb9ce128242658109c61359b39d409fe026aaa6e6777aed73ad8f5f608a1cd6a"
+  },
+  "prettier-estree.js": {
+    "Url": "https://esm.sh/prettier@3.3.2/plugins/estree?target=es2022",
+    "Sha256": "02c8f8c62e66ac66a49a189ec461d6f3e298f56e75133731f914df6e1db6989c"
+  },
+  "prettier-graphql.js": {
+    "Url": "https://esm.sh/prettier@3.3.2/plugins/graphql?target=es2022",
+    "Sha256": "15f8ee75b9c250a5e8e31ff8a4bbbe9189f45f2cf56670b5509fb8a2cfde86f7"
+  },
+  "prettier-standalone.js": {
+    "Url": "https://esm.sh/prettier@3.3.2/standalone?target=es2022",
+    "Sha256": "608356a2bbb3f450765dd2d45ff14251c39d02d803773ed903c059e350c73d92"
+  },
+  "prettier@3.3.2/es2022/plugins/babel.mjs": {
+    "Url": "https://esm.sh/prettier@3.3.2/es2022/plugins/babel.mjs",
+    "Sha256": "e600a46938dcd4a3a8db1f00fcfa2f906ffdae530530fefc552d8291619bc87c"
+  },
+  "prettier@3.3.2/es2022/plugins/estree.mjs": {
+    "Url": "https://esm.sh/prettier@3.3.2/es2022/plugins/estree.mjs",
+    "Sha256": "61773f912adf1d2e4bbe959013b3b2c19dff4c38726d2e9e3a38f6fe5b3fc5eb"
+  },
+  "prettier@3.3.2/es2022/plugins/graphql.mjs": {
+    "Url": "https://esm.sh/prettier@3.3.2/es2022/plugins/graphql.mjs",
+    "Sha256": "a8f6a284401e3b26a03a605bb8305018e593f3a48cc05fe5472fc3e690bf5d78"
+  },
+  "prettier@3.3.2/es2022/prettier.mjs": {
+    "Url": "https://esm.sh/prettier@3.3.2/es2022/prettier.mjs",
+    "Sha256": "b82cc149f0d0af274c65749212cdc66d0fe45d3cee75878fb80834a49a0ca706"
+  }
+}

@@ -1,0 +1,5 @@
+/* esm.sh - graphql@17.0.2/language/printLocation */
+import{getLocation as $}from"./location.mjs";function S(n){return g(n.source,$(n.source,n.start))}function g(n,e){let r=n.locationOffset.column-1,i="".padStart(r)+n.body,t=e.line-1,d=n.locationOffset.line-1,s=e.line+d,L=e.line===1?r:0,l=e.column+L,u=`${n.name}:${s}:${l}
+`,a=i.split(/\r\n|[\n\r]/g),c=a[t];if(c.length>120){let m=Math.floor(l/80),x=l%80,f=[];for(let o=0;o<c.length;o+=80)f.push(c.slice(o,o+80));return u+p([[`${s} |`,f[0]],...f.slice(1,m+1).map(o=>["|",o]),["|","^".padStart(x)],["|",f[m+1]]])}return u+p([[`${s-1} |`,a[t-1]],[`${s} |`,c],["|","^".padStart(l)],[`${s+1} |`,a[t+1]]])}function p(n){let e=n.filter(([i,t])=>t!==void 0),r=Math.max(...e.map(([i])=>i.length));return e.map(([i,t])=>i.padStart(r)+(t?" "+t:"")).join(`
+`)}export{S as printLocation,g as printSourceLocation};
+//# sourceMappingURL=printLocation.mjs.map
