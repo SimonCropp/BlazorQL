@@ -62,7 +62,6 @@ Built-in fetchers: `HttpFetcher(url)` and `GraphQLWsFetcher(url)`. Anything else
 - [Storage](docs/storage.md)
 - [Shortcuts](docs/shortcuts.md)
 - [The sample](docs/sample.md)
-- [Deploying to GitHub Pages](docs/deploying-to-pages.md)
 
 
 ## Attribution
