@@ -2,12 +2,18 @@
    the data-theme attribute the host module sets on <html>. */
 
 /* An explicit theme choice overrides the OS preference; without one, light-dark() follows the
-   page's own color-scheme. */
-html[data-theme='light'] {
+   page's own color-scheme. Body and the component root are included because a host page setting
+   its own color-scheme on body would otherwise shadow the html-level override for everything
+   inside it. */
+html[data-theme='light'],
+html[data-theme='light'] body,
+html[data-theme='light'] .blazorql {
     color-scheme: light;
 }
 
-html[data-theme='dark'] {
+html[data-theme='dark'],
+html[data-theme='dark'] body,
+html[data-theme='dark'] .blazorql {
     color-scheme: dark;
 }
 
@@ -239,7 +245,7 @@ html[data-theme='dark'] {
 }
 
 .blazorql-doc-field-signature {
-    font-family: "Fira Code", monospace;
+    font-family: Consolas, "Courier New", monospace;
     font-size: 0.85rem;
 }
 
@@ -353,7 +359,7 @@ html[data-theme='dark'] {
 }
 
 .blazorql-markdown code {
-    font-family: "Fira Code", monospace;
+    font-family: Consolas, "Courier New", monospace;
     font-size: 0.85em;
 }
 
@@ -986,7 +992,7 @@ html[data-theme='dark'] {
 }
 
 .blazorql-shortkeys-table code {
-    font-family: "Fira Code", monospace;
+    font-family: Consolas, "Courier New", monospace;
     font-size: 0.85em;
 }
 

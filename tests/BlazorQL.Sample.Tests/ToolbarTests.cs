@@ -29,8 +29,19 @@ public class ToolbarTests :
         await page.SetEditorValueAsync("{id isTest}");
         await page.ClickAsync("[data-testid='prettify']");
 
-        // Prettier splits the selection set one field per line.
-        await WaitForOperationTextAsync(page, "{\\n  id\\n  isTest\\n}");
+        // The formatter splits the selection set one indented field per line.
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor.getModels().some(m => {
+                if (!m.uri.path.includes('operation')) {
+                    return false;
+                }
+                const text = m.getValue();
+                return text.includes('  id') && text.includes('  isTest') && text.split('\n').length >= 4;
+            })
+            """,
+            null,
+            new() {Timeout = 30_000});
         Assert.That(ConsoleErrors(), Is.Empty);
     }
 

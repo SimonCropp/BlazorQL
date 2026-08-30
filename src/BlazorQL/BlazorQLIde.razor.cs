@@ -1,21 +1,25 @@
 using System.Diagnostics;
 using System.Globalization;
+using BlazorMonaco;
+using BlazorMonaco.Editor;
+using BlazorMonaco.Languages;
+using Global = BlazorMonaco.Editor.Global;
 
 namespace BlazorQL;
 
 /// <summary>
-/// The BlazorQL IDE. Renders the editor shell and drives the vendored Monaco/monaco-graphql stack
-/// through the <c>blazorql.js</c> host module. One instance per page.
+/// The BlazorQL IDE. Renders the editor shell over BlazorMonaco editors, with every language
+/// feature (completion, validation, hover, formatting) computed in C#. One instance per page.
 /// </summary>
 public partial class BlazorQLIde :
     IAsyncDisposable
 {
     internal const string OperationElementId = "blazorql-operation-editor";
     internal const string ResponseElementId = "blazorql-response-editor";
-    const string OperationUri = "operation.graphql";
-    const string ResponseUri = "response.json";
-    const string VariablesUri = "variables.json";
-    const string HeadersUri = "request-headers.json";
+    const string OperationModelUri = "inmemory://model/blazorql-operation.graphql";
+    const string VariablesModelUri = "inmemory://model/blazorql-variables.json";
+    const string HeadersModelUri = "inmemory://model/blazorql-request-headers.json";
+    const string ResponseModelUri = "inmemory://model/blazorql-response.json";
     const string PluginResizerId = "blazorql-plugin-resizer";
     const string SessionResizerId = "blazorql-session-resizer";
     const string ToolsResizerId = "blazorql-tools-resizer";
@@ -90,8 +94,28 @@ public partial class BlazorQLIde :
     DotNetObjectReference<BlazorQLCallbacks>? reference;
     CancellationTokenSource? execution;
 
-    // Shell state. Pane ratios are the first pane's share of the container (see PaneState);
-    // persistence of all of this arrives in M6.
+    // Editor components and the named models they are moved onto — the models carry stable uris
+    // so tests and the language providers can address each editor.
+    StandaloneCodeEditor? operationEditor;
+    StandaloneCodeEditor? responseEditor;
+    EditorTools? editorTools;
+    TextModel? operationModel;
+    TextModel? variablesModel;
+    TextModel? headersModel;
+    TextModel? responseModel;
+
+    // Persisted state is rehydrated before the editors render (their initial values come from the
+    // active tab), so the editor components are gated on this flag.
+    bool hydrated;
+    bool domWired;
+    int editorsInitialized;
+    bool resolvedDark;
+
+    // The one live instance the (globally registered, once) language providers route through.
+    static BlazorQLIde? active;
+    static bool providersRegistered;
+
+    // Shell state. Pane ratios are the first pane's share of the container (see PaneState).
     readonly TabStore tabs = new();
     readonly ThemeService themes = new();
     readonly PaneState pluginPane = new(1.0 / 3);
@@ -103,11 +127,10 @@ public partial class BlazorQLIde :
     bool toolsExpanded;
     EditorTool activeTool = EditorTool.Variables;
     bool pickerOpen;
-    IReadOnlyList<OperationInfo> pickerOperations = [];
+    IReadOnlyList<OperationFact> pickerOperations = [];
 
-    // M6 persistence: storage + history exist only after the host module is imported (the storage
-    // backend is the module's localStorage seam). Writes are debounced so typing does not thrash
-    // localStorage.
+    // M6 persistence: storage rides the host module's localStorage seam. Writes are debounced so
+    // typing does not thrash localStorage.
     StorageService? storage;
     HistoryStore? history;
     bool persistHeaders;
@@ -121,36 +144,32 @@ public partial class BlazorQLIde :
     readonly Debouncer stateDebounce = new();
     readonly Debouncer paneDebounce = new();
 
+    // Content-change fan-out: each editor coalesces its change bursts, and diagnostics get their
+    // own window so validation lags typing rather than racing it.
+    readonly Debouncer operationChangeDebounce = new(300);
+    readonly Debouncer variablesChangeDebounce = new();
+    readonly Debouncer headersChangeDebounce = new();
+    readonly Debouncer responseChangeDebounce = new();
+    readonly Debouncer diagnosticsDebounce = new(400);
+
     /// <summary>The schema printed as SDL, once loaded.</summary>
     public string? SchemaSdl { get; private set; }
 
     /// <summary>The parsed introspection result, once loaded — what the doc explorer navigates.</summary>
     public SchemaIndex? Schema { get; private set; }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    /// <summary>Validates operations against the loaded schema. Null until introspection lands.</summary>
+    SchemaValidator? validator;
+
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender)
-        {
-            // The docs pane (and its search input) had to render before it could take focus.
-            if (docSearchFocusPending)
-            {
-                docSearchFocusPending = false;
-                await module!.Invoke("focusElement", "#blazorql-doc-search-input");
-            }
-
-            return;
-        }
-
         module = new(JS);
         reference = DotNetObjectReference.Create(callbacks);
-        callbacks.EditorAction += OnEditorAction;
-        callbacks.EditorChanged += OnEditorChanged;
         callbacks.PaneResize += OnPaneResize;
-        callbacks.SchemaReference += OnSchemaReference;
         callbacks.GlobalShortcut += OnGlobalShortcut;
         attachedFetcher = Fetcher;
 
-        await module.Invoke<JsonElement>("init", reference, "blazorql");
+        await module.Invoke("init", reference);
 
         // Storage rides the freshly imported module, so everything persisted is rehydrated here —
         // before the editors take their initial values.
@@ -161,65 +180,30 @@ public partial class BlazorQLIde :
         await ApplySharedLink();
 
         await ApplyTheme();
-        await module.Invoke(
-            "createEditor",
-            OperationElementId,
-            OperationUri,
-            "graphql",
-            tabs.Active.Query,
-            null);
-        await module.Invoke(
-            "createEditor",
-            ResponseElementId,
-            ResponseUri,
-            "json",
-            "",
-            """{"readOnly": true, "lineNumbers": "off", "wordWrap": "on", "contextmenu": false}""");
-        await module.Invoke(
-            "createEditor",
-            EditorTools.VariablesElementId,
-            VariablesUri,
-            "json",
-            tabs.Active.Variables,
-            null);
-        if (IsHeadersEditorEnabled)
+
+        // The editors render on the next pass, seeded from the rehydrated tab state.
+        hydrated = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // The docs pane (and its search input) had to render before it could take focus.
+        if (docSearchFocusPending && module is not null)
         {
-            await module.Invoke(
-                "createEditor",
-                EditorTools.HeadersElementId,
-                HeadersUri,
-                "json",
-                tabs.Active.Headers,
-                null);
+            docSearchFocusPending = false;
+            await module.Invoke("focusElement", "#blazorql-doc-search-input");
         }
 
-        // Monaco KeyMod.CtrlCmd | KeyCode.Enter.
-        await module.Invoke("addAction", OperationUri, "blazorql-run", "Run Operation", "[2051]");
-        // GraphiQL's editor bindings: Shift-Ctrl-P prettify, Shift-Ctrl-M merge, Shift-Ctrl-C copy
-        // (KeyMod.Shift | KeyMod.WinCtrl | the key).
-        await module.Invoke("addAction", OperationUri, "blazorql-prettify", "Prettify Editors", "[1326]");
-        await module.Invoke("addAction", OperationUri, "blazorql-merge", "Merge Fragments", "[1323]");
-        await module.Invoke("addAction", OperationUri, "blazorql-copy", "Copy Query", "[1313]");
-        await module.Invoke("addAction", VariablesUri, "blazorql-prettify", "Prettify Editors", "[1326]");
-        if (IsHeadersEditorEnabled)
+        if (!hydrated || domWired)
         {
-            await module.Invoke("addAction", HeadersUri, "blazorql-prettify", "Prettify Editors", "[1326]");
+            return;
         }
 
-        // Keeps the active tab's Query (and so its derived title) in step with typing.
-        await module.Invoke("onChange", OperationUri, 300);
-        // The other editors feed the active tab too, so edits persist without a tab switch.
-        await module.Invoke("onChange", VariablesUri, 500);
-        if (IsHeadersEditorEnabled)
-        {
-            await module.Invoke("onChange", HeadersUri, 500);
-        }
+        domWired = true;
+        await module!.Invoke("trackPointer", PluginResizerId, "plugin", "x");
+        await module.Invoke("trackPointer", SessionResizerId, "session", "x");
+        await module.Invoke("trackPointer", ToolsResizerId, "tools", "y");
 
-        await module.Invoke("onChange", ResponseUri, 500);
-        // Ctrl/Cmd+click on a schema name jumps to its documentation.
-        await module.Invoke("registerJumpToDoc", OperationUri);
-        // Hovering an image url in a response previews the image.
-        await module.Invoke("registerResponseImageHover", ResponseUri);
         // Document-level shortcuts for commands that live outside any editor.
         await module.Invoke(
             "registerGlobalShortcuts",
@@ -229,15 +213,6 @@ public partial class BlazorQLIde :
                 new {id = "doc-search", key = "k", ctrl = true, shift = false, alt = true, meta = false},
                 new {id = "settings", key = ",", ctrl = true, shift = false, alt = false, meta = false}
             }));
-
-        await module.Invoke("trackPointer", PluginResizerId, "plugin", "x");
-        await module.Invoke("trackPointer", SessionResizerId, "session", "x");
-        await module.Invoke("trackPointer", ToolsResizerId, "tools", "y");
-
-        await LoadSchema();
-
-        ready = true;
-        StateHasChanged();
     }
 
     /// <summary>
@@ -246,7 +221,7 @@ public partial class BlazorQLIde :
     /// </summary>
     protected override async Task OnParametersSetAsync()
     {
-        if (module is null ||
+        if (!hydrated ||
             ReferenceEquals(attachedFetcher, Fetcher))
         {
             return;
@@ -256,6 +231,502 @@ public partial class BlazorQLIde :
         // A run in flight belongs to the old fetcher.
         execution?.Cancel();
         await LoadSchema();
+    }
+
+    // ---- Editor construction and init ----
+
+    StandaloneEditorConstructionOptions OperationOptions(StandaloneCodeEditor _) =>
+        EditorDefaults.Create("graphql", "", MonacoTheme);
+
+    StandaloneEditorConstructionOptions VariablesOptions(StandaloneCodeEditor _) =>
+        EditorDefaults.Create("json", "", MonacoTheme);
+
+    StandaloneEditorConstructionOptions HeadersOptions(StandaloneCodeEditor _) =>
+        EditorDefaults.Create("json", "", MonacoTheme);
+
+    StandaloneEditorConstructionOptions ResponseOptions(StandaloneCodeEditor _)
+    {
+        var options = EditorDefaults.Create("json", "", MonacoTheme);
+        options.ReadOnly = true;
+        options.LineNumbers = "off";
+        options.WordWrap = "on";
+        options.Contextmenu = false;
+        return options;
+    }
+
+    string MonacoTheme =>
+        resolvedDark ? "vs-dark" : "vs";
+
+    /// <summary>
+    /// Moves an editor onto a named model carrying the real initial value. The anonymous model the
+    /// component created stays behind, detached and empty — BlazorMonaco's uri-keyed model lookup
+    /// cannot resolve monaco's auto-generated uris, so it cannot be disposed from C#.
+    /// </summary>
+    async Task<TextModel> SwapModel(StandaloneCodeEditor editor, string value, string language, string uri)
+    {
+        var model = await Global.CreateModel(JS, value, language, uri);
+        await editor.SetModel(model);
+        return model;
+    }
+
+    async Task OnOperationInit()
+    {
+        operationModel = await SwapModel(operationEditor!, tabs.Active.Query, "graphql", OperationModelUri);
+
+        await operationEditor!.AddAction(new ActionDescriptor
+        {
+            Id = "blazorql-run",
+            Label = "Run Operation",
+            ContextMenuGroupId = "graphql",
+            Keybindings = [(int)KeyMod.CtrlCmd | (int)KeyCode.Enter],
+            Run = _ => InvokeAsync(RunFromKeyboard)
+        });
+        // GraphiQL's editor bindings: Shift-Ctrl-P prettify, Shift-Ctrl-M merge, Shift-Ctrl-C copy.
+        await AddPrettifyAction(operationEditor);
+        await operationEditor.AddAction(new ActionDescriptor
+        {
+            Id = "blazorql-merge",
+            Label = "Merge Fragments",
+            ContextMenuGroupId = "graphql",
+            Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyM],
+            Run = _ => InvokeAsync(MergeFragments)
+        });
+        await operationEditor.AddAction(new ActionDescriptor
+        {
+            Id = "blazorql-copy",
+            Label = "Copy Query",
+            ContextMenuGroupId = "graphql",
+            Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyC],
+            Run = _ => InvokeAsync(CopyQuery)
+        });
+
+        await EditorReady();
+    }
+
+    async Task OnVariablesInit()
+    {
+        variablesModel = await SwapModel(editorTools!.VariablesEditor!, tabs.Active.Variables, "json", VariablesModelUri);
+        await AddPrettifyAction(editorTools.VariablesEditor!);
+        await EditorReady();
+    }
+
+    async Task OnHeadersInit()
+    {
+        headersModel = await SwapModel(editorTools!.HeadersEditor!, tabs.Active.Headers, "json", HeadersModelUri);
+        await AddPrettifyAction(editorTools.HeadersEditor!);
+        await EditorReady();
+    }
+
+    async Task OnResponseInit()
+    {
+        responseModel = await SwapModel(responseEditor!, tabs.Active.Response, "json", ResponseModelUri);
+        await EditorReady();
+    }
+
+    Task AddPrettifyAction(StandaloneCodeEditor editor) =>
+        editor.AddAction(new ActionDescriptor
+        {
+            Id = "blazorql-prettify",
+            Label = "Prettify Editors",
+            ContextMenuGroupId = "graphql",
+            Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyP],
+            Run = _ => InvokeAsync(PrettifyEditors)
+        });
+
+    int ExpectedEditors =>
+        IsHeadersEditorEnabled ? 4 : 3;
+
+    /// <summary>Once every editor has its model, the providers register and the schema loads.</summary>
+    async Task EditorReady()
+    {
+        editorsInitialized++;
+        if (editorsInitialized != ExpectedEditors)
+        {
+            return;
+        }
+
+        await RegisterProviders();
+        await LoadSchema();
+
+        ready = true;
+        StateHasChanged();
+    }
+
+    // ---- Language providers (registered once per page, routed through the live instance) ----
+
+    async Task RegisterProviders()
+    {
+        active = this;
+        if (providersRegistered)
+        {
+            return;
+        }
+
+        providersRegistered = true;
+
+        var provider = new CompletionItemProvider(
+            [" ", "(", "$", "@", ":", "{", "."],
+            (modelUri, position, context) =>
+                active?.ProvideCompletions(modelUri, position, context) ?? Task.FromResult(EmptyCompletions()));
+        await BlazorMonaco.Languages.Global.RegisterCompletionItemProvider(JS, "graphql", provider);
+
+        await BlazorMonaco.Languages.Global.RegisterHoverProviderAsync(
+            JS,
+            "graphql",
+            (modelUri, position, context) =>
+                active?.ProvideOperationHover(modelUri, position, context) ?? Task.FromResult<Hover>(null!));
+
+        // Hovering a value ending in an image extension in the response editor previews the image.
+        await BlazorMonaco.Languages.Global.RegisterHoverProviderAsync(
+            JS,
+            "json",
+            (modelUri, position, context) =>
+                active?.ProvideResponseImageHover(modelUri, position, context) ?? Task.FromResult<Hover>(null!));
+    }
+
+    static CompletionList EmptyCompletions() =>
+        new()
+        {
+            Suggestions = []
+        };
+
+    async Task<CompletionList> ProvideCompletions(string modelUri, Position position, CompletionContext context)
+    {
+        // Monaco invokes this on every keystroke/trigger; never let an exception escape into the
+        // JS interop boundary (it would surface as an unhandled Blazor error).
+        try
+        {
+            if (Schema is null ||
+                operationModel is null ||
+                modelUri != operationModel.Uri)
+            {
+                return EmptyCompletions();
+            }
+
+            var model = await Global.GetModel(JS, modelUri);
+            var text = await model.GetValue(EndOfLinePreference.LF, false);
+            var offset = ToOffset(text, position.LineNumber, position.Column);
+            var range = ReplacedWordRange(text, position, offset);
+
+            return new()
+            {
+                Suggestions =
+                [
+                    .. CompletionEngine.Complete(Schema, text, offset)
+                        .Select(entry => new CompletionItem
+                        {
+                            LabelAsString = entry.Label,
+                            Kind = MapKind(entry.Kind),
+                            Detail = entry.Detail,
+                            DocumentationAsString = entry.Documentation,
+                            SortText = entry.SortText,
+                            InsertText = entry.InsertText ?? entry.Label,
+                            Tags = entry.Deprecated ? [CompletionItemTag.Deprecated] : null,
+                            RangeAsObject = range
+                        })
+                ]
+            };
+        }
+        catch
+        {
+            return EmptyCompletions();
+        }
+    }
+
+    async Task<Hover> ProvideOperationHover(string modelUri, Position position, HoverContext context)
+    {
+        try
+        {
+            if (Schema is null ||
+                operationModel is null ||
+                modelUri != operationModel.Uri)
+            {
+                return null!;
+            }
+
+            var model = await Global.GetModel(JS, modelUri);
+            var text = await model.GetValue(EndOfLinePreference.LF, false);
+            var hover = HoverEngine.Hover(Schema, text, ToOffset(text, position.LineNumber, position.Column));
+            if (hover is null)
+            {
+                return null!;
+            }
+
+            return new()
+            {
+                Contents = [new MarkdownString {Value = hover.Markdown}],
+                Range = ToRange(text, hover.Start, hover.End)
+            };
+        }
+        catch
+        {
+            return null!;
+        }
+    }
+
+    static readonly System.Text.RegularExpressions.Regex imageToken =
+        new(@"\S+\.(png|svg|jpe?g|gif|webp)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+    async Task<Hover> ProvideResponseImageHover(string modelUri, Position position, HoverContext context)
+    {
+        try
+        {
+            if (responseModel is null ||
+                modelUri != responseModel.Uri)
+            {
+                return null!;
+            }
+
+            var model = await Global.GetModel(JS, modelUri);
+            var line = await model.GetLineContent(position.LineNumber);
+
+            var start = position.Column - 1;
+            var end = start;
+            while (start > 0 && !IsTokenBoundary(line[start - 1]))
+            {
+                start--;
+            }
+
+            while (end < line.Length && !IsTokenBoundary(line[end]))
+            {
+                end++;
+            }
+
+            var token = line[start..end];
+            if (!imageToken.IsMatch(token))
+            {
+                return null!;
+            }
+
+            return new()
+            {
+                Contents = [new MarkdownString {Value = $"![]({token})"}],
+                Range = new()
+                {
+                    StartLineNumber = position.LineNumber,
+                    StartColumn = start + 1,
+                    EndLineNumber = position.LineNumber,
+                    EndColumn = end + 1
+                }
+            };
+        }
+        catch
+        {
+            return null!;
+        }
+    }
+
+    static bool IsTokenBoundary(char ch) =>
+        ch is '"' or ' ' or '\t' or ',';
+
+    static CompletionItemKind MapKind(string kind) =>
+        kind switch
+        {
+            "Field" => CompletionItemKind.Field,
+            "Argument" => CompletionItemKind.Property,
+            "EnumMember" => CompletionItemKind.EnumMember,
+            "Value" => CompletionItemKind.Value,
+            "Variable" => CompletionItemKind.Variable,
+            "Class" => CompletionItemKind.Class,
+            "Interface" => CompletionItemKind.Interface,
+            "Reference" => CompletionItemKind.Reference,
+            "Keyword" => CompletionItemKind.Keyword,
+            _ => CompletionItemKind.Text
+        };
+
+    /// <summary>The word being completed: its start through the caret, in Monaco coordinates.</summary>
+    static BlazorMonaco.Range ReplacedWordRange(string text, Position position, int offset)
+    {
+        var start = Math.Min(offset, text.Length);
+        while (start > 0 && (char.IsLetterOrDigit(text[start - 1]) || text[start - 1] == '_'))
+        {
+            start--;
+        }
+
+        return new()
+        {
+            StartLineNumber = position.LineNumber,
+            StartColumn = position.Column - (Math.Min(offset, text.Length) - start),
+            EndLineNumber = position.LineNumber,
+            EndColumn = position.Column
+        };
+    }
+
+    // ---- Content changes: tab state, persistence, diagnostics ----
+
+    Task OnOperationContentChanged(ModelContentChangedEvent _)
+    {
+        operationChangeDebounce.Run(() =>
+            InvokeAsync(async () =>
+            {
+                if (operationEditor is null)
+                {
+                    return;
+                }
+
+                // Also keeps the derived tab title live while the user types.
+                tabs.Active.Query = await operationEditor.GetValue();
+                SchedulePersist();
+                StateHasChanged();
+            }));
+        ScheduleDiagnostics();
+        return Task.CompletedTask;
+    }
+
+    Task OnVariablesContentChanged(ModelContentChangedEvent _)
+    {
+        variablesChangeDebounce.Run(() =>
+            InvokeAsync(async () =>
+            {
+                if (editorTools?.VariablesEditor is not { } editor)
+                {
+                    return;
+                }
+
+                tabs.Active.Variables = await editor.GetValue();
+                SchedulePersist();
+                StateHasChanged();
+            }));
+        ScheduleDiagnostics();
+        return Task.CompletedTask;
+    }
+
+    Task OnHeadersContentChanged(ModelContentChangedEvent _)
+    {
+        headersChangeDebounce.Run(() =>
+            InvokeAsync(async () =>
+            {
+                if (editorTools?.HeadersEditor is not { } editor)
+                {
+                    return;
+                }
+
+                tabs.Active.Headers = await editor.GetValue();
+                SchedulePersist();
+                StateHasChanged();
+            }));
+        return Task.CompletedTask;
+    }
+
+    Task OnResponseContentChanged(ModelContentChangedEvent _)
+    {
+        responseChangeDebounce.Run(() =>
+            InvokeAsync(async () =>
+            {
+                if (responseEditor is null)
+                {
+                    return;
+                }
+
+                // Tracked for tab switches, but never persisted. The response-action buttons
+                // key off this value, so the change still renders.
+                tabs.Active.Response = await responseEditor.GetValue();
+                StateHasChanged();
+            }));
+        return Task.CompletedTask;
+    }
+
+    void ScheduleDiagnostics() =>
+        diagnosticsDebounce.Run(() => InvokeAsync(RunDiagnostics));
+
+    /// <summary>
+    /// Validates the operation text (syntax + schema rules + deprecation warnings) into markers on
+    /// the operation model, then checks the variables document against the operation's declared
+    /// variables. Best-effort: diagnostics must never disrupt typing.
+    /// </summary>
+    async Task RunDiagnostics()
+    {
+        if (operationEditor is null ||
+            operationModel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var text = await operationEditor.GetValue();
+            var document = DocumentInfo.Parse(text);
+            var markers = new List<MarkerData>();
+            if (validator is not null)
+            {
+                foreach (var diagnostic in await validator.Validate(document))
+                {
+                    markers.Add(ToMarker(text, diagnostic.Message, diagnostic.IsError, diagnostic.Line, diagnostic.Column));
+                }
+            }
+            else if (document.SyntaxError is not null)
+            {
+                markers.Add(ToMarker(text, $"Syntax Error: {document.SyntaxError}", isError: true, document.SyntaxErrorLine, document.SyntaxErrorColumn));
+            }
+
+            await Global.SetModelMarkers(JS, operationModel, "blazorql", markers);
+            await CheckVariables(document);
+        }
+        catch
+        {
+            // Diagnostics are best-effort; never disrupt typing.
+        }
+    }
+
+    async Task CheckVariables(DocumentInfo document)
+    {
+        if (variablesModel is null ||
+            editorTools?.VariablesEditor is not { } editor)
+        {
+            return;
+        }
+
+        var text = await editor.GetValue();
+        var markers = new List<MarkerData>();
+        var (ok, value, error) = Formatter.ParseJsonc(text, "Variables");
+        if (!ok)
+        {
+            markers.Add(FirstLineMarker(error!));
+        }
+        else if (Schema is not null &&
+                 document.OperationNode(null) is { } operation)
+        {
+            foreach (var message in VariablesChecker.Check(Schema, operation, value))
+            {
+                markers.Add(FirstLineMarker(message));
+            }
+        }
+
+        await Global.SetModelMarkers(JS, variablesModel, "blazorql-variables", markers);
+    }
+
+    static MarkerData FirstLineMarker(string message) =>
+        new()
+        {
+            Message = message,
+            Severity = MarkerSeverity.Error,
+            StartLineNumber = 1,
+            StartColumn = 1,
+            EndLineNumber = 1,
+            EndColumn = 2
+        };
+
+    /// <summary>A marker spanning the word at the diagnostic's position (at least one column).</summary>
+    static MarkerData ToMarker(string text, string message, bool isError, int line, int column)
+    {
+        line = Math.Max(line, 1);
+        column = Math.Max(column, 1);
+        var offset = ToOffset(text, line, column);
+        var end = offset;
+        while (end < text.Length && (char.IsLetterOrDigit(text[end]) || text[end] == '_'))
+        {
+            end++;
+        }
+
+        return new()
+        {
+            Message = message,
+            Severity = isError ? MarkerSeverity.Error : MarkerSeverity.Warning,
+            StartLineNumber = line,
+            StartColumn = column,
+            EndLineNumber = line,
+            EndColumn = column + Math.Max(end - offset, 1)
+        };
     }
 
     // ---- Persistence ----
@@ -332,8 +803,8 @@ public partial class BlazorQLIde :
     }
 
     /// <summary>Whether a query parses as GraphQL — the history's gate against garbage entries.</summary>
-    bool QueryParses(string query) =>
-        module!.InvokeSync<string?>("getOperationFacts", query) is not null;
+    static bool QueryParses(string query) =>
+        DocumentInfo.Parse(query).Parses;
 
     void SchedulePersist() =>
         stateDebounce.Run(() =>
@@ -481,11 +952,18 @@ public partial class BlazorQLIde :
                 return;
             }
 
-            SchemaSdl = await module!.Invoke<string>("setSchemaFromIntrospection", introspection.Value.GetRawText());
-            Schema = SchemaIndex.Parse(introspection.Value);
-            // With a schema in place the variables editor can validate against the operation's
-            // declared variables.
-            await module.Invoke("linkVariablesValidation", OperationUri, VariablesUri);
+            var schema = SchemaIndex.Parse(introspection.Value);
+            if (schema is null)
+            {
+                await SetResponse("""{"errors":[{"message":"Introspection failed: the result carries no schema."}]}""");
+                return;
+            }
+
+            Schema = schema;
+            SchemaSdl = SdlPrinter.Print(schema);
+            validator = SchemaValidator.TryCreate(schema, SchemaSdl);
+            // Revalidate whatever is in the editors against the fresh schema.
+            ScheduleDiagnostics();
             await OnSchemaLoaded.InvokeAsync();
         }
         catch (Exception exception)
@@ -533,11 +1011,9 @@ public partial class BlazorQLIde :
     {
         var effective = ForcedTheme ?? themes.Current;
         var systemDark = effective == Theme.System && await module!.Invoke<bool>("systemDark");
-        var mode = effective == Theme.Dark || systemDark
-            ? "dark"
-            : "light";
-        await module!.Invoke("setDataTheme", mode);
-        await module.Invoke("setMonacoTheme", $"blazorql-{mode}");
+        resolvedDark = effective == Theme.Dark || systemDark;
+        await module!.Invoke("setDataTheme", resolvedDark ? "dark" : "light");
+        await Global.SetTheme(JS, MonacoTheme);
     }
 
     // ---- Plugin pane ----
@@ -550,22 +1026,36 @@ public partial class BlazorQLIde :
         PersistVisiblePlugin();
     }
 
-    /// <summary>Jump-to-doc: opens the docs plugin and navigates to the referenced schema member.</summary>
-    void OnSchemaReference(string referenceJson) =>
-        _ = InvokeAsync(() =>
+    /// <summary>
+    /// Ctrl/Cmd+click on a schema name in the operation editor jumps to its documentation. The
+    /// clicked word resolves through the C# scanner against the loaded schema.
+    /// </summary>
+    async Task OnOperationMouseDown(EditorMouseEvent args)
+    {
+        var pointer = args.Event;
+        var position = args.Target?.Position;
+        if (Schema is null ||
+            operationEditor is null ||
+            pointer is null ||
+            position is null ||
+            (!pointer.CtrlKey && !pointer.MetaKey) ||
+            pointer.RightButton)
         {
-            var reference = JsonSerializer.Deserialize<SchemaReference>(referenceJson, referenceOptions);
-            if (reference is null)
-            {
-                return;
-            }
+            return;
+        }
 
-            visiblePlugin = PluginKind.Docs;
-            docNavigator.NavigateTo(reference);
-            StateHasChanged();
-        });
+        var text = await operationEditor.GetValue();
+        var schemaReference = SchemaReferenceResolver.Resolve(Schema, text, ToOffset(text, position.LineNumber, position.Column));
+        if (schemaReference is null)
+        {
+            return;
+        }
 
-    static readonly JsonSerializerOptions referenceOptions = new(JsonSerializerDefaults.Web);
+        visiblePlugin = PluginKind.Docs;
+        PersistVisiblePlugin();
+        docNavigator.NavigateTo(schemaReference);
+        StateHasChanged();
+    }
 
     // ---- Editor tools ----
 
@@ -705,28 +1195,55 @@ public partial class BlazorQLIde :
 
     async Task SaveActiveTab()
     {
-        var tab = tabs.Active;
-        tab.Query = await module!.Invoke<string>("getValue", OperationUri);
-        tab.Variables = await module.Invoke<string>("getValue", VariablesUri);
-        if (IsHeadersEditorEnabled)
+        if (operationEditor is null)
         {
-            tab.Headers = await module.Invoke<string>("getValue", HeadersUri);
+            return;
         }
 
-        tab.Response = await module.Invoke<string>("getValue", ResponseUri);
+        var tab = tabs.Active;
+        tab.Query = await operationEditor.GetValue();
+        if (editorTools?.VariablesEditor is { } variablesEditor)
+        {
+            tab.Variables = await variablesEditor.GetValue();
+        }
+
+        if (IsHeadersEditorEnabled &&
+            editorTools?.HeadersEditor is { } headersEditor)
+        {
+            tab.Headers = await headersEditor.GetValue();
+        }
+
+        if (responseEditor is not null)
+        {
+            tab.Response = await responseEditor.GetValue();
+        }
     }
 
     async Task LoadActiveTab()
     {
-        var tab = tabs.Active;
-        await module!.Invoke("setValue", OperationUri, tab.Query);
-        await module.Invoke("setValue", VariablesUri, tab.Variables);
-        if (IsHeadersEditorEnabled)
+        if (operationEditor is null)
         {
-            await module.Invoke("setValue", HeadersUri, tab.Headers);
+            return;
         }
 
-        await module.Invoke("setValue", ResponseUri, tab.Response);
+        var tab = tabs.Active;
+        await operationEditor.SetValue(tab.Query);
+        if (editorTools?.VariablesEditor is { } variablesEditor)
+        {
+            await variablesEditor.SetValue(tab.Variables);
+        }
+
+        if (IsHeadersEditorEnabled &&
+            editorTools?.HeadersEditor is { } headersEditor)
+        {
+            await headersEditor.SetValue(tab.Headers);
+        }
+
+        if (responseEditor is not null)
+        {
+            await responseEditor.SetValue(tab.Response);
+        }
+
         // The status line described the previous tab's run.
         statusLine = null;
         // Tools open themselves for a tab that has content in them, close otherwise.
@@ -735,58 +1252,7 @@ public partial class BlazorQLIde :
             (IsHeadersEditorEnabled && !string.IsNullOrWhiteSpace(tab.Headers));
     }
 
-    void OnEditorChanged(string uriName, string text) =>
-        _ = InvokeAsync(() =>
-        {
-            // Every editor routes through the active tab, so its state (and the persisted
-            // tabState) stays current without waiting for a tab switch.
-            var tab = tabs.Active;
-            switch (uriName)
-            {
-                case OperationUri:
-                    // Also keeps the derived tab title live while the user types.
-                    tab.Query = text;
-                    break;
-                case VariablesUri:
-                    tab.Variables = text;
-                    break;
-                case HeadersUri:
-                    tab.Headers = text;
-                    break;
-                case ResponseUri:
-                    // Tracked for tab switches, but never persisted. The response-action buttons
-                    // key off this value, so the change still renders.
-                    tab.Response = text;
-                    StateHasChanged();
-                    return;
-                default:
-                    return;
-            }
-
-            SchedulePersist();
-            StateHasChanged();
-        });
-
     // ---- Execution ----
-
-    void OnEditorAction(string actionId)
-    {
-        switch (actionId)
-        {
-            case "blazorql-run":
-                _ = InvokeAsync(RunFromKeyboard);
-                break;
-            case "blazorql-prettify":
-                _ = InvokeAsync(PrettifyEditors);
-                break;
-            case "blazorql-merge":
-                _ = InvokeAsync(MergeFragments);
-                break;
-            case "blazorql-copy":
-                _ = InvokeAsync(CopyQuery);
-                break;
-        }
-    }
 
     /// <summary>Document-level shortcuts registered with the host module.</summary>
     void OnGlobalShortcut(string id) =>
@@ -820,53 +1286,99 @@ public partial class BlazorQLIde :
     /// <summary>Prettifies every editor, in GraphiQL's order: variables, headers, then the query.</summary>
     async Task PrettifyEditors()
     {
-        await module!.Invoke("prettify", VariablesUri);
+        await PrettifyJson(editorTools?.VariablesEditor);
         if (IsHeadersEditorEnabled)
         {
-            await module.Invoke("prettify", HeadersUri);
+            await PrettifyJson(editorTools?.HeadersEditor);
         }
 
-        await module.Invoke("prettify", OperationUri);
+        if (operationEditor is null)
+        {
+            return;
+        }
+
+        var text = await operationEditor.GetValue();
+        if (text.Trim().Length == 0)
+        {
+            return;
+        }
+
+        var formatted = Formatter.FormatGraphQL(text);
+        if (formatted != text)
+        {
+            await operationEditor.SetValue(formatted);
+        }
+    }
+
+    static async Task PrettifyJson(StandaloneCodeEditor? editor)
+    {
+        if (editor is null)
+        {
+            return;
+        }
+
+        var text = await editor.GetValue();
+        if (text.Trim().Length == 0)
+        {
+            return;
+        }
+
+        var formatted = Formatter.FormatJson(text);
+        if (formatted != text)
+        {
+            await editor.SetValue(formatted);
+        }
     }
 
     /// <summary>Inlines named fragments into the operations. A parse failure becomes the response.</summary>
     async Task MergeFragments()
     {
-        var resultJson = await module!.Invoke<string>("mergeFragments", OperationUri);
-        using var document = JsonDocument.Parse(resultJson);
-        var root = document.RootElement;
-        if (!root.GetProperty("ok").GetBoolean())
+        if (operationEditor is null)
         {
-            await SetResponse(ErrorDocument(root.GetProperty("error").GetString() ?? "Merge failed."));
+            return;
+        }
+
+        var text = await operationEditor.GetValue();
+        var (ok, merged, error) = FragmentMerger.Merge(text);
+        if (!ok)
+        {
+            await SetResponse(ErrorDocument(error ?? "Merge failed."));
+            return;
+        }
+
+        if (merged != text)
+        {
+            await operationEditor.SetValue(merged!);
         }
     }
 
     async Task CopyQuery()
     {
-        var query = await module!.Invoke<string>("getValue", OperationUri);
-        await module.Invoke("copyText", query);
+        var query = await operationEditor!.GetValue();
+        await module!.Invoke("copyText", query);
     }
 
     /// <summary>Writes the query + variables into the location hash and copies the resulting link.</summary>
     async Task ShareQuery()
     {
-        var shared = new SharedQuery(
-            await module!.Invoke<string>("getValue", OperationUri),
-            await module.Invoke<string>("getValue", VariablesUri));
-        var href = await module.Invoke<string>("setHash", ShareLinkCodec.Encode(shared));
+        var variables = editorTools?.VariablesEditor is { } variablesEditor
+            ? await variablesEditor.GetValue()
+            : "";
+        var shared = new SharedQuery(await operationEditor!.GetValue(), variables);
+        var href = await module!.Invoke<string>("setHash", ShareLinkCodec.Encode(shared));
         await module.Invoke("copyText", href);
     }
 
     async Task CopyResponse()
     {
-        var response = await module!.Invoke<string>("getValue", ResponseUri);
-        await module.Invoke("copyText", response);
+        var response = await responseEditor!.GetValue();
+        await module!.Invoke("copyText", response);
     }
 
     async Task DownloadResponse()
     {
-        var response = await module!.Invoke<string>("getValue", ResponseUri);
-        await module.Invoke("downloadText", "response.json", response, "application/json");
+        var response = await responseEditor!.GetValue();
+        await module!.Invoke("downloadText", "response.json", response, "application/json");
     }
 
     /// <summary>Ctrl-Enter: with several operations in the document the caret decides.</summary>
@@ -878,12 +1390,13 @@ public partial class BlazorQLIde :
             return;
         }
 
-        var query = await module!.Invoke<string>("getValue", OperationUri);
-        var operations = await GetOperations(query);
+        var query = await operationEditor!.GetValue();
+        var operations = DocumentInfo.Parse(query).Operations;
         string? operationName = null;
         if (operations.Count > 1)
         {
-            var offset = await module.Invoke<int>("getCursorOffset", OperationUri);
+            var position = await operationEditor.GetPosition();
+            var offset = position is null ? 0 : ToOffset(query, position.LineNumber, position.Column);
             var at = operations.FirstOrDefault(_ => _.Start <= offset && offset <= _.End);
             operationName = (at ?? operations[0]).Name;
         }
@@ -910,8 +1423,8 @@ public partial class BlazorQLIde :
             return;
         }
 
-        var query = await module!.Invoke<string>("getValue", OperationUri);
-        var operations = await GetOperations(query);
+        var query = await operationEditor!.GetValue();
+        var operations = DocumentInfo.Parse(query).Operations;
         if (operations.Count > 1)
         {
             pickerOperations = operations;
@@ -922,10 +1435,10 @@ public partial class BlazorQLIde :
         await Run(query, operations.Count == 1 ? operations[0].Name : null, multipleOperations: false);
     }
 
-    async Task RunPicked(OperationInfo operation)
+    async Task RunPicked(OperationFact operation)
     {
         pickerOpen = false;
-        var query = await module!.Invoke<string>("getValue", OperationUri);
+        var query = await operationEditor!.GetValue();
         await Run(query, operation.Name, multipleOperations: true);
     }
 
@@ -933,10 +1446,10 @@ public partial class BlazorQLIde :
     {
         // Fill in default leaf selections first; the filled text is what runs (and what the user
         // sees, briefly highlighted).
-        query = await module!.Invoke<string>("fillLeafs", OperationUri);
+        query = await FillLeafs(query);
 
         // The parse errors short-circuit: nothing is sent, the error is the response.
-        var variables = await ParseJsonc(VariablesUri, "Variables");
+        var variables = await ParseEditorJson(editorTools?.VariablesEditor, "Variables");
         if (variables.Error is not null)
         {
             await SetResponse(ErrorDocument(variables.Error));
@@ -946,7 +1459,7 @@ public partial class BlazorQLIde :
         var headers = EmptyHeaders;
         if (IsHeadersEditorEnabled)
         {
-            var parsedHeaders = await ParseJsonc(HeadersUri, "Request headers");
+            var parsedHeaders = await ParseEditorJson(editorTools?.HeadersEditor, "Request headers");
             if (parsedHeaders.Error is not null)
             {
                 await SetResponse(ErrorDocument(parsedHeaders.Error));
@@ -965,9 +1478,11 @@ public partial class BlazorQLIde :
         }
 
         // The history records every execution start, whether or not its pane is open.
-        var variablesText = await module!.Invoke<string>("getValue", VariablesUri);
-        var headersText = IsHeadersEditorEnabled
-            ? await module.Invoke<string>("getValue", HeadersUri)
+        var variablesText = editorTools?.VariablesEditor is { } variablesEditor
+            ? await variablesEditor.GetValue()
+            : "";
+        var headersText = IsHeadersEditorEnabled && editorTools?.HeadersEditor is { } headersEditor
+            ? await headersEditor.GetValue()
             : "";
         history?.Record(
             query,
@@ -1026,49 +1541,90 @@ public partial class BlazorQLIde :
         }
     }
 
-    async Task<IReadOnlyList<OperationInfo>> GetOperations(string query)
+    /// <summary>
+    /// Fills in default leaf selections for fields that need them, returning the text the run
+    /// sends. Inserted ranges are highlighted for a few seconds so the user sees what was added.
+    /// The cursor keeps its position rather than being remapped through the insertion offsets.
+    /// </summary>
+    async Task<string> FillLeafs(string query)
     {
-        var factsJson = await module!.Invoke<string?>("getOperationFacts", query);
-        if (factsJson is null)
+        if (Schema is null ||
+            operationEditor is null)
         {
-            return [];
+            return query;
         }
 
-        using var document = JsonDocument.Parse(factsJson);
-        List<OperationInfo> operations = [];
-        foreach (var element in document.RootElement.GetProperty("operations").EnumerateArray())
+        try
         {
-            operations.Add(new(
-                element.GetProperty("name").ValueKind == JsonValueKind.String
-                    ? element.GetProperty("name").GetString()
-                    : null,
-                element.GetProperty("operation").GetString() ?? "query",
-                element.GetProperty("start").GetInt32(),
-                element.GetProperty("end").GetInt32()));
-        }
+            var (result, insertions) = LeafFiller.Fill(Schema, query);
+            if (insertions.Count == 0)
+            {
+                return query;
+            }
 
-        return operations;
+            var position = await operationEditor.GetPosition();
+            await operationEditor.SetValue(result);
+            if (position is not null)
+            {
+                await operationEditor.SetPosition(position, "blazorql");
+            }
+
+            await DecorateInsertions(result, insertions);
+            return result;
+        }
+        catch
+        {
+            return query;
+        }
     }
 
-    /// <summary>Runs the given editor's content through the host module's JSONC parser.</summary>
-    async Task<(JsonElement? Value, string? Error)> ParseJsonc(string uriName, string what)
+    async Task DecorateInsertions(string text, IReadOnlyList<LeafFiller.Insertion> insertions)
     {
-        var text = await module!.Invoke<string>("getValue", uriName);
-        var resultJson = await module.Invoke<string>("parseJsonc", text, what);
-        using var document = JsonDocument.Parse(resultJson);
-        var root = document.RootElement;
-        if (!root.GetProperty("ok").GetBoolean())
+        // Insertion indices address the original text; earlier insertions shift the later ones.
+        var shift = 0;
+        var decorations = new List<ModelDeltaDecoration>();
+        foreach (var insertion in insertions.OrderBy(_ => _.Index))
         {
-            return (null, root.GetProperty("error").GetString());
+            var start = insertion.Index + shift;
+            decorations.Add(new()
+            {
+                Range = ToRange(text, start, start + insertion.Text.Length),
+                Options = new()
+                {
+                    ClassName = "blazorql-auto-inserted-leaf",
+                    HoverMessage = [new() {Value = "Automatically added leaf fields"}]
+                }
+            });
+            shift += insertion.Text.Length;
         }
 
-        if (root.TryGetProperty("value", out var value) &&
-            value.ValueKind == JsonValueKind.Object)
-        {
-            return (value.Clone(), null);
-        }
+        var ids = await operationEditor!.DeltaDecorations(null, [.. decorations]);
+        _ = ClearDecorations(ids);
+    }
 
-        return (null, null);
+    async Task ClearDecorations(string[] ids)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(7));
+        try
+        {
+            await operationEditor!.DeltaDecorations(ids, []);
+        }
+        catch
+        {
+            // The editor may be gone; the highlight going with it is fine.
+        }
+    }
+
+    /// <summary>Runs the given editor's content through the shared JSONC parser.</summary>
+    static async Task<(JsonElement? Value, string? Error)> ParseEditorJson(StandaloneCodeEditor? editor, string what)
+    {
+        var text = editor is null
+            ? ""
+            : await editor.GetValue();
+        var (ok, value, error) = Formatter.ParseJsonc(text, what);
+        return ok
+            ? (value, null)
+            : (null, error);
     }
 
     static string ErrorDocument(string message) =>
@@ -1095,8 +1651,13 @@ public partial class BlazorQLIde :
         return headers;
     }
 
-    ValueTask SetResponse(string text) =>
-        module!.Invoke("setValue", ResponseUri, text);
+    async ValueTask SetResponse(string text)
+    {
+        if (responseEditor is not null)
+        {
+            await responseEditor.SetValue(text);
+        }
+    }
 
     /// <summary>Whether the response pane shows anything — gates the copy/download overlay.</summary>
     bool HasResponse =>
@@ -1115,11 +1676,16 @@ public partial class BlazorQLIde :
             tab.Headers = item.Headers;
         }
 
-        await module!.Invoke("setValue", OperationUri, tab.Query);
-        await module.Invoke("setValue", VariablesUri, tab.Variables);
-        if (IsHeadersEditorEnabled)
+        await operationEditor!.SetValue(tab.Query);
+        if (editorTools?.VariablesEditor is { } variablesEditor)
         {
-            await module.Invoke("setValue", HeadersUri, tab.Headers);
+            await variablesEditor.SetValue(tab.Variables);
+        }
+
+        if (IsHeadersEditorEnabled &&
+            editorTools?.HeadersEditor is { } headersEditor)
+        {
+            await headersEditor.SetValue(tab.Headers);
         }
 
         SchedulePersist();
@@ -1139,25 +1705,81 @@ public partial class BlazorQLIde :
 
     static readonly Dictionary<string, string> EmptyHeaders = [];
 
+    // ---- Coordinate helpers (Monaco is 1-based line/column; the language services use offsets) ----
+
+    static int ToOffset(string text, int line, int column)
+    {
+        var offset = 0;
+        var currentLine = 1;
+        while (currentLine < line && offset < text.Length)
+        {
+            if (text[offset] == '\n')
+            {
+                currentLine++;
+            }
+
+            offset++;
+        }
+
+        return Math.Min(offset + (column - 1), text.Length);
+    }
+
+    static BlazorMonaco.Range ToRange(string text, int start, int end)
+    {
+        var (startLine, startColumn) = ToLineColumn(text, start);
+        var (endLine, endColumn) = ToLineColumn(text, end);
+        return new()
+        {
+            StartLineNumber = startLine,
+            StartColumn = startColumn,
+            EndLineNumber = endLine,
+            EndColumn = endColumn
+        };
+    }
+
+    static (int Line, int Column) ToLineColumn(string text, int offset)
+    {
+        var line = 1;
+        var column = 1;
+        for (var i = 0; i < offset && i < text.Length; i++)
+        {
+            if (text[i] == '\n')
+            {
+                line++;
+                column = 1;
+            }
+            else
+            {
+                column++;
+            }
+        }
+
+        return (line, column);
+    }
+
     public async ValueTask DisposeAsync()
     {
-        callbacks.EditorAction -= OnEditorAction;
-        callbacks.EditorChanged -= OnEditorChanged;
         callbacks.PaneResize -= OnPaneResize;
-        callbacks.SchemaReference -= OnSchemaReference;
         callbacks.GlobalShortcut -= OnGlobalShortcut;
         execution?.Cancel();
         stateDebounce.Dispose();
         paneDebounce.Dispose();
+        operationChangeDebounce.Dispose();
+        variablesChangeDebounce.Dispose();
+        headersChangeDebounce.Dispose();
+        responseChangeDebounce.Dispose();
+        diagnosticsDebounce.Dispose();
+        if (ReferenceEquals(active, this))
+        {
+            active = null;
+        }
+
         reference?.Dispose();
         if (module is not null)
         {
             await module.DisposeAsync();
         }
     }
-
-    /// <summary>One operation in the document, as getOperationFacts reports it.</summary>
-    sealed record OperationInfo(string? Name, string Operation, int Start, int End);
 
     // The standard introspection query, as graphql-js emits it (descriptions and deprecated
     // members included; nine levels of type nesting).

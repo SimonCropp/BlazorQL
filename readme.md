@@ -1,19 +1,19 @@
 # <img src="icon.png" height="40px" alt="icon"> BlazorQL
 
-An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor Class Library, with the shell, panes, and state written in C# and the editor intelligence powered by the same monaco-graphql language service GraphiQL itself uses.
+An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor Class Library. The editors are Monaco via the BlazorMonaco package, and everything else — shell, panes, state, and every language feature (completion, validation, hover, formatting) — is C#.
 
 <img src="tests/BlazorQL.Sample.Tests/UiScreenshotTests.HeroLight.verified.png" border="1" alt="BlazorQL running a query: the operation editor, toolbar, and formatted response">
 
 
 ## Features
 
-- **Schema-aware editing**: completion (fields, arguments, input objects, enums, variables, fragments, directives), live validation with deprecation warnings, and hover docs — computed in a web worker by monaco-graphql.
+- **Schema-aware editing**: completion (fields, arguments, input objects, enums, variables, fragments, directives), live validation with deprecation warnings, and hover docs — computed in C#, against the introspected schema.
 - **Documentation explorer**: navigable schema docs with markdown descriptions, deprecated sections, argument defaults, bucketed search, an SDL view, and Ctrl-click jump-to-doc from the editor.
 - **Tabs** with derived titles, rename, and full persistence across reloads.
-- **Variables and headers editors** — JSONC tolerated, with JSON-Schema validation of variables generated from the operation's declarations.
+- **Variables and headers editors** — JSONC tolerated, with variables validated against the operation's declarations.
 - **Execution**: run-at-caret, an operation picker for multi-operation documents, subscriptions, and incremental delivery (`@defer`/`@stream`) merged live into the response.
 - **History**: 20-item log plus unlimited favorites, labels, and a search box.
-- **Toolbar**: prettify (Prettier), merge fragments, copy, share links (query + variables in the url fragment — never headers), response copy/download, and a status line.
+- **Toolbar**: prettify, merge fragments, copy, share links (query + variables in the url fragment — never headers), response copy/download, and a status line.
 - **Transports**: HTTP (including `multipart/mixed` incremental responses), graphql-transport-ws subscriptions, or any custom `IGraphQLFetcher` — the sample executes a GraphQL.NET schema inside the WASM app and runs on GitHub Pages with no server at all.
 - **Theming**: system/light/dark, followed by the editors.
 
@@ -73,7 +73,7 @@ Built-in fetchers: `HttpFetcher(url)` and `GraphQLWsFetcher(url)`. Anything else
 
 ## Attribution
 
-The editor stack vendors MIT-licensed builds of monaco-editor, monaco-graphql, graphql-language-service, graphql-js, and Prettier; the sample's schema is a C# port of GraphiQL's own test schema (GraphQL Contributors, MIT). See the headers on the vendored files.
+The editors are [monaco-editor](https://github.com/microsoft/monaco-editor) (Microsoft, MIT) via the [BlazorMonaco](https://github.com/serdarciplak/BlazorMonaco) package (MIT). Parsing is [GraphQL-Parser](https://github.com/graphql-dotnet/parser) and validation [GraphQL.NET](https://github.com/graphql-dotnet/graphql-dotnet) (both MIT); markdown rendering is [Markdig](https://github.com/xoofx/markdig) (BSD-2-Clause). The sample's schema is a C# port of GraphiQL's own test schema (GraphQL Contributors, MIT).
 
 
 ## Icon

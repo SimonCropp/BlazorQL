@@ -1,4 +1,5 @@
 @namespace BlazorQL
+@using BlazorMonaco.Editor
 
 @*
     The Variables/Headers strip under the operation editor. The editor host elements are always in
@@ -30,10 +31,26 @@
     </div>
     <div class="blazorql-editor-tools-body">
         <div class="blazorql-editor-host @(ActiveTool == EditorTool.Variables ? null : "blazorql-hidden")" aria-label="Variables">
-            <div id="@VariablesElementId" class="blazorql-editor"></div>
+            @if (VariablesConstruction is not null)
+            {
+                <StandaloneCodeEditor @ref="variablesEditor"
+                                      Id="@VariablesElementId"
+                                      CssClass="blazorql-editor"
+                                      ConstructionOptions="VariablesConstruction"
+                                      OnDidInit="OnVariablesInit"
+                                      OnDidChangeModelContent="OnVariablesChanged" />
+            }
         </div>
         <div class="blazorql-editor-host @(ActiveTool == EditorTool.Headers ? null : "blazorql-hidden")" aria-label="Request Headers">
-            <div id="@HeadersElementId" class="blazorql-editor"></div>
+            @if (HeadersEnabled && HeadersConstruction is not null)
+            {
+                <StandaloneCodeEditor @ref="headersEditor"
+                                      Id="@HeadersElementId"
+                                      CssClass="blazorql-editor"
+                                      ConstructionOptions="HeadersConstruction"
+                                      OnDidInit="OnHeadersInit"
+                                      OnDidChangeModelContent="OnHeadersChanged" />
+            }
         </div>
     </div>
 </section>
@@ -42,6 +59,15 @@
 
     internal const string VariablesElementId = "blazorql-variables-editor";
     internal const string HeadersElementId = "blazorql-headers-editor";
+
+    StandaloneCodeEditor? variablesEditor;
+    StandaloneCodeEditor? headersEditor;
+
+    /// <summary>The variables editor, once its component has rendered.</summary>
+    public StandaloneCodeEditor? VariablesEditor => variablesEditor;
+
+    /// <summary>The headers editor, once its component has rendered. Null when headers are disabled.</summary>
+    public StandaloneCodeEditor? HeadersEditor => headersEditor;
 
     [Parameter]
     public bool Expanded { get; set; }
@@ -55,6 +81,29 @@
     /// <summary>Inline flex sizing supplied by the parent's pane state.</summary>
     [Parameter]
     public string? Style { get; set; }
+
+    /// <summary>
+    /// Construction options for the variables editor. Null (pre-hydration) renders no editor —
+    /// the parent supplies these only once persisted state is available to seed the value from.
+    /// </summary>
+    [Parameter]
+    public Func<StandaloneCodeEditor, StandaloneEditorConstructionOptions>? VariablesConstruction { get; set; }
+
+    /// <summary>Construction options for the headers editor — see <see cref="VariablesConstruction"/>.</summary>
+    [Parameter]
+    public Func<StandaloneCodeEditor, StandaloneEditorConstructionOptions>? HeadersConstruction { get; set; }
+
+    [Parameter]
+    public EventCallback OnVariablesInit { get; set; }
+
+    [Parameter]
+    public EventCallback OnHeadersInit { get; set; }
+
+    [Parameter]
+    public EventCallback<ModelContentChangedEvent> OnVariablesChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<ModelContentChangedEvent> OnHeadersChanged { get; set; }
 
     [Parameter]
     public EventCallback<EditorTool> OnSelectTool { get; set; }

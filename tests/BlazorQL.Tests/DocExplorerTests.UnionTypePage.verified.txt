@@ -1,5 +1,6 @@
 ﻿{
   Instance: {
+    JS: {},
     Schema: {
       Description: A hand-written *subset* of the sample schema, for doc explorer tests.,
       Directives: [
@@ -534,5 +535,5 @@ A second paragraph the preview must clamp away.,
       ]
     }
   },
-  NodeCount: 27
+  NodeCount: 26
 }

@@ -134,7 +134,7 @@ public class UiScreenshotTests :
     static async Task ForceTheme(IPage page, string theme)
     {
         await page.EvaluateAsync("t => document.documentElement.dataset.theme = t", theme);
-        await page.EvaluateAsync("t => monaco.editor.setTheme('blazorql-' + t)", theme);
+        await page.EvaluateAsync("t => monaco.editor.setTheme(t === 'dark' ? 'vs-dark' : 'vs')", theme);
     }
 
     Task<IPage> NewSizedPageAsync() =>

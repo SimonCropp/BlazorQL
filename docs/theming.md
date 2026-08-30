@@ -16,6 +16,6 @@ The palette is CSS custom properties on `.blazorql` using `light-dark()`, switch
 }
 ```
 
-The Monaco editors follow automatically (`blazorql-light`/`blazorql-dark` themes with a transparent editor background, so the page's own background shows through).
+The Monaco editors follow automatically, switching between the stock `vs` and `vs-dark` themes.
 
 `light-dark()` needs a current evergreen browser — the same floor Blazor WebAssembly effectively has.

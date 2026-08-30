@@ -1,6 +1,6 @@
 # Deploying to GitHub Pages
 
-A standalone Blazor WebAssembly publish is a static site, and BlazorQL keeps every asset reference — workers, vendored modules, the local schema — relative, so the whole IDE runs from static hosting under a repository sub-path.
+A standalone Blazor WebAssembly publish is a static site, and BlazorQL keeps every asset reference — the BlazorMonaco editor assets, the host module, the local schema — base-href relative, so the whole IDE runs from static hosting under a repository sub-path.
 
 The workflow (`.github/workflows/pages.yml`) publishes the sample and adjusts three things for Pages:
 

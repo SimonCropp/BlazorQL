@@ -207,7 +207,7 @@ public class DocExplorerTests
     }
 
     [Test]
-    public void SdlToggleIsHiddenWithoutTheJsModule()
+    public void SdlToggleIsHiddenWithoutTheSdl()
     {
         using var context = new BunitContext();
         var cut = Render(context);

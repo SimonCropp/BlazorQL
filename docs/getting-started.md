@@ -10,6 +10,31 @@ dotnet add package BlazorQL
 ```
 
 
+## Wire up index.html
+
+The editors are Monaco, delivered by the BlazorMonaco package the component depends on. The host page links the stylesheets and loads Monaco before Blazor starts (the editor components need `window.monaco` the moment they first render):
+
+```html
+<head>
+    ...
+    <link rel="stylesheet" href="_content/BlazorQL/blazorql.css" />
+    <link rel="stylesheet" href="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.css" />
+</head>
+<body>
+    ...
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <script>
+        require(['vs/editor/editor.main'], () => Blazor.start(), () => Blazor.start());
+    </script>
+</body>
+```
+
+The `autostart="false"` + `require` boot removes the race between the AMD loader publishing Monaco and Blazor rendering the first editor. See the sample's `wwwroot/index.html` for the full page.
+
+
 ## Render the IDE
 
 Pick a fetcher and hand it to the component. Against an HTTP endpoint:

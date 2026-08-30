@@ -68,7 +68,7 @@ public static class HoverEngine
             ? $"```graphql\n{signature}\n```"
             : $"```graphql\n{signature}\n```\n\n{description}";
 
-    static (string? Word, int Start, int End) WordAt(string text, int offset)
+    internal static (string? Word, int Start, int End) WordAt(string text, int offset)
     {
         if (text.Length == 0)
         {

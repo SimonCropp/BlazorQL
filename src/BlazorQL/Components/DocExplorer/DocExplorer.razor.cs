@@ -1,18 +1,22 @@
 using System.Text;
+using BlazorMonaco.Editor;
 
 namespace BlazorQL;
 
 /// <summary>
 /// The documentation explorer: GraphiQL-style stack navigation over the introspected schema, a
-/// debounced search, and a read-only SDL view backed by a lazily created Monaco editor.
+/// debounced search, and a read-only SDL view backed by a lazily created BlazorMonaco editor.
 /// </summary>
 public partial class DocExplorer :
     IAsyncDisposable
 {
     internal const string SdlElementId = "blazorql-doc-sdl-editor";
-    const string SdlUri = "schema.graphql";
+    const string SdlModelUri = "inmemory://model/blazorql-schema.graphql";
     const int SearchDebounceMs = 200;
     const int SearchResultCap = 100;
+
+    [Inject]
+    public IJSRuntime JS { get; set; } = null!;
 
     /// <summary>The parsed schema. Null renders the no-schema placeholder.</summary>
     [Parameter]
@@ -25,13 +29,6 @@ public partial class DocExplorer :
     /// <summary>Receives jump-to-doc navigation from the IDE.</summary>
     [Parameter]
     public DocExplorerNavigator? Navigator { get; set; }
-
-    /// <summary>
-    /// The IDE's JS host module. Optional so plain (bUnit) rendering needs no JS: without it the
-    /// SDL toggle is hidden.
-    /// </summary>
-    [CascadingParameter]
-    public JsModule? Module { get; set; }
 
     // The navigation stack always holds at least the root entry.
     readonly List<DocEntry> stack = [new DocRootEntry()];
@@ -47,6 +44,8 @@ public partial class DocExplorer :
     // SDL view state. The editor is created once, on the first toggle, and then only shown/hidden.
     bool sdlVisible;
     bool sdlCreated;
+    StandaloneCodeEditor? sdlEditor;
+    TextModel? sdlModel;
 
     DocEntry Current => stack[^1];
     DocEntry Previous => stack[^2];
@@ -89,10 +88,10 @@ public partial class DocExplorer :
             CloseSearch();
         }
 
-        if (sdlCreated && SchemaSdl != lastSdl)
+        if (sdlModel is not null && SchemaSdl != lastSdl)
         {
             lastSdl = SchemaSdl;
-            await Module!.Invoke("setValue", SdlUri, SchemaSdl ?? "");
+            await sdlModel.SetValue(SchemaSdl ?? "");
         }
     }
 
@@ -309,47 +308,67 @@ public partial class DocExplorer :
 
     // ---- SDL view ----
 
-    async Task ToggleSdl()
+    StandaloneEditorConstructionOptions SdlOptions(StandaloneCodeEditor _)
     {
-        if (Module is null || SchemaSdl is null)
+        // A null theme keeps whatever theme the IDE has set globally.
+        var options = EditorDefaults.Create("graphql", SchemaSdl ?? "", theme: null);
+        options.ReadOnly = true;
+        options.WordWrap = "on";
+        options.Contextmenu = false;
+        return options;
+    }
+
+    /// <summary>
+    /// Moves the editor onto a named model so the SDL view is addressable by uri (tests, and the
+    /// value push in <see cref="OnParametersSetAsync"/>). The anonymous model the component
+    /// created stays behind, detached and empty — BlazorMonaco's uri-keyed model lookup cannot
+    /// resolve monaco's auto-generated uris, so it cannot be disposed from C#.
+    /// </summary>
+    async Task OnSdlEditorInit()
+    {
+        if (sdlEditor is null)
+        {
+            return;
+        }
+
+        lastSdl = SchemaSdl;
+        sdlModel = await Global.CreateModel(JS, SchemaSdl ?? "", "graphql", SdlModelUri);
+        await sdlEditor.SetModel(sdlModel);
+    }
+
+    void ToggleSdl()
+    {
+        if (SchemaSdl is null)
         {
             return;
         }
 
         sdlVisible = !sdlVisible;
-        if (!sdlVisible || sdlCreated)
+        if (sdlVisible)
         {
-            return;
+            // Created once, on the first toggle; after that the editor is only shown/hidden.
+            sdlCreated = true;
         }
-
-        // Flush the render that unhides the host element before Monaco measures it.
-        sdlCreated = true;
-        lastSdl = SchemaSdl;
-        StateHasChanged();
-        await Task.Yield();
-        await Module.Invoke(
-            "createEditor",
-            SdlElementId,
-            SdlUri,
-            "graphql",
-            SchemaSdl,
-            """{"readOnly": true, "wordWrap": "on", "contextmenu": false}""");
     }
 
     public async ValueTask DisposeAsync()
     {
         Navigator?.Navigated -= OnNavigated;
         searchDebounce?.Cancel();
-        if (!sdlCreated || Module is null)
+        if (sdlModel is null)
         {
             return;
         }
 
         // The pane can close and reopen; the model must go with the component or the next
-        // createEditor would collide with the leaked model's uri.
+        // creation would collide with the leaked model's uri.
         try
         {
-            await Module.Invoke("disposeEditor", SdlUri);
+            await sdlModel.DisposeModel();
+        }
+        catch (JSException)
+        {
+            // Best-effort cleanup; the editor may already be gone.
         }
         catch (JSDisconnectedException)
         {

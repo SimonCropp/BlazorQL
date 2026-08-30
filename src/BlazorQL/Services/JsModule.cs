@@ -1,8 +1,8 @@
 namespace BlazorQL;
 
 /// <summary>
-/// The lazily imported <c>blazorql.js</c> host module — the single seam to the vendored editor
-/// stack. One instance per <see cref="BlazorQLIde"/>.
+/// The lazily imported <c>blazorql.js</c> host module — pure browser utilities (clipboard,
+/// downloads, storage, shortcuts, pane dragging). One instance per <see cref="BlazorQLIde"/>.
 /// </summary>
 public sealed class JsModule(IJSRuntime js) :
     IAsyncDisposable

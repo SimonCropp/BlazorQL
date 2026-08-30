@@ -1,7 +1,7 @@
 /// <summary>
-/// The foundation smoke: the published sample boots with the vendored editor stack — Monaco
-/// mounted, graphql/json languages registered, and, decisively, a console free of errors, which is
-/// where asset, MIME, and worker failures land while the page otherwise looks fine.
+/// The foundation smoke: the published sample boots with the BlazorMonaco editor stack — Monaco
+/// mounted, graphql/json languages present, and, decisively, a console free of errors, which is
+/// where asset and MIME failures land while the page otherwise looks fine.
 /// </summary>
 [TestFixture]
 [Category("Browser")]
@@ -23,8 +23,8 @@ public class BootTests :
 }
 
 /// <summary>
-/// The same smoke with the app mounted under a sub-path — how GitHub Pages hosts it. Worker urls
-/// and vendored imports are all relative, and this is the fixture that keeps them that way.
+/// The same smoke with the app mounted under a sub-path — how GitHub Pages hosts it. Every asset
+/// reference resolves through the base href, and this is the fixture that keeps it that way.
 /// </summary>
 [TestFixture]
 [Category("Browser")]

@@ -30,7 +30,30 @@ public sealed class SchemaValidator
     {
         try
         {
-            var schema = Schema.For(sdl);
+            // The schema exists to validate documents, never to execute them, so every execution
+            // hook is stubbed: abstract types resolve to nothing, and subscription roots stream
+            // nothing.
+            var schema = Schema.For(sdl, options => options.Types.ForAll(typeConfig => typeConfig.ResolveType = _ => null!));
+
+            // Schema.For only materializes a custom scalar declaration when a matching CLR scalar
+            // is registered; validation treats custom scalars as accept-anything, like GraphiQL.
+            foreach (var type in index.Types)
+            {
+                if (type.Kind == "SCALAR" &&
+                    type.Name is not ("Int" or "Float" or "String" or "Boolean" or "ID"))
+                {
+                    schema.RegisterType(new PermissiveScalar(type.Name));
+                }
+            }
+
+            if (schema.Subscription is not null)
+            {
+                foreach (var field in schema.Subscription.Fields)
+                {
+                    field.StreamResolver = NullStreamResolver.Instance;
+                }
+            }
+
             schema.Initialize();
             return new(schema, index);
         }
@@ -38,6 +61,35 @@ public sealed class SchemaValidator
         {
             return null;
         }
+    }
+
+    /// <summary>A scalar that accepts any value — validation-only stand-in for custom scalars.</summary>
+    sealed class PermissiveScalar : ScalarGraphType
+    {
+        public PermissiveScalar(string name) =>
+            Name = name;
+
+        public override object? ParseValue(object? value) =>
+            value;
+
+        public override object? ParseLiteral(GraphQLValue value) =>
+            value;
+
+        public override bool CanParseLiteral(GraphQLValue value) =>
+            true;
+
+        public override bool CanParseValue(object? value) =>
+            true;
+    }
+
+    /// <summary>Satisfies the subscription-root requirement on a schema that never executes.</summary>
+    sealed class NullStreamResolver :
+        GraphQL.Resolvers.ISourceStreamResolver
+    {
+        public static readonly NullStreamResolver Instance = new();
+
+        public ValueTask<IObservable<object?>> ResolveAsync(GraphQL.IResolveFieldContext context) =>
+            throw new NotSupportedException("The validation schema never executes.");
     }
 
     public async Task<IReadOnlyList<OperationDiagnostic>> Validate(DocumentInfo document)

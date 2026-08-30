@@ -1,4 +1,5 @@
 @namespace BlazorQL
+@using BlazorMonaco.Editor
 
 @if (Schema is null)
 {
@@ -19,7 +20,7 @@ else
                 }
                 <div class="blazorql-doc-title">@Current.Title</div>
             </div>
-            @if (Module is not null && SchemaSdl is not null)
+            @if (SchemaSdl is not null)
             {
                 <button type="button"
                         class="blazorql-doc-sdl-toggle @(sdlVisible ? "blazorql-active" : null)"
@@ -85,7 +86,14 @@ else
             }
         </div>
         <div class="blazorql-docs-sdl @(sdlVisible ? null : "blazorql-hidden")">
-            <div id="@SdlElementId" class="blazorql-editor"></div>
+            @if (sdlCreated)
+            {
+                <StandaloneCodeEditor @ref="sdlEditor"
+                                      Id="@SdlElementId"
+                                      CssClass="blazorql-editor"
+                                      ConstructionOptions="SdlOptions"
+                                      OnDidInit="OnSdlEditorInit" />
+            }
         </div>
     </div>
 }
