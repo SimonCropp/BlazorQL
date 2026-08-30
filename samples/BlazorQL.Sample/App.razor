@@ -1,12 +1,44 @@
 @namespace BlazorQL.Sample
 @using BlazorQL
 
-<BlazorQLIde Fetcher="fetcher" />
+<div class="sample-shell">
+    <div class="endpoint-bar">
+        <input data-testid="endpoint"
+               placeholder="GraphQL endpoint url — empty runs the built-in schema in your browser"
+               @bind="endpoint" />
+        <button type="button" data-testid="endpoint-apply" @onclick="Apply">Apply</button>
+    </div>
+    <BlazorQLIde Fetcher="fetcher" />
+</div>
 
 @code {
 
-    // The whole schema lives in the browser: graphql-js executes it inside the page, so the sample
-    // deploys to static hosting with subscriptions and incremental delivery intact.
-    readonly LocalSchemaFetcher fetcher = new("test-schema/index.js");
+    const string localSchemaUrl = "test-schema/index.js";
+
+    // The whole schema lives in the browser by default: graphql-js executes it inside the page, so
+    // the sample deploys to static hosting with subscriptions and incremental delivery intact.
+    IGraphQLFetcher fetcher = new LocalSchemaFetcher(localSchemaUrl);
+
+    string endpoint = "";
+
+    // Empty falls back to the in-browser schema; ws(s):// speaks graphql-transport-ws; anything
+    // else posts over http. Swapping the parameter makes the IDE re-introspect.
+    void Apply()
+    {
+        var url = endpoint.Trim();
+        if (url.Length == 0)
+        {
+            fetcher = new LocalSchemaFetcher(localSchemaUrl);
+        }
+        else if (url.StartsWith("ws://", StringComparison.OrdinalIgnoreCase) ||
+                 url.StartsWith("wss://", StringComparison.OrdinalIgnoreCase))
+        {
+            fetcher = new GraphQLWsFetcher(url);
+        }
+        else
+        {
+            fetcher = new HttpFetcher(url);
+        }
+    }
 
 }

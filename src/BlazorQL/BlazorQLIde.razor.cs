@@ -84,6 +84,7 @@ public partial class BlazorQLIde :
     bool ready;
     bool running;
     bool refetching;
+    IGraphQLFetcher? attachedFetcher;
     JsModule? module;
     readonly BlazorQLCallbacks callbacks = new();
     DotNetObjectReference<BlazorQLCallbacks>? reference;
@@ -147,6 +148,7 @@ public partial class BlazorQLIde :
         callbacks.PaneResize += OnPaneResize;
         callbacks.SchemaReference += OnSchemaReference;
         callbacks.GlobalShortcut += OnGlobalShortcut;
+        attachedFetcher = Fetcher;
         if (Fetcher is LocalSchemaFetcher local)
         {
             local.Attach(module, callbacks);
@@ -240,6 +242,29 @@ public partial class BlazorQLIde :
 
         ready = true;
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// A swapped-in fetcher instance (an endpoint change in the host app) re-attaches and
+    /// re-introspects, so the schema always describes what requests will actually hit.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (module is null ||
+            ReferenceEquals(attachedFetcher, Fetcher))
+        {
+            return;
+        }
+
+        attachedFetcher = Fetcher;
+        // A run in flight belongs to the old fetcher.
+        execution?.Cancel();
+        if (Fetcher is LocalSchemaFetcher local)
+        {
+            local.Attach(module, callbacks);
+        }
+
+        await LoadSchema();
     }
 
     // ---- Persistence ----
@@ -964,8 +989,8 @@ public partial class BlazorQLIde :
         StateHasChanged();
 
         var merger = new IncrementalMerger();
-        // Elapsed covers the full fetch; the status text is what the footer line shows. HTTP
-        // status codes arrive with the HTTP fetcher (M8) — until then "OK" stands in for success.
+        // Elapsed covers the full fetch; the status text is what the footer line shows. An HTTP
+        // fetcher contributes its status code; elsewhere "OK" stands in for success.
         var stopwatch = Stopwatch.StartNew();
         var status = "OK";
         try
@@ -997,7 +1022,12 @@ public partial class BlazorQLIde :
         finally
         {
             stopwatch.Stop();
-            statusLine = $"{status} · {stopwatch.ElapsedMilliseconds} ms";
+            // The HTTP status code replaces "OK" outright; error/stopped wording still wins a slot.
+            statusLine = Fetcher is HttpFetcher {LastStatus: { } httpStatus}
+                ? status == "OK"
+                    ? $"{httpStatus.StatusCode} · {stopwatch.ElapsedMilliseconds} ms"
+                    : $"{httpStatus.StatusCode} · {status} · {stopwatch.ElapsedMilliseconds} ms"
+                : $"{status} · {stopwatch.ElapsedMilliseconds} ms";
             execution.Dispose();
             execution = null;
             running = false;

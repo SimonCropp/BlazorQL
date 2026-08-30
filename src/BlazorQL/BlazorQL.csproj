@@ -6,8 +6,11 @@
   </PropertyGroup>
   <ItemGroup>
     <SupportedPlatform Include="browser" />
+    <InternalsVisibleTo Include="BlazorQL.Tests" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
+    <!-- For SetBrowserResponseStreamingEnabled: streams multipart responses in the browser. -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Polyfill" PrivateAssets="all" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <None Include="nuget-readme.md" Pack="true" PackagePath="\" />

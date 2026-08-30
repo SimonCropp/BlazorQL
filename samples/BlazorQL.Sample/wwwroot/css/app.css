@@ -28,3 +28,28 @@ html, body {
 #blazor-error-ui a.reload {
     color: white;
 }
+
+.sample-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sample-shell > .blazorql {
+    flex: 1;
+    min-height: 0;
+}
+
+.endpoint-bar {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    font-size: 13px;
+}
+
+.endpoint-bar input {
+    flex: 1;
+    font: inherit;
+    padding: 0.1rem 0.4rem;
+}
