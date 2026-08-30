@@ -149,10 +149,6 @@ public partial class BlazorQLIde :
         callbacks.SchemaReference += OnSchemaReference;
         callbacks.GlobalShortcut += OnGlobalShortcut;
         attachedFetcher = Fetcher;
-        if (Fetcher is LocalSchemaFetcher local)
-        {
-            local.Attach(module, callbacks);
-        }
 
         await module.Invoke<JsonElement>("init", reference, "blazorql");
 
@@ -259,11 +255,6 @@ public partial class BlazorQLIde :
         attachedFetcher = Fetcher;
         // A run in flight belongs to the old fetcher.
         execution?.Cancel();
-        if (Fetcher is LocalSchemaFetcher local)
-        {
-            local.Attach(module, callbacks);
-        }
-
         await LoadSchema();
     }
 

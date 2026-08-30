@@ -1,18 +1,18 @@
 # The sample
 
-The deployed sample is a standalone Blazor WebAssembly app with **no backend**: the schema is executed in the browser by graphql-js through the `LocalSchemaFetcher`.
+The deployed sample is a standalone Blazor WebAssembly app with **no backend**: the schema is executed inside the WASM app by GraphQL.NET through the sample's `LocalSchemaFetcher`.
 
 <!-- snippet: sampleFetcher -->
 <a id='snippet-sampleFetcher'></a>
 ```razor
-// The whole schema lives in the browser by default: graphql-js executes it inside the page, so
-// the sample deploys to static hosting with subscriptions and incremental delivery intact.
-IGraphQLFetcher fetcher = new LocalSchemaFetcher(localSchemaUrl);
+// The whole schema lives in the browser by default: GraphQL.NET executes it inside the WASM
+// app itself, so the sample deploys to static hosting with subscriptions intact.
+IGraphQLFetcher fetcher = new LocalSchemaFetcher();
 ```
-<sup><a href='/samples/BlazorQL.Sample/App.razor#L18-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/BlazorQL.Sample/App.razor#L16-L20' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The schema itself is GraphiQL's own test schema, copied verbatim (`samples/BlazorQL.Sample/wwwroot/test-schema/` — MIT, GraphQL Contributors). It exercises the whole language: every scalar and list argument shape, enums and input objects with defaults, interfaces, unions, deprecated fields/values/arguments, markdown descriptions with images, a subscription driven by an async generator, and `@defer`/`@stream` fields.
+The schema itself is a C# port of GraphiQL's own test schema (`samples/BlazorQL.Sample/SampleSchema.cs` — original by GraphQL Contributors, MIT). It exercises the whole language: every scalar and list argument shape, enums and input objects with defaults, interfaces, unions, deprecated fields/values/arguments, markdown descriptions with images, and a real streaming subscription. GraphQL.NET has no incremental delivery, so unlike the graphql-js original the `@defer`/`@stream` directives are not part of the schema.
 
 Worth trying:
 
@@ -21,7 +21,7 @@ subscription { message(delay: 300) }
 ```
 
 ```graphql
-query { deferrable { normalString ... @defer { deferredString } } }
+query { deferrable { normalString deferredString } }
 ```
 
 The endpoint box above the IDE points the same UI at any real API — an `http(s)` url swaps in the HTTP fetcher, `ws(s)` the graphql-transport-ws fetcher, and clearing it returns to the in-browser schema.

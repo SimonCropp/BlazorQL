@@ -8,9 +8,6 @@ public sealed class BlazorQLCallbacks
 {
     public event Action<string, string>? EditorChanged;
     public event Action<string>? EditorAction;
-    public event Action<string, string>? StreamNext;
-    public event Action<string>? StreamComplete;
-    public event Action<string, string>? StreamError;
     public event Action<string, double, double>? PaneResize;
     public event Action<string>? SchemaReference;
     public event Action<string>? GlobalShortcut;
@@ -22,18 +19,6 @@ public sealed class BlazorQLCallbacks
     [JSInvokable]
     public void OnEditorAction(string actionId) =>
         EditorAction?.Invoke(actionId);
-
-    [JSInvokable]
-    public void OnStreamNext(string streamId, string resultJson) =>
-        StreamNext?.Invoke(streamId, resultJson);
-
-    [JSInvokable]
-    public void OnStreamComplete(string streamId) =>
-        StreamComplete?.Invoke(streamId);
-
-    [JSInvokable]
-    public void OnStreamError(string streamId, string message) =>
-        StreamError?.Invoke(streamId, message);
 
     [JSInvokable]
     public void OnPaneResize(string resizerId, double fraction, double size) =>

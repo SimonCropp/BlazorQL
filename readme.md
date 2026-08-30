@@ -14,7 +14,7 @@ An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor
 - **Execution**: run-at-caret, an operation picker for multi-operation documents, subscriptions, and incremental delivery (`@defer`/`@stream`) merged live into the response.
 - **History**: 20-item log plus unlimited favorites, labels, and a search box.
 - **Toolbar**: prettify (Prettier), merge fragments, copy, share links (query + variables in the url fragment — never headers), response copy/download, and a status line.
-- **Transports**: HTTP (including `multipart/mixed` incremental responses), graphql-transport-ws subscriptions, or a fully in-browser schema executed by graphql-js — the sample runs on GitHub Pages with no server at all.
+- **Transports**: HTTP (including `multipart/mixed` incremental responses), graphql-transport-ws subscriptions, or any custom `IGraphQLFetcher` — the sample executes a GraphQL.NET schema inside the WASM app and runs on GitHub Pages with no server at all.
 - **Theming**: system/light/dark, followed by the editors.
 
 Dark mode:
@@ -29,11 +29,11 @@ Add the `BlazorQL` package to a Blazor WebAssembly app, then render the componen
 <!-- snippet: sampleFetcher -->
 <a id='snippet-sampleFetcher'></a>
 ```razor
-// The whole schema lives in the browser by default: graphql-js executes it inside the page, so
-// the sample deploys to static hosting with subscriptions and incremental delivery intact.
-IGraphQLFetcher fetcher = new LocalSchemaFetcher(localSchemaUrl);
+// The whole schema lives in the browser by default: GraphQL.NET executes it inside the WASM
+// app itself, so the sample deploys to static hosting with subscriptions intact.
+IGraphQLFetcher fetcher = new LocalSchemaFetcher();
 ```
-<sup><a href='/samples/BlazorQL.Sample/App.razor#L18-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/BlazorQL.Sample/App.razor#L16-L20' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 ```razor
@@ -56,7 +56,7 @@ public interface IGraphQLFetcher
 <sup><a href='/src/BlazorQL/Fetchers/IGraphQLFetcher.cs#L8-L16' title='Snippet source file'>snippet source</a> | <a href='#snippet-fetcherInterface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-Built-in fetchers: `HttpFetcher(url)`, `GraphQLWsFetcher(url)`, and `LocalSchemaFetcher(schemaModuleUrl)`.
+Built-in fetchers: `HttpFetcher(url)` and `GraphQLWsFetcher(url)`. Anything else — like the sample's in-browser `LocalSchemaFetcher` — is one interface implementation away.
 
 
 ## Documentation
@@ -73,7 +73,7 @@ Built-in fetchers: `HttpFetcher(url)`, `GraphQLWsFetcher(url)`, and `LocalSchema
 
 ## Attribution
 
-The editor stack vendors MIT-licensed builds of monaco-editor, monaco-graphql, graphql-language-service, graphql-js, and Prettier; the sample's schema is GraphiQL's own test schema (GraphQL Contributors, MIT). See the headers on the vendored files.
+The editor stack vendors MIT-licensed builds of monaco-editor, monaco-graphql, graphql-language-service, graphql-js, and Prettier; the sample's schema is a C# port of GraphiQL's own test schema (GraphQL Contributors, MIT). See the headers on the vendored files.
 
 
 ## Icon

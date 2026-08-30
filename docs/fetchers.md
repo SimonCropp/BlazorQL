@@ -39,13 +39,9 @@ new GraphQLWsFetcher("wss://example.com/graphql");
 Speaks the `graphql-transport-ws` subprotocol: `connection_init` carrying the headers editor's entries as the connection payload, then one subscribe per run; cancellation sends `complete`.
 
 
-## LocalSchemaFetcher
+## In-browser schemas
 
-```csharp
-new LocalSchemaFetcher("test-schema/index.js");
-```
-
-Executes entirely in the browser: the url points at an ES module exporting `createSchema(graphql)` (and optionally `createExecute(graphql)`), which receives the page's graphql-js and returns a `GraphQLSchema` built with resolvers. Queries, mutations, subscriptions (async generators), and incremental delivery all work with no server — this is what the deployed sample runs on.
+A fetcher does not have to transport anything: the deployed sample's `LocalSchemaFetcher` (in `samples/BlazorQL.Sample`) executes a GraphQL.NET schema inside the WASM app itself — queries, mutations, and subscriptions with no server anywhere. Any schema that can run in the browser works the same way; see [the sample](sample.md).
 
 
 ## Writing a fetcher

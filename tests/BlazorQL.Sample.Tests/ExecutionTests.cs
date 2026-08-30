@@ -1,7 +1,7 @@
 /// <summary>
 /// The core loop against the in-browser schema: schema-aware completion and validation from the
-/// language worker, execution through the local graphql-js fetcher, subscription streaming, and
-/// @defer merging — all with no server anywhere.
+/// language worker, execution through the local GraphQL.NET fetcher, and subscription streaming —
+/// all with no server anywhere.
 /// </summary>
 [TestFixture]
 [Category("Browser")]
@@ -67,12 +67,14 @@ public class ExecutionTests :
     }
 
     [Test]
-    public async Task MergesDeferredData()
+    public async Task ResolvesDeferrableFields()
     {
         var page = await NewPageAsync();
         await page.GoToAppAsync(BaseUrl);
 
-        await page.SetEditorValueAsync("query { deferrable { normalString ... @defer { deferredString } } }");
+        // GraphQL.NET has no incremental delivery, so no @defer here: both fields arrive in the
+        // one response document, the slow one after its resolver's delay.
+        await page.SetEditorValueAsync("query { deferrable { normalString deferredString(delay: 100) } }");
         await page.ClickAsync("[data-testid='execute']");
 
         await page.WaitForFunctionAsync(
@@ -82,10 +84,12 @@ public class ExecutionTests :
                     return false;
                 }
                 const text = m.getValue();
-                return text.includes('deferredString') && text.includes('longer than I thought') && !text.includes('hasNext');
+                return text.includes('Nice') && text.includes('longer than I thought');
             })
             """,
             null,
             new() {Timeout = 30_000});
+
+        Assert.That(ConsoleErrors(), Is.Empty);
     }
 }
