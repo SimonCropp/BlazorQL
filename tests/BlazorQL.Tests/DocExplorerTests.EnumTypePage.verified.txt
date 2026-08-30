@@ -1,0 +1,538 @@
+﻿{
+  Instance: {
+    Schema: {
+      Description: A hand-written *subset* of the sample schema, for doc explorer tests.,
+      Directives: [
+        {
+          Description: A repeatable directive.,
+          IsRepeatable: true,
+          Locations: [
+            FIELD
+          ],
+          Name: repeat
+        }
+      ],
+      QueryTypeName: Query,
+      Schema: {
+        Description: A hand-written *subset* of the sample schema, for doc explorer tests.,
+        Directives: [
+          {
+            Description: A repeatable directive.,
+            IsRepeatable: true,
+            Locations: [
+              FIELD
+            ],
+            Name: repeat
+          }
+        ],
+        QueryType: {
+          Kind: OBJECT,
+          Name: Query
+        },
+        Types: [
+          {
+            Description: The root query type.,
+            Fields: [
+              {
+                Description:
+The person of the hour.
+
+A second paragraph the preview must clamp away.,
+                IsDeprecated: false,
+                Name: person,
+                Type: {
+                  Kind: OBJECT,
+                  Name: Person
+                }
+              },
+              {
+                Args: [
+                  {
+                    DefaultValue: "all",
+                    Description: What to look for.,
+                    IsDeprecated: false,
+                    Name: term,
+                    Type: {
+                      Kind: NON_NULL,
+                      OfType: {
+                        Kind: SCALAR,
+                        Name: String
+                      }
+                    }
+                  }
+                ],
+                Description: Finds things.,
+                IsDeprecated: false,
+                Name: search,
+                Type: {
+                  Kind: UNION,
+                  Name: SearchResult
+                }
+              },
+              {
+                Args: [
+                  {
+                    Description: A string,
+                    IsDeprecated: false,
+                    Name: string,
+                    Type: {
+                      Kind: SCALAR,
+                      Name: String
+                    }
+                  },
+                  {
+                    DefaultValue: 0,
+                    IsDeprecated: false,
+                    Name: count,
+                    Type: {
+                      Kind: SCALAR,
+                      Name: Int
+                    }
+                  },
+                  {
+                    IsDeprecated: false,
+                    Name: input,
+                    Type: {
+                      Kind: INPUT_OBJECT,
+                      Name: PetInput
+                    }
+                  },
+                  {
+                    DeprecationReason: Use `string` instead.,
+                    Description: Old.,
+                    IsDeprecated: true,
+                    Name: deprecatedArg,
+                    Type: {
+                      Kind: SCALAR,
+                      Name: String
+                    }
+                  }
+                ],
+                IsDeprecated: false,
+                Name: hasArgs,
+                Type: {
+                  Kind: SCALAR,
+                  Name: String
+                }
+              },
+              {
+                DeprecationReason: Use `person` instead.,
+                Description: An example of a deprecated field.,
+                IsDeprecated: true,
+                Name: oldField,
+                Type: {
+                  Kind: SCALAR,
+                  Name: String
+                }
+              }
+            ],
+            Kind: OBJECT,
+            Name: Query
+          },
+          {
+            Description: Somebody.,
+            Fields: [
+              {
+                Description: The person's name.,
+                IsDeprecated: false,
+                Name: name,
+                Type: {
+                  Kind: SCALAR,
+                  Name: String
+                }
+              },
+              {
+                IsDeprecated: false,
+                Name: friends,
+                Type: {
+                  Kind: LIST,
+                  OfType: {
+                    Kind: OBJECT,
+                    Name: Person
+                  }
+                }
+              }
+            ],
+            Interfaces: [
+              {
+                Kind: INTERFACE,
+                Name: Named
+              }
+            ],
+            Kind: OBJECT,
+            Name: Person
+          },
+          {
+            Description: Anything with a name.,
+            Fields: [
+              {
+                Description: A common name string.,
+                IsDeprecated: false,
+                Name: name,
+                Type: {
+                  Kind: SCALAR,
+                  Name: String
+                }
+              }
+            ],
+            Kind: INTERFACE,
+            Name: Named,
+            PossibleTypes: [
+              {
+                Kind: OBJECT,
+                Name: Person
+              }
+            ]
+          },
+          {
+            Description: An enum of super cool colors.,
+            EnumValues: [
+              {
+                Description: A rosy color,
+                IsDeprecated: false,
+                Name: RED
+              },
+              {
+                IsDeprecated: false,
+                Name: GREEN
+              },
+              {
+                DeprecationReason: Colors are boring.,
+                Description: A really dull color,
+                IsDeprecated: true,
+                Name: GRAY
+              }
+            ],
+            Kind: ENUM,
+            Name: Color
+          },
+          {
+            Description: Input for a pet.,
+            InputFields: [
+              {
+                DefaultValue: "Rex",
+                Description: What to call it.,
+                IsDeprecated: false,
+                Name: name,
+                Type: {
+                  Kind: NON_NULL,
+                  OfType: {
+                    Kind: SCALAR,
+                    Name: String
+                  }
+                }
+              },
+              {
+                DefaultValue: 3,
+                IsDeprecated: false,
+                Name: age,
+                Type: {
+                  Kind: SCALAR,
+                  Name: Int
+                }
+              }
+            ],
+            Kind: INPUT_OBJECT,
+            Name: PetInput
+          },
+          {
+            Description: Either a person or a post.,
+            Kind: UNION,
+            Name: SearchResult,
+            PossibleTypes: [
+              {
+                Kind: OBJECT,
+                Name: Person
+              },
+              {
+                Kind: OBJECT,
+                Name: Post
+              }
+            ]
+          },
+          {
+            Fields: [
+              {
+                IsDeprecated: false,
+                Name: title,
+                Type: {
+                  Kind: SCALAR,
+                  Name: String
+                }
+              }
+            ],
+            Kind: OBJECT,
+            Name: Post
+          },
+          {
+            Description: Text.,
+            Kind: SCALAR,
+            Name: String
+          },
+          {
+            Kind: SCALAR,
+            Name: Int
+          },
+          {
+            Description: A scalar with a specification.,
+            Kind: SCALAR,
+            Name: JSON,
+            SpecifiedByURL: https://example.com/json-spec
+          }
+        ]
+      },
+      Types: [
+        {
+          Description: The root query type.,
+          Fields: [
+            {
+              Description:
+The person of the hour.
+
+A second paragraph the preview must clamp away.,
+              IsDeprecated: false,
+              Name: person,
+              Type: {
+                Kind: OBJECT,
+                Name: Person
+              }
+            },
+            {
+              Args: [
+                {
+                  DefaultValue: "all",
+                  Description: What to look for.,
+                  IsDeprecated: false,
+                  Name: term,
+                  Type: {
+                    Kind: NON_NULL,
+                    OfType: {
+                      Kind: SCALAR,
+                      Name: String
+                    }
+                  }
+                }
+              ],
+              Description: Finds things.,
+              IsDeprecated: false,
+              Name: search,
+              Type: {
+                Kind: UNION,
+                Name: SearchResult
+              }
+            },
+            {
+              Args: [
+                {
+                  Description: A string,
+                  IsDeprecated: false,
+                  Name: string,
+                  Type: {
+                    Kind: SCALAR,
+                    Name: String
+                  }
+                },
+                {
+                  DefaultValue: 0,
+                  IsDeprecated: false,
+                  Name: count,
+                  Type: {
+                    Kind: SCALAR,
+                    Name: Int
+                  }
+                },
+                {
+                  IsDeprecated: false,
+                  Name: input,
+                  Type: {
+                    Kind: INPUT_OBJECT,
+                    Name: PetInput
+                  }
+                },
+                {
+                  DeprecationReason: Use `string` instead.,
+                  Description: Old.,
+                  IsDeprecated: true,
+                  Name: deprecatedArg,
+                  Type: {
+                    Kind: SCALAR,
+                    Name: String
+                  }
+                }
+              ],
+              IsDeprecated: false,
+              Name: hasArgs,
+              Type: {
+                Kind: SCALAR,
+                Name: String
+              }
+            },
+            {
+              DeprecationReason: Use `person` instead.,
+              Description: An example of a deprecated field.,
+              IsDeprecated: true,
+              Name: oldField,
+              Type: {
+                Kind: SCALAR,
+                Name: String
+              }
+            }
+          ],
+          Kind: OBJECT,
+          Name: Query
+        },
+        {
+          Description: Somebody.,
+          Fields: [
+            {
+              Description: The person's name.,
+              IsDeprecated: false,
+              Name: name,
+              Type: {
+                Kind: SCALAR,
+                Name: String
+              }
+            },
+            {
+              IsDeprecated: false,
+              Name: friends,
+              Type: {
+                Kind: LIST,
+                OfType: {
+                  Kind: OBJECT,
+                  Name: Person
+                }
+              }
+            }
+          ],
+          Interfaces: [
+            {
+              Kind: INTERFACE,
+              Name: Named
+            }
+          ],
+          Kind: OBJECT,
+          Name: Person
+        },
+        {
+          Description: Anything with a name.,
+          Fields: [
+            {
+              Description: A common name string.,
+              IsDeprecated: false,
+              Name: name,
+              Type: {
+                Kind: SCALAR,
+                Name: String
+              }
+            }
+          ],
+          Kind: INTERFACE,
+          Name: Named,
+          PossibleTypes: [
+            {
+              Kind: OBJECT,
+              Name: Person
+            }
+          ]
+        },
+        {
+          Description: An enum of super cool colors.,
+          EnumValues: [
+            {
+              Description: A rosy color,
+              IsDeprecated: false,
+              Name: RED
+            },
+            {
+              IsDeprecated: false,
+              Name: GREEN
+            },
+            {
+              DeprecationReason: Colors are boring.,
+              Description: A really dull color,
+              IsDeprecated: true,
+              Name: GRAY
+            }
+          ],
+          Kind: ENUM,
+          Name: Color
+        },
+        {
+          Description: Input for a pet.,
+          InputFields: [
+            {
+              DefaultValue: "Rex",
+              Description: What to call it.,
+              IsDeprecated: false,
+              Name: name,
+              Type: {
+                Kind: NON_NULL,
+                OfType: {
+                  Kind: SCALAR,
+                  Name: String
+                }
+              }
+            },
+            {
+              DefaultValue: 3,
+              IsDeprecated: false,
+              Name: age,
+              Type: {
+                Kind: SCALAR,
+                Name: Int
+              }
+            }
+          ],
+          Kind: INPUT_OBJECT,
+          Name: PetInput
+        },
+        {
+          Description: Either a person or a post.,
+          Kind: UNION,
+          Name: SearchResult,
+          PossibleTypes: [
+            {
+              Kind: OBJECT,
+              Name: Person
+            },
+            {
+              Kind: OBJECT,
+              Name: Post
+            }
+          ]
+        },
+        {
+          Fields: [
+            {
+              IsDeprecated: false,
+              Name: title,
+              Type: {
+                Kind: SCALAR,
+                Name: String
+              }
+            }
+          ],
+          Kind: OBJECT,
+          Name: Post
+        },
+        {
+          Description: Text.,
+          Kind: SCALAR,
+          Name: String
+        },
+        {
+          Kind: SCALAR,
+          Name: Int
+        },
+        {
+          Description: A scalar with a specification.,
+          Kind: SCALAR,
+          Name: JSON,
+          SpecifiedByURL: https://example.com/json-spec
+        }
+      ]
+    }
+  },
+  NodeCount: 33
+}

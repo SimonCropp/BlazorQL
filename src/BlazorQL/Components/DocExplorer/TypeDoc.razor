@@ -1,0 +1,208 @@
+@namespace BlazorQL
+
+@*
+    A type page: description, implemented interfaces, fields (input fields included), enum values,
+    and implementations / possible types. Deprecated members hide behind a toggle, unless every
+    member of the section is deprecated.
+*@
+<div class="blazorql-doc-page" data-testid="doc-type">
+    <MarkdownView Content="@Type.Description" />
+
+    @if (Type.SpecifiedByURL is not null)
+    {
+        <div class="blazorql-doc-specified-by"><a href="@Type.SpecifiedByURL" target="_blank" rel="noreferrer">Specification</a></div>
+    }
+
+    @if (Type.Interfaces is {Count: > 0} interfaces)
+    {
+        <div class="blazorql-doc-section-title">Implements</div>
+        foreach (var interfaceRef in interfaces)
+        {
+            <div><TypeLink Type="interfaceRef" OnNavigate="OnNavigateType" /></div>
+        }
+    }
+
+    @{
+        var fields = Type.Fields ?? [];
+        var activeFields = fields.Where(_ => !_.IsDeprecated).ToList();
+        var deprecatedFields = fields.Where(_ => _.IsDeprecated).ToList();
+        var inputFields = Type.InputFields ?? [];
+        var activeInputFields = inputFields.Where(_ => !_.IsDeprecated).ToList();
+        var deprecatedInputFields = inputFields.Where(_ => _.IsDeprecated).ToList();
+        var allFieldsDeprecated = activeFields.Count == 0 && activeInputFields.Count == 0;
+    }
+
+    @if (activeFields.Count > 0 || activeInputFields.Count > 0)
+    {
+        <div class="blazorql-doc-section-title">Fields</div>
+        foreach (var field in activeFields)
+        {
+            @FieldRow(field)
+        }
+
+        foreach (var inputField in activeInputFields)
+        {
+            @InputFieldRow(inputField)
+        }
+    }
+
+    @if ((deprecatedFields.Count > 0 || deprecatedInputFields.Count > 0) && !showDeprecatedFields && !allFieldsDeprecated)
+    {
+        <button type="button" class="blazorql-doc-toggle" @onclick="() => showDeprecatedFields = true">Show Deprecated Fields</button>
+    }
+
+    @if ((deprecatedFields.Count > 0 || deprecatedInputFields.Count > 0) && (showDeprecatedFields || allFieldsDeprecated))
+    {
+        <div class="blazorql-doc-section-title">Deprecated Fields</div>
+        foreach (var field in deprecatedFields)
+        {
+            @FieldRow(field)
+        }
+
+        foreach (var inputField in deprecatedInputFields)
+        {
+            @InputFieldRow(inputField)
+        }
+    }
+
+    @{
+        var enumValues = Type.EnumValues ?? [];
+        var activeValues = enumValues.Where(_ => !_.IsDeprecated).ToList();
+        var deprecatedValues = enumValues.Where(_ => _.IsDeprecated).ToList();
+    }
+
+    @if (activeValues.Count > 0)
+    {
+        <div class="blazorql-doc-section-title">Enum Values</div>
+        foreach (var value in activeValues)
+        {
+            @EnumValueRow(value)
+        }
+    }
+
+    @if (deprecatedValues.Count > 0 && !showDeprecatedValues && activeValues.Count > 0)
+    {
+        <button type="button" class="blazorql-doc-toggle" @onclick="() => showDeprecatedValues = true">Show Deprecated Values</button>
+    }
+
+    @if (deprecatedValues.Count > 0 && (showDeprecatedValues || activeValues.Count == 0))
+    {
+        <div class="blazorql-doc-section-title">Deprecated Enum Values</div>
+        foreach (var value in deprecatedValues)
+        {
+            @EnumValueRow(value)
+        }
+    }
+
+    @if (Type.PossibleTypes is {Count: > 0} possibleTypes)
+    {
+        <div class="blazorql-doc-section-title">@(Type.Kind == "INTERFACE" ? "Implementations" : "Possible Types")</div>
+        foreach (var possibleType in possibleTypes)
+        {
+            <div><TypeLink Type="possibleType" OnNavigate="OnNavigateType" /></div>
+        }
+    }
+</div>
+
+@code {
+
+    bool showDeprecatedFields;
+    bool showDeprecatedValues;
+    string? lastTypeName;
+
+    [Parameter]
+    [EditorRequired]
+    public IntrospectionType Type { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<string> OnNavigateType { get; set; }
+
+    /// <summary>Raised with the field name to open its field page.</summary>
+    [Parameter]
+    public EventCallback<string> OnNavigateField { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        // The component instance survives navigating between type pages; the toggles do not.
+        if (lastTypeName != Type.Name)
+        {
+            lastTypeName = Type.Name;
+            showDeprecatedFields = false;
+            showDeprecatedValues = false;
+        }
+    }
+
+    RenderFragment FieldRow(IntrospectionField field) =>
+        @<div class="blazorql-doc-field">
+            <div class="blazorql-doc-field-signature">
+                <button type="button" class="blazorql-field-link" @onclick="() => OnNavigateField.InvokeAsync(field.Name)">@field.Name</button>@Args(field)<span>: </span><TypeLink Type="field.Type" OnNavigate="OnNavigateType" />
+            </div>
+            @if (field.Description is not null)
+            {
+                <MarkdownView Content="@field.Description" Preview="true" />
+            }
+            @if (field.IsDeprecated)
+            {
+                <div class="blazorql-doc-deprecation"><MarkdownView Content="@(field.DeprecationReason ?? "Deprecated.")" Preview="true" /></div>
+            }
+        </div>;
+
+    RenderFragment InputFieldRow(IntrospectionInputValue inputField) =>
+        @<div class="blazorql-doc-field">
+            <div class="blazorql-doc-field-signature">
+                <button type="button" class="blazorql-field-link" @onclick="() => OnNavigateField.InvokeAsync(inputField.Name)">@inputField.Name</button><span>: </span><TypeLink Type="inputField.Type" OnNavigate="OnNavigateType" />@DefaultValue(inputField)
+            </div>
+            @if (inputField.Description is not null)
+            {
+                <MarkdownView Content="@inputField.Description" Preview="true" />
+            }
+            @if (inputField.IsDeprecated)
+            {
+                <div class="blazorql-doc-deprecation"><MarkdownView Content="@(inputField.DeprecationReason ?? "Deprecated.")" Preview="true" /></div>
+            }
+        </div>;
+
+    static RenderFragment EnumValueRow(IntrospectionEnumValue value) =>
+        @<div class="blazorql-doc-field">
+            <div class="blazorql-doc-field-signature"><span class="blazorql-doc-enum-value">@value.Name</span></div>
+            @if (value.Description is not null)
+            {
+                <MarkdownView Content="@value.Description" Preview="true" />
+            }
+            @if (value.IsDeprecated)
+            {
+                <div class="blazorql-doc-deprecation"><MarkdownView Content="@(value.DeprecationReason ?? "Deprecated.")" Preview="true" /></div>
+            }
+        </div>;
+
+    // Deprecated arguments are excluded from field-row signatures; the field page shows them
+    // behind its own toggle. One argument stays inline, several go one per line.
+    RenderFragment? Args(IntrospectionField field)
+    {
+        var args = field.Args.Where(_ => !_.IsDeprecated).ToList();
+        if (args.Count == 0)
+        {
+            return null;
+        }
+
+        if (args.Count == 1)
+        {
+            var argument = args[0];
+            return @<span class="blazorql-doc-args">(@ArgInline(argument))</span>;
+        }
+
+        return @<span class="blazorql-doc-args">(@foreach (var argument in args)
+                                                {
+                                                    <span class="blazorql-doc-arg-line">@ArgInline(argument)</span>
+                                                })</span>;
+    }
+
+    RenderFragment ArgInline(IntrospectionInputValue argument) =>
+        @<span class="blazorql-doc-arg">@argument.Name<span>: </span><TypeLink Type="argument.Type" OnNavigate="OnNavigateType" />@DefaultValue(argument)</span>;
+
+    static RenderFragment? DefaultValue(IntrospectionInputValue value) =>
+        value.DefaultValue is null
+            ? null
+            : @<span class="blazorql-doc-default"> = @value.DefaultValue</span>;
+
+}

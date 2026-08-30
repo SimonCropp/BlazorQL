@@ -15,5 +15,6 @@
     <PackageReference Include="DiffEngine" />
     <PackageReference Include="MarkdownSnippets.MsBuild" PrivateAssets="all" />
     <ProjectReference Include="..\..\src\BlazorQL\BlazorQL.csproj" />
+    <None Include="DocExplorerTests.schema.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

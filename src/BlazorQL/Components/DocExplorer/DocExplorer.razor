@@ -1,0 +1,97 @@
+@namespace BlazorQL
+
+@if (Schema is null)
+{
+    <div class="blazorql-plugin-placeholder">No GraphQL schema available</div>
+}
+else
+{
+    <div class="blazorql-docs">
+        <div class="blazorql-docs-header">
+            <div class="blazorql-docs-nav">
+                @if (stack.Count > 1)
+                {
+                    <button type="button"
+                            class="blazorql-doc-back"
+                            data-testid="doc-back"
+                            aria-label="Go back to @Previous.Title"
+                            @onclick="Pop">‹ @Previous.Title</button>
+                }
+                <div class="blazorql-doc-title">@Current.Title</div>
+            </div>
+            @if (Module is not null && SchemaSdl is not null)
+            {
+                <button type="button"
+                        class="blazorql-doc-sdl-toggle @(sdlVisible ? "blazorql-active" : null)"
+                        data-testid="doc-sdl"
+                        title="@(sdlVisible ? "Show documentation" : "Show schema definition")"
+                        aria-label="@(sdlVisible ? "Show documentation" : "Show schema definition")"
+                        @onclick="ToggleSdl">SDL</button>
+            }
+        </div>
+        <div class="blazorql-docs-body @(sdlVisible ? "blazorql-hidden" : null)">
+            @if (ShowSearch)
+            {
+                <div class="blazorql-doc-search" data-testid="doc-search">
+                    <input type="text"
+                           placeholder="@SearchPlaceholder"
+                           aria-label="@SearchPlaceholder"
+                           value="@searchTerm"
+                           @oninput="OnSearchInput" />
+                    @if (withinResults is not null && otherResults is not null)
+                    {
+                        <div class="blazorql-doc-search-results" role="listbox">
+                            @if (withinResults.Count == 0 && otherResults.Count == 0)
+                            {
+                                <div class="blazorql-doc-search-empty">No results found</div>
+                            }
+                            else
+                            {
+                                foreach (var match in withinResults)
+                                {
+                                    @ResultRow(match)
+                                }
+
+                                if (withinResults.Count > 0 && otherResults.Count > 0)
+                                {
+                                    <div class="blazorql-doc-search-divider">Other results</div>
+                                }
+
+                                foreach (var match in otherResults)
+                                {
+                                    @ResultRow(match)
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            @switch (Current)
+            {
+                case DocTypeEntry typeEntry:
+                    <TypeDoc Type="typeEntry.Type"
+                             OnNavigateType="NavigateToTypeName"
+                             OnNavigateField="_ => NavigateToField(typeEntry.Type, _)" />
+                    break;
+                case DocFieldEntry fieldEntry:
+                    <FieldDoc Parent="fieldEntry.Parent"
+                              FieldName="@fieldEntry.Name"
+                              OnNavigateType="NavigateToTypeName" />
+                    break;
+                default:
+                    <SchemaDoc Schema="Schema" OnNavigateType="NavigateToTypeName" />
+                    break;
+            }
+        </div>
+        <div class="blazorql-docs-sdl @(sdlVisible ? null : "blazorql-hidden")">
+            <div id="@SdlElementId" class="blazorql-editor"></div>
+        </div>
+    </div>
+}
+
+@code {
+
+    RenderFragment ResultRow(SearchMatch match) =>
+        @<button type="button" role="option" class="blazorql-doc-search-result" @onclick="() => SelectMatch(match)">@MatchText(match)</button>;
+
+}

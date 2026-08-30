@@ -110,6 +110,8 @@ html[data-theme='dark'] {
 }
 
 .blazorql-plugin-pane {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     padding: 0.8rem 1rem;
     overflow: auto;
@@ -122,6 +124,251 @@ html[data-theme='dark'] {
 }
 
 .blazorql-plugin-placeholder {
+    color: var(--blazorql-muted);
+}
+
+/* ---- Documentation explorer ---- */
+
+.blazorql-docs {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.blazorql-docs-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.blazorql-docs-nav {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.blazorql-doc-back {
+    border: none;
+    background: transparent;
+    color: var(--blazorql-accent);
+    font: inherit;
+    padding: 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.blazorql-doc-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blazorql-doc-sdl-toggle {
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    font: inherit;
+    font-size: 0.8rem;
+    padding: 0.1rem 0.4rem;
+    cursor: pointer;
+}
+
+.blazorql-doc-sdl-toggle.blazorql-active {
+    color: var(--blazorql-accent);
+    border-color: var(--blazorql-accent);
+}
+
+.blazorql-docs-body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.blazorql-docs-sdl {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.blazorql-doc-section-title {
+    margin: 0.9rem 0 0.4rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--blazorql-muted);
+}
+
+.blazorql-doc-root-type,
+.blazorql-doc-type-list div,
+.blazorql-doc-field {
+    margin-bottom: 0.35rem;
+}
+
+.blazorql-doc-keyword {
+    color: var(--blazorql-accent);
+}
+
+.blazorql-type-link,
+.blazorql-field-link {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0;
+    cursor: pointer;
+}
+
+.blazorql-type-link {
+    color: light-dark(#ca9800, #ffc21d);
+}
+
+.blazorql-field-link {
+    color: light-dark(#1f61a0, #55b9f3);
+}
+
+.blazorql-type-link:hover,
+.blazorql-field-link:hover {
+    text-decoration: underline;
+}
+
+.blazorql-doc-field-signature {
+    font-family: "Fira Code", monospace;
+    font-size: 0.85rem;
+}
+
+.blazorql-doc-arg-line {
+    display: block;
+    padding-left: 1rem;
+}
+
+.blazorql-doc-default {
+    color: var(--blazorql-muted);
+}
+
+.blazorql-doc-toggle {
+    margin-top: 0.6rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+}
+
+.blazorql-doc-toggle:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
+.blazorql-doc-deprecation {
+    margin-top: 0.2rem;
+    padding: 0.2rem 0.5rem;
+    border-left: 3px solid var(--blazorql-error);
+    color: var(--blazorql-muted);
+}
+
+.blazorql-doc-search {
+    position: relative;
+    margin-bottom: 0.5rem;
+}
+
+.blazorql-doc-search input {
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    font: inherit;
+}
+
+.blazorql-doc-search-results {
+    position: absolute;
+    top: calc(100% + 0.2rem);
+    left: 0;
+    right: 0;
+    z-index: 30;
+    max-height: 18rem;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 0.25rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 6px;
+    background: var(--blazorql-bg);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.blazorql-doc-search-result {
+    border: none;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    text-align: left;
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.blazorql-doc-search-result:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 14%, transparent);
+}
+
+.blazorql-doc-search-divider,
+.blazorql-doc-search-empty {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--blazorql-muted);
+}
+
+.blazorql-doc-search-divider {
+    border-top: 1px solid var(--blazorql-border);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.blazorql-markdown p {
+    margin: 0.3rem 0;
+}
+
+.blazorql-markdown img {
+    max-width: 100%;
+}
+
+.blazorql-markdown pre {
+    overflow: auto;
+    padding: 0.5rem;
+    background: var(--blazorql-panel);
+    border-radius: 4px;
+}
+
+.blazorql-markdown code {
+    font-family: "Fira Code", monospace;
+    font-size: 0.85em;
+}
+
+.blazorql-markdown blockquote {
+    margin: 0.3rem 0;
+    padding-left: 0.6rem;
+    border-left: 3px solid var(--blazorql-border);
+    color: var(--blazorql-muted);
+}
+
+.blazorql-markdown a {
+    color: var(--blazorql-accent);
+}
+
+.blazorql-markdown-fallback {
     color: var(--blazorql-muted);
 }
 

@@ -1,0 +1,71 @@
+@namespace BlazorQL
+
+@*
+    The documentation explorer's root page: schema description, root operation types, and every
+    other type the schema declares.
+*@
+<div class="blazorql-doc-page" data-testid="doc-root">
+    <MarkdownView Content="@Schema.Description"
+                  Fallback="A GraphQL schema provides a root type for each kind of operation." />
+
+    <div class="blazorql-doc-section-title">Root Types</div>
+    <div class="blazorql-doc-root-types">
+        @foreach (var (operation, typeName) in RootTypes())
+        {
+            var type = Schema.Find(typeName);
+            if (type is null)
+            {
+                continue;
+            }
+
+            <div class="blazorql-doc-root-type">
+                <span class="blazorql-doc-keyword">@operation</span><span>: </span>
+                <TypeLink Type="new() {Kind = type.Kind, Name = type.Name}" OnNavigate="OnNavigateType" />
+            </div>
+        }
+    </div>
+
+    <div class="blazorql-doc-section-title">All Schema Types</div>
+    <div class="blazorql-doc-type-list">
+        @foreach (var type in OtherTypes())
+        {
+            <div>
+                <TypeLink Type="new() {Kind = type.Kind, Name = type.Name}" OnNavigate="OnNavigateType" />
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    [EditorRequired]
+    public SchemaIndex Schema { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<string> OnNavigateType { get; set; }
+
+    IEnumerable<(string Operation, string TypeName)> RootTypes()
+    {
+        if (Schema.QueryTypeName is not null)
+        {
+            yield return ("query", Schema.QueryTypeName);
+        }
+
+        if (Schema.MutationTypeName is not null)
+        {
+            yield return ("mutation", Schema.MutationTypeName);
+        }
+
+        if (Schema.SubscriptionTypeName is not null)
+        {
+            yield return ("subscription", Schema.SubscriptionTypeName);
+        }
+    }
+
+    IEnumerable<IntrospectionType> OtherTypes() =>
+        Schema.Types
+            .Where(_ => !_.Name.StartsWith("__", StringComparison.Ordinal) && !Schema.IsRootType(_.Name))
+            .OrderBy(_ => _.Name, StringComparer.Ordinal);
+
+}

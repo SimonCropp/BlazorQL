@@ -1,0 +1,292 @@
+{
+  "data": {
+    "__schema": {
+      "description": "A hand-written *subset* of the sample schema, for doc explorer tests.",
+      "queryType": { "name": "Query", "kind": "OBJECT" },
+      "mutationType": null,
+      "subscriptionType": null,
+      "types": [
+        {
+          "kind": "OBJECT",
+          "name": "Query",
+          "description": "The root query type.",
+          "specifiedByURL": null,
+          "fields": [
+            {
+              "name": "person",
+              "description": "The person of the hour.\n\nA second paragraph the preview must clamp away.",
+              "args": [],
+              "type": { "kind": "OBJECT", "name": "Person", "ofType": null },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "search",
+              "description": "Finds things.",
+              "args": [
+                {
+                  "name": "term",
+                  "description": "What to look for.",
+                  "type": {
+                    "kind": "NON_NULL",
+                    "name": null,
+                    "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+                  },
+                  "defaultValue": "\"all\"",
+                  "isDeprecated": false,
+                  "deprecationReason": null
+                }
+              ],
+              "type": { "kind": "UNION", "name": "SearchResult", "ofType": null },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "hasArgs",
+              "description": null,
+              "args": [
+                {
+                  "name": "string",
+                  "description": "A string",
+                  "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+                  "defaultValue": null,
+                  "isDeprecated": false,
+                  "deprecationReason": null
+                },
+                {
+                  "name": "count",
+                  "description": null,
+                  "type": { "kind": "SCALAR", "name": "Int", "ofType": null },
+                  "defaultValue": "0",
+                  "isDeprecated": false,
+                  "deprecationReason": null
+                },
+                {
+                  "name": "input",
+                  "description": null,
+                  "type": { "kind": "INPUT_OBJECT", "name": "PetInput", "ofType": null },
+                  "defaultValue": null,
+                  "isDeprecated": false,
+                  "deprecationReason": null
+                },
+                {
+                  "name": "deprecatedArg",
+                  "description": "Old.",
+                  "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+                  "defaultValue": null,
+                  "isDeprecated": true,
+                  "deprecationReason": "Use `string` instead."
+                }
+              ],
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "oldField",
+              "description": "An example of a deprecated field.",
+              "args": [],
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+              "isDeprecated": true,
+              "deprecationReason": "Use `person` instead."
+            }
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Person",
+          "description": "Somebody.",
+          "specifiedByURL": null,
+          "fields": [
+            {
+              "name": "name",
+              "description": "The person's name.",
+              "args": [],
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "friends",
+              "description": null,
+              "args": [],
+              "type": {
+                "kind": "LIST",
+                "name": null,
+                "ofType": { "kind": "OBJECT", "name": "Person", "ofType": null }
+              },
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ],
+          "inputFields": null,
+          "interfaces": [ { "kind": "INTERFACE", "name": "Named", "ofType": null } ],
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "kind": "INTERFACE",
+          "name": "Named",
+          "description": "Anything with a name.",
+          "specifiedByURL": null,
+          "fields": [
+            {
+              "name": "name",
+              "description": "A common name string.",
+              "args": [],
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "enumValues": null,
+          "possibleTypes": [ { "kind": "OBJECT", "name": "Person", "ofType": null } ]
+        },
+        {
+          "kind": "ENUM",
+          "name": "Color",
+          "description": "An enum of super cool colors.",
+          "specifiedByURL": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "enumValues": [
+            {
+              "name": "RED",
+              "description": "A rosy color",
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "GREEN",
+              "description": null,
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "GRAY",
+              "description": "A really dull color",
+              "isDeprecated": true,
+              "deprecationReason": "Colors are boring."
+            }
+          ],
+          "possibleTypes": null
+        },
+        {
+          "kind": "INPUT_OBJECT",
+          "name": "PetInput",
+          "description": "Input for a pet.",
+          "specifiedByURL": null,
+          "fields": null,
+          "inputFields": [
+            {
+              "name": "name",
+              "description": "What to call it.",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              },
+              "defaultValue": "\"Rex\"",
+              "isDeprecated": false,
+              "deprecationReason": null
+            },
+            {
+              "name": "age",
+              "description": null,
+              "type": { "kind": "SCALAR", "name": "Int", "ofType": null },
+              "defaultValue": "3",
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ],
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "kind": "UNION",
+          "name": "SearchResult",
+          "description": "Either a person or a post.",
+          "specifiedByURL": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": [
+            { "kind": "OBJECT", "name": "Person", "ofType": null },
+            { "kind": "OBJECT", "name": "Post", "ofType": null }
+          ]
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Post",
+          "description": null,
+          "specifiedByURL": null,
+          "fields": [
+            {
+              "name": "title",
+              "description": null,
+              "args": [],
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null },
+              "isDeprecated": false,
+              "deprecationReason": null
+            }
+          ],
+          "inputFields": null,
+          "interfaces": [],
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "kind": "SCALAR",
+          "name": "String",
+          "description": "Text.",
+          "specifiedByURL": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "kind": "SCALAR",
+          "name": "Int",
+          "description": null,
+          "specifiedByURL": null,
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": null
+        },
+        {
+          "kind": "SCALAR",
+          "name": "JSON",
+          "description": "A scalar with a specification.",
+          "specifiedByURL": "https://example.com/json-spec",
+          "fields": null,
+          "inputFields": null,
+          "interfaces": null,
+          "enumValues": null,
+          "possibleTypes": null
+        }
+      ],
+      "directives": [
+        {
+          "name": "repeat",
+          "description": "A repeatable directive.",
+          "isRepeatable": true,
+          "locations": [ "FIELD" ],
+          "args": []
+        }
+      ]
+    }
+  }
+}

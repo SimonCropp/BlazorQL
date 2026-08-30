@@ -167,15 +167,90 @@ export function setSchema(sdl) {
     ]);
 }
 
+// The graphql-js schema built from the last introspection — what jump-to-doc resolves against.
+let pageSchema = null;
+
 /// Builds the language-mode schema from an introspection result and returns the printed SDL —
 /// the SDL view's content, produced by graphql-js so it is spec-correct for free.
 export function setSchemaFromIntrospection(introspectionJson) {
     const parsed = JSON.parse(introspectionJson);
     const data = parsed.data ?? parsed;
     const schema = page.graphql.buildClientSchema(data);
+    pageSchema = schema;
     const sdl = page.graphql.printSchema(schema);
     setSchema(sdl);
     return sdl;
+}
+
+/// Ctrl/Cmd+click jump-to-doc on the operation editor. The language service resolves the token
+/// under the pointer against the schema; a resolvable field, argument, or type reference goes to
+/// C# as a flattened {kind, typeName, fieldName?, argName?} through the callback hub. A mouse
+/// gesture rather than a Monaco DefinitionProvider: Monaco also invokes definition providers
+/// during ctrl-hover link detection, which would open the docs on hover.
+export function registerJumpToDoc(operationUriName) {
+    const entry = editors.get(operationUriName);
+    entry.listeners.push(entry.editor.onMouseDown(mouseEvent => {
+        const pointer = mouseEvent.event;
+        if (!(pointer.ctrlKey || pointer.metaKey) || pointer.rightButton) {
+            return;
+        }
+
+        const position = mouseEvent.target.position;
+        if (!position || !pageSchema) {
+            return;
+        }
+
+        const reference = schemaReferenceAt(entry.model.getValue(), position);
+        if (reference) {
+            pointer.preventDefault();
+            dotNet.invokeMethodAsync('OnSchemaReference', JSON.stringify(reference));
+        }
+    }));
+}
+
+function schemaReferenceAt(text, position) {
+    let context = null;
+    try {
+        context = page.languageService.getContextAtPosition(
+            text,
+            // Monaco positions are 1-based; the language service's are 0-based.
+            { line: position.lineNumber - 1, character: position.column - 1 },
+            pageSchema);
+    } catch {
+        return null;
+    }
+
+    if (!context) {
+        return null;
+    }
+
+    const named = type => (type ? (page.graphql.getNamedType(type)?.name ?? null) : null);
+    const info = context.typeInfo;
+    switch (context.state.kind) {
+        case 'Field':
+        case 'AliasedField':
+            if (info.fieldDef && info.parentType) {
+                return { kind: 'Field', typeName: named(info.parentType), fieldName: info.fieldDef.name };
+            }
+            break;
+        case 'Argument':
+            if (info.argDef && info.fieldDef && info.parentType) {
+                return {
+                    kind: 'Argument',
+                    typeName: named(info.parentType),
+                    fieldName: info.fieldDef.name,
+                    argName: info.argDef.name,
+                };
+            }
+            break;
+        case 'NamedType':
+            if (info.type) {
+                return { kind: 'Type', typeName: named(info.type) };
+            }
+            break;
+    }
+
+    return null;
 }
 
 /// Wires the variables editor's JSON-Schema validation to the operation editor's declared

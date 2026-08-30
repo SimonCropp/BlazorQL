@@ -82,6 +82,7 @@ public partial class BlazorQLIde :
     // The operation editor's share of the editors column; 3:1 over the editor tools.
     readonly PaneState toolsPane = new(0.75);
     PluginKind? visiblePlugin;
+    readonly DocExplorerNavigator docNavigator = new();
     bool toolsExpanded;
     EditorTool activeTool = EditorTool.Variables;
     bool pickerOpen;
@@ -89,6 +90,9 @@ public partial class BlazorQLIde :
 
     /// <summary>The schema printed as SDL, once loaded.</summary>
     public string? SchemaSdl { get; private set; }
+
+    /// <summary>The parsed introspection result, once loaded — what the doc explorer navigates.</summary>
+    public SchemaIndex? Schema { get; private set; }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -102,6 +106,7 @@ public partial class BlazorQLIde :
         callbacks.EditorAction += OnEditorAction;
         callbacks.EditorChanged += OnEditorChanged;
         callbacks.PaneResize += OnPaneResize;
+        callbacks.SchemaReference += OnSchemaReference;
         if (Fetcher is LocalSchemaFetcher local)
         {
             local.Attach(module, callbacks);
@@ -151,6 +156,8 @@ public partial class BlazorQLIde :
         await module.Invoke("addAction", OperationUri, "blazorql-run", "Run Operation", "[2051]");
         // Keeps the active tab's Query (and so its derived title) in step with typing.
         await module.Invoke("onChange", OperationUri, 300);
+        // Ctrl/Cmd+click on a schema name jumps to its documentation.
+        await module.Invoke("registerJumpToDoc", OperationUri);
 
         await module.Invoke("trackPointer", PluginResizerId, "plugin", "x");
         await module.Invoke("trackPointer", SessionResizerId, "session", "x");
@@ -181,6 +188,7 @@ public partial class BlazorQLIde :
             }
 
             SchemaSdl = await module!.Invoke<string>("setSchemaFromIntrospection", introspection.Value.GetRawText());
+            Schema = SchemaIndex.Parse(introspection.Value);
             // With a schema in place the variables editor can validate against the operation's
             // declared variables.
             await module.Invoke("linkVariablesValidation", OperationUri, VariablesUri);
@@ -235,6 +243,23 @@ public partial class BlazorQLIde :
         visiblePlugin = visiblePlugin == plugin
             ? null
             : plugin;
+
+    /// <summary>Jump-to-doc: opens the docs plugin and navigates to the referenced schema member.</summary>
+    void OnSchemaReference(string referenceJson) =>
+        _ = InvokeAsync(() =>
+        {
+            var reference = JsonSerializer.Deserialize<SchemaReference>(referenceJson, referenceOptions);
+            if (reference is null)
+            {
+                return;
+            }
+
+            visiblePlugin = PluginKind.Docs;
+            docNavigator.NavigateTo(reference);
+            StateHasChanged();
+        });
+
+    static readonly JsonSerializerOptions referenceOptions = new(JsonSerializerDefaults.Web);
 
     // ---- Editor tools ----
 
@@ -614,6 +639,7 @@ public partial class BlazorQLIde :
         callbacks.EditorAction -= OnEditorAction;
         callbacks.EditorChanged -= OnEditorChanged;
         callbacks.PaneResize -= OnPaneResize;
+        callbacks.SchemaReference -= OnSchemaReference;
         execution?.Cancel();
         reference?.Dispose();
         if (module is not null)

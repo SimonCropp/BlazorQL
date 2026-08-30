@@ -1,0 +1,113 @@
+@namespace BlazorQL
+
+@*
+    A field page — a field of an object or interface type, or an input-object field. Introspection
+    carries no directive information for fields, so there is no Directives section.
+*@
+<div class="blazorql-doc-page" data-testid="doc-field">
+    @if (field is not null)
+    {
+        <MarkdownView Content="@field.Description" />
+        if (field.IsDeprecated)
+        {
+            <div class="blazorql-doc-deprecation"><MarkdownView Content="@(field.DeprecationReason ?? "Deprecated.")" /></div>
+        }
+
+        <div class="blazorql-doc-section-title">Type</div>
+        <div><TypeLink Type="field.Type" OnNavigate="OnNavigateType" /></div>
+
+        var activeArgs = field.Args.Where(_ => !_.IsDeprecated).ToList();
+        var deprecatedArgs = field.Args.Where(_ => _.IsDeprecated).ToList();
+
+        if (activeArgs.Count > 0)
+        {
+            <div class="blazorql-doc-section-title">Arguments</div>
+            foreach (var argument in activeArgs)
+            {
+                @ArgumentRow(argument)
+            }
+        }
+
+        if (deprecatedArgs.Count > 0 && !showDeprecatedArgs && activeArgs.Count > 0)
+        {
+            <button type="button" class="blazorql-doc-toggle" @onclick="() => showDeprecatedArgs = true">Show Deprecated Arguments</button>
+        }
+
+        if (deprecatedArgs.Count > 0 && (showDeprecatedArgs || activeArgs.Count == 0))
+        {
+            <div class="blazorql-doc-section-title">Deprecated Arguments</div>
+            foreach (var argument in deprecatedArgs)
+            {
+                @ArgumentRow(argument)
+            }
+        }
+    }
+    else if (inputField is not null)
+    {
+        <MarkdownView Content="@inputField.Description" />
+        if (inputField.IsDeprecated)
+        {
+            <div class="blazorql-doc-deprecation"><MarkdownView Content="@(inputField.DeprecationReason ?? "Deprecated.")" /></div>
+        }
+
+        <div class="blazorql-doc-section-title">Type</div>
+        <div><TypeLink Type="inputField.Type" OnNavigate="OnNavigateType" />@DefaultValue(inputField)</div>
+    }
+    else
+    {
+        <div class="blazorql-plugin-placeholder">Field not found.</div>
+    }
+</div>
+
+@code {
+
+    bool showDeprecatedArgs;
+    IntrospectionField? field;
+    IntrospectionInputValue? inputField;
+    string? lastKey;
+
+    [Parameter]
+    [EditorRequired]
+    public IntrospectionType Parent { get; set; } = null!;
+
+    [Parameter]
+    [EditorRequired]
+    public string FieldName { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> OnNavigateType { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var key = $"{Parent.Name}.{FieldName}";
+        if (lastKey != key)
+        {
+            lastKey = key;
+            showDeprecatedArgs = false;
+        }
+
+        field = Parent.Fields?.FirstOrDefault(_ => _.Name == FieldName);
+        inputField = field is null
+            ? Parent.InputFields?.FirstOrDefault(_ => _.Name == FieldName)
+            : null;
+    }
+
+    RenderFragment ArgumentRow(IntrospectionInputValue argument) =>
+        @<div class="blazorql-doc-field">
+            <div class="blazorql-doc-field-signature"><span class="blazorql-doc-arg">@argument.Name<span>: </span><TypeLink Type="argument.Type" OnNavigate="OnNavigateType" />@DefaultValue(argument)</span></div>
+            @if (argument.Description is not null)
+            {
+                <MarkdownView Content="@argument.Description" Preview="true" />
+            }
+            @if (argument.IsDeprecated)
+            {
+                <div class="blazorql-doc-deprecation"><MarkdownView Content="@(argument.DeprecationReason ?? "Deprecated.")" Preview="true" /></div>
+            }
+        </div>;
+
+    static RenderFragment? DefaultValue(IntrospectionInputValue value) =>
+        value.DefaultValue is null
+            ? null
+            : @<span class="blazorql-doc-default"> = @value.DefaultValue</span>;
+
+}
