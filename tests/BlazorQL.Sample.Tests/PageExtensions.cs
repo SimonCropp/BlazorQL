@@ -43,6 +43,33 @@ static class PageExtensions
             query);
 
     /// <summary>
+    /// Sets the content of the Monaco model whose uri contains <paramref name="uriPart"/> —
+    /// how the tests reach the variables and headers editors, visible or not.
+    /// </summary>
+    public static Task SetModelValueAsync(this IPage page, string uriPart, string text) =>
+        page.EvaluateAsync(
+            """
+            args => monaco.editor.getModels()
+                .find(m => m.uri.path.includes(args.uriPart))
+                .setValue(args.text)
+            """,
+            new
+            {
+                uriPart,
+                text
+            });
+
+    /// <summary>Reads the content of the Monaco model whose uri contains <paramref name="uriPart"/>.</summary>
+    public static Task<string> GetModelValueAsync(this IPage page, string uriPart) =>
+        page.EvaluateAsync<string>(
+            """
+            uriPart => monaco.editor.getModels()
+                .find(m => m.uri.path.includes(uriPart))
+                .getValue()
+            """,
+            uriPart);
+
+    /// <summary>
     /// Opens Monaco's completion dropdown at the caret and returns the labels it is showing, in
     /// order. The first call on a page pays for the language worker's cold start, hence the long
     /// default.

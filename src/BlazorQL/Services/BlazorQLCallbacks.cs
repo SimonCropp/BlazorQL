@@ -11,6 +11,7 @@ public sealed class BlazorQLCallbacks
     public event Action<string, string>? StreamNext;
     public event Action<string>? StreamComplete;
     public event Action<string, string>? StreamError;
+    public event Action<string, double, double>? PaneResize;
 
     [JSInvokable]
     public void OnEditorChanged(string uriName, string text) =>
@@ -31,4 +32,8 @@ public sealed class BlazorQLCallbacks
     [JSInvokable]
     public void OnStreamError(string streamId, string message) =>
         StreamError?.Invoke(streamId, message);
+
+    [JSInvokable]
+    public void OnPaneResize(string resizerId, double fraction, double size) =>
+        PaneResize?.Invoke(resizerId, fraction, size);
 }

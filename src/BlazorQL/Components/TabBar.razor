@@ -1,0 +1,113 @@
+@namespace BlazorQL
+
+<div class="blazorql-tabs" role="tablist" aria-label="Select active operation">
+    @for (var i = 0; i < Store.Tabs.Count; i++)
+    {
+        var index = i;
+        var tab = Store.Tabs[index];
+        var active = index == Store.ActiveIndex;
+        <div class="blazorql-tab @(active ? "blazorql-active" : null)"
+             role="tab"
+             aria-selected="@(active ? "true" : "false")"
+             @key="tab.Id">
+            @if (renamingIndex == index)
+            {
+                <input class="blazorql-tab-rename"
+                       @ref="renameInput"
+                       @bind="renameText"
+                       @bind:event="oninput"
+                       @onkeydown="_ => OnRenameKey(_, index)"
+                       @onblur="CancelRename" />
+            }
+            else
+            {
+                <button type="button"
+                        class="blazorql-tab-button"
+                        @onclick="() => OnActivate.InvokeAsync(index)"
+                        @ondblclick="() => StartRename(index)">@TabStore.Title(tab)</button>
+                @if (Store.Tabs.Count > 1)
+                {
+                    <button type="button"
+                            class="blazorql-tab-close"
+                            aria-label="Close Tab"
+                            @onclick="() => OnClose.InvokeAsync(index)">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M6 6l12 12M18 6L6 18"/>
+                        </svg>
+                    </button>
+                }
+            }
+        </div>
+    }
+    <button type="button"
+            class="blazorql-tab-add"
+            data-testid="tab-add"
+            aria-label="New tab"
+            title="New tab"
+            @onclick="() => OnAdd.InvokeAsync()">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 5v14M5 12h14"/>
+        </svg>
+    </button>
+</div>
+
+@code {
+
+    [Parameter]
+    [EditorRequired]
+    public TabStore Store { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<int> OnActivate { get; set; }
+
+    [Parameter]
+    public EventCallback<int> OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnAdd { get; set; }
+
+    /// <summary>Raised when an inline rename commits: (tab index, new title or null to clear).</summary>
+    [Parameter]
+    public EventCallback<(int Index, string? Title)> OnRename { get; set; }
+
+    int renamingIndex = -1;
+    string renameText = "";
+    bool focusRename;
+    ElementReference renameInput;
+
+    void StartRename(int index)
+    {
+        renamingIndex = index;
+        renameText = TabStore.Title(Store.Tabs[index]);
+        focusRename = true;
+    }
+
+    void CancelRename() =>
+        renamingIndex = -1;
+
+    async Task OnRenameKey(KeyboardEventArgs args, int index)
+    {
+        if (args.Key == "Enter")
+        {
+            renamingIndex = -1;
+            var title = string.IsNullOrWhiteSpace(renameText)
+                ? null
+                : renameText.Trim();
+            await OnRename.InvokeAsync((index, title));
+        }
+        else if (args.Key == "Escape")
+        {
+            renamingIndex = -1;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (focusRename)
+        {
+            focusRename = false;
+            await renameInput.FocusAsync();
+        }
+    }
+
+}

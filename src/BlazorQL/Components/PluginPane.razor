@@ -1,0 +1,22 @@
+@namespace BlazorQL
+
+<div class="blazorql-plugin-pane" data-testid="plugin-pane" style="@Style">
+    <div class="blazorql-plugin-title">@Title</div>
+    <div class="blazorql-plugin-placeholder">Coming in a later milestone.</div>
+</div>
+
+@code {
+
+    [Parameter]
+    public PluginKind Kind { get; set; }
+
+    /// <summary>Inline flex sizing supplied by the parent's pane state.</summary>
+    [Parameter]
+    public string? Style { get; set; }
+
+    string Title =>
+        Kind == PluginKind.Docs
+            ? "Documentation Explorer"
+            : "History";
+
+}

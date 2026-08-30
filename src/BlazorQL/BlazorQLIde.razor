@@ -2,22 +2,93 @@
 @inject IJSRuntime JS
 
 <div class="blazorql" data-testid="blazorql" data-ready="@(ready ? "true" : null)">
-    <div class="blazorql-editors">
-        <section class="blazorql-editor-host" aria-label="Operation Editor">
-            <div id="@OperationElementId" class="blazorql-editor"></div>
-        </section>
-    </div>
-    <div class="blazorql-toolbar" role="toolbar" aria-label="Editor Commands">
-        <button type="button"
-                class="blazorql-execute"
-                data-testid="execute"
-                title="@(running ? "Stop query" : "Execute query (Ctrl-Enter)")"
-                aria-label="@(running ? "Stop query" : "Execute query (Ctrl-Enter)")"
-                @onclick="RunOrStop">@(running ? "■" : "▶")</button>
-    </div>
-    <div class="blazorql-response">
-        <section class="blazorql-editor-host" aria-label="Result Window" aria-live="polite" aria-atomic="true">
-            <div id="@ResponseElementId" class="blazorql-editor"></div>
-        </section>
+    <Sidebar Visible="visiblePlugin"
+             OnToggle="TogglePlugin"
+             Refetching="refetching"
+             OnRefetch="RefetchSchema"
+             Theme="themes.Current"
+             OnThemeToggle="CycleTheme" />
+    <div class="blazorql-main">
+        @if (visiblePlugin is not null)
+        {
+            <PluginPane Kind="visiblePlugin.Value" Style="@Grow(pluginPane.Ratio)" />
+        }
+        <PaneResizer Id="@PluginResizerId" Direction="x" Hidden="visiblePlugin is null" OnReset="() => ResetPane(pluginPane)" />
+        <div class="blazorql-sessions" style="@Grow(visiblePlugin is null ? 1 : 1 - pluginPane.Ratio)">
+            <header class="blazorql-session-header">
+                <TabBar Store="tabs"
+                        OnActivate="ActivateTab"
+                        OnClose="CloseTab"
+                        OnAdd="AddTab"
+                        OnRename="RenameTab" />
+            <div class="blazorql-logo">
+                @if (Logo is null)
+                {
+                    <a href="https://github.com/SimonCropp/BlazorQL" target="_blank" rel="noreferrer">Blazor<em>QL</em></a>
+                }
+                else
+                {
+                    @Logo
+                }
+            </div>
+            </header>
+            <div class="blazorql-session">
+                <div class="blazorql-editors-column" style="@Grow(sessionPane.Ratio)">
+                    <div class="blazorql-editor-section" style="@(toolsExpanded ? Grow(toolsPane.Ratio) : "flex: 1 1 0%")">
+                        <div class="blazorql-editors">
+                            <section class="blazorql-editor-host" aria-label="Operation Editor">
+                                <div id="@OperationElementId" class="blazorql-editor"></div>
+                            </section>
+                        </div>
+                        <div class="blazorql-toolbar" role="toolbar" aria-label="Editor Commands">
+                            <div class="blazorql-execute-wrap">
+                                <button type="button"
+                                        class="blazorql-execute"
+                                        data-testid="execute"
+                                        title="@(running ? "Stop query" : "Execute query (Ctrl-Enter)")"
+                                        aria-label="@(running ? "Stop query" : "Execute query (Ctrl-Enter)")"
+                                        @onclick="ExecuteClicked">@(running ? "■" : "▶")</button>
+                                @if (pickerOpen)
+                                {
+                                    <div class="blazorql-operation-picker" data-testid="operation-picker" role="menu">
+                                        @foreach (var operation in pickerOperations)
+                                        {
+                                            var item = operation;
+                                            <button type="button"
+                                                    role="menuitem"
+                                                    @onclick="() => RunPicked(item)">@(item.Name ?? $"<Unnamed {item.Operation}>")</button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            @ToolbarContent
+                        </div>
+                    </div>
+                    <PaneResizer Id="@ToolsResizerId" Direction="y" OnReset="ResetToolsPane" />
+                    <EditorTools Expanded="toolsExpanded"
+                                 ActiveTool="activeTool"
+                                 HeadersEnabled="IsHeadersEditorEnabled"
+                                 Style="@(toolsExpanded ? Grow(1 - toolsPane.Ratio) : "flex: 0 0 auto")"
+                                 OnSelectTool="SelectTool"
+                                 OnToggle="ToggleTools" />
+                </div>
+                <PaneResizer Id="@SessionResizerId" Direction="x" OnReset="() => ResetPane(sessionPane)" />
+                <div class="blazorql-response" style="@Grow(1 - sessionPane.Ratio)">
+                    <section class="blazorql-editor-host" aria-label="Result Window" aria-live="polite" aria-atomic="true">
+                        <div id="@ResponseElementId" class="blazorql-editor"></div>
+                        @if (running)
+                        {
+                            <div class="blazorql-spinner" data-testid="spinner">
+                                <div class="blazorql-spinner-circle"></div>
+                            </div>
+                        }
+                    </section>
+                    @if (FooterContent is not null)
+                    {
+                        <footer class="blazorql-session-footer">@FooterContent</footer>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
 </div>

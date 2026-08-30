@@ -1,6 +1,16 @@
 /* BlazorQL shell. Palette via custom properties + light-dark(); the page opts into the theme by
    the data-theme attribute the host module sets on <html>. */
 
+/* An explicit theme choice overrides the OS preference; without one, light-dark() follows the
+   page's own color-scheme. */
+html[data-theme='light'] {
+    color-scheme: light;
+}
+
+html[data-theme='dark'] {
+    color-scheme: dark;
+}
+
 .blazorql {
     --blazorql-bg: light-dark(#ffffff, #16181d);
     --blazorql-panel: light-dark(#f6f7f9, #1d2027);
@@ -24,11 +34,249 @@
     box-sizing: border-box;
 }
 
+.blazorql .blazorql-hidden {
+    display: none !important;
+}
+
+/* ---- Sidebar rail ---- */
+
+.blazorql-sidebar {
+    flex: 0 0 60px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    background: var(--blazorql-panel);
+    border-right: 1px solid var(--blazorql-border);
+}
+
+.blazorql-sidebar-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.blazorql-sidebar-button {
+    width: 2.6rem;
+    height: 2.6rem;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-sidebar-button svg {
+    width: 1.4rem;
+    height: 1.4rem;
+}
+
+.blazorql-sidebar-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+    color: var(--blazorql-text);
+}
+
+.blazorql-sidebar-button.blazorql-active {
+    color: var(--blazorql-accent);
+    background: color-mix(in srgb, var(--blazorql-accent) 16%, transparent);
+}
+
+.blazorql-sidebar-button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.blazorql-sidebar-button.blazorql-spin svg {
+    animation: blazorql-spin 1s linear infinite;
+}
+
+@keyframes blazorql-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ---- Main area: plugin pane + sessions ---- */
+
+.blazorql-main {
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}
+
+.blazorql-plugin-pane {
+    min-width: 0;
+    padding: 0.8rem 1rem;
+    overflow: auto;
+    border-right: 1px solid var(--blazorql-border);
+}
+
+.blazorql-plugin-title {
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+}
+
+.blazorql-plugin-placeholder {
+    color: var(--blazorql-muted);
+}
+
+/* ---- Drag bars ---- */
+
+.blazorql-resizer {
+    flex: 0 0 6px;
+    background: transparent;
+    touch-action: none;
+}
+
+.blazorql-resizer:hover,
+.blazorql-resizer:active {
+    background: color-mix(in srgb, var(--blazorql-accent) 35%, transparent);
+}
+
+.blazorql-resizer-x {
+    cursor: col-resize;
+}
+
+.blazorql-resizer-y {
+    cursor: row-resize;
+}
+
+/* ---- Sessions column ---- */
+
+.blazorql-sessions {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.blazorql-session-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.25rem 0.75rem 0 0.5rem;
+    border-bottom: 1px solid var(--blazorql-border);
+    background: var(--blazorql-panel);
+}
+
+.blazorql-logo {
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.blazorql-logo a {
+    color: var(--blazorql-text);
+    text-decoration: none;
+}
+
+.blazorql-logo em {
+    font-style: normal;
+    color: var(--blazorql-accent);
+}
+
+/* ---- Tabs ---- */
+
+.blazorql-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-width: 0;
+    overflow-x: auto;
+}
+
+.blazorql-tab {
+    display: flex;
+    align-items: center;
+    border-radius: 6px 6px 0 0;
+    color: var(--blazorql-muted);
+}
+
+.blazorql-tab.blazorql-active {
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    box-shadow: inset 0 -2px 0 var(--blazorql-accent);
+}
+
+.blazorql-tab-button {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.blazorql-tab-close,
+.blazorql-tab-add {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-tab-close svg,
+.blazorql-tab-add svg {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
+.blazorql-tab-close:hover,
+.blazorql-tab-add:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+    color: var(--blazorql-text);
+}
+
+.blazorql-tab-rename {
+    margin: 0.2rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--blazorql-accent);
+    border-radius: 4px;
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    font: inherit;
+    width: 9rem;
+}
+
+/* ---- Session: editors column + response ---- */
+
+.blazorql-session {
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}
+
+.blazorql-editors-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+
+.blazorql-editor-section {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}
+
 .blazorql-editors {
     flex: 1;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
 }
 
 .blazorql-toolbar {
@@ -42,6 +290,10 @@
     background: var(--blazorql-panel);
 }
 
+.blazorql-execute-wrap {
+    position: relative;
+}
+
 .blazorql-execute {
     width: 2.4rem;
     height: 2.4rem;
@@ -53,16 +305,141 @@
     cursor: pointer;
 }
 
-.blazorql-response {
+.blazorql-operation-picker {
+    position: absolute;
+    top: 0;
+    right: calc(100% + 0.4rem);
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 10rem;
+    padding: 0.25rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 6px;
+    background: var(--blazorql-bg);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.18);
+}
+
+.blazorql-operation-picker button {
+    border: none;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    text-align: left;
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.blazorql-operation-picker button:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 14%, transparent);
+}
+
+/* ---- Editor tools (Variables / Headers) ---- */
+
+.blazorql-editor-tools {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-top: 1px solid var(--blazorql-border);
+}
+
+.blazorql-editor-tools-header {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--blazorql-panel);
+}
+
+.blazorql-tool-button {
+    border: none;
+    background: transparent;
+    color: var(--blazorql-muted);
+    font: inherit;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.blazorql-tool-button.blazorql-active {
+    color: var(--blazorql-text);
+    box-shadow: inset 0 -2px 0 var(--blazorql-accent);
+}
+
+.blazorql-tools-chevron {
+    margin-left: auto;
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-tools-chevron svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.blazorql-tools-chevron .blazorql-chevron-up {
+    transform: rotate(180deg);
+}
+
+.blazorql-editor-tools-body {
     flex: 1;
+    display: flex;
+    min-height: 0;
+}
+
+.blazorql-editor-tools.blazorql-collapsed .blazorql-editor-tools-body {
+    display: none;
+}
+
+/* ---- Response pane ---- */
+
+.blazorql-response {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0;
 }
 
+.blazorql-spinner {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: color-mix(in srgb, var(--blazorql-bg) 55%, transparent);
+    z-index: 20;
+}
+
+.blazorql-spinner-circle {
+    width: 2.2rem;
+    height: 2.2rem;
+    border: 3px solid color-mix(in srgb, var(--blazorql-accent) 30%, transparent);
+    border-top-color: var(--blazorql-accent);
+    border-radius: 50%;
+    animation: blazorql-spin 0.8s linear infinite;
+}
+
+.blazorql-session-footer {
+    border-top: 1px solid var(--blazorql-border);
+    padding: 0.35rem 0.75rem;
+    background: var(--blazorql-panel);
+}
+
+/* ---- Editor hosts ---- */
+
 .blazorql-editor-host {
+    position: relative;
     flex: 1;
     min-height: 0;
+    min-width: 0;
     display: flex;
 }
 

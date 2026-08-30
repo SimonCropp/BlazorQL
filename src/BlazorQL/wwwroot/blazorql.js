@@ -298,6 +298,39 @@ export function stopLocalStream(streamId) {
     iterator?.return?.();
 }
 
+// Detachers for the pane-resizer pointerdown listeners, run on dispose.
+const pointerTrackers = [];
+
+/// Attaches pane-resize dragging to a drag-bar element. While a pointer is captured, every move
+/// reports the pointer's fractional position within the bar's parent container (and the
+/// container's size on that axis, so C# can apply pixel thresholds) through the callback hub.
+export function trackPointer(elementId, resizerId, direction) {
+    const element = document.getElementById(elementId);
+    const onDown = down => {
+        down.preventDefault();
+        element.setPointerCapture(down.pointerId);
+        const onMove = move => {
+            const rect = element.parentElement.getBoundingClientRect();
+            const size = direction === 'x' ? rect.width : rect.height;
+            const offset = direction === 'x' ? move.clientX - rect.left : move.clientY - rect.top;
+            if (size > 0) {
+                dotNet.invokeMethodAsync('OnPaneResize', resizerId, Math.min(Math.max(offset / size, 0), 1), size);
+            }
+        };
+        const stop = up => {
+            element.releasePointerCapture(up.pointerId);
+            element.removeEventListener('pointermove', onMove);
+            element.removeEventListener('pointerup', stop);
+            element.removeEventListener('pointercancel', stop);
+        };
+        element.addEventListener('pointermove', onMove);
+        element.addEventListener('pointerup', stop);
+        element.addEventListener('pointercancel', stop);
+    };
+    element.addEventListener('pointerdown', onDown);
+    pointerTrackers.push(() => element.removeEventListener('pointerdown', onDown));
+}
+
 export function focusEditor(uriName) {
     editors.get(uriName)?.editor.focus();
 }
@@ -342,6 +375,10 @@ export function systemDark() {
 export function dispose() {
     for (const uriName of [...editors.keys()]) {
         disposeEditor(uriName);
+    }
+
+    for (const detach of pointerTrackers.splice(0)) {
+        detach();
     }
 
     dotNet = null;
