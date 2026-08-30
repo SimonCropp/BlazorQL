@@ -1,5 +1,3 @@
-using System.Net.WebSockets;
-
 /// <summary>
 /// Adapts <see cref="ClientWebSocket"/> to <see cref="IWsSocket"/>: text frames only, with
 /// fragmented messages reassembled into one string per receive.

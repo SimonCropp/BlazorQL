@@ -1,4 +1,4 @@
-namespace BlazorQL;
+﻿namespace BlazorQL;
 
 public enum ScanMode
 {
@@ -156,11 +156,12 @@ static class ContextScanner
                     break;
 
                 case '(':
-                    if (frames.Count > 0 && frames.Peek().Kind == FrameKind.Selection && frames.Peek().LastField is not null)
+                    if (frames.TryPeek(out var enclosing) &&
+                        enclosing is {Kind: FrameKind.Selection, LastField: not null})
                     {
                         var arguments = new Frame(FrameKind.Arguments)
                         {
-                            LastField = frames.Peek().LastField
+                            LastField = enclosing.LastField
                         };
                         frames.Push(arguments);
                     }
@@ -173,7 +174,7 @@ static class ContextScanner
                     break;
 
                 case ')':
-                    if (frames.Count > 0 && frames.Peek().Kind == FrameKind.Arguments)
+                    if (frames.TryPeek(out var openArguments) && openArguments.Kind == FrameKind.Arguments)
                     {
                         frames.Pop();
                     }
@@ -187,9 +188,9 @@ static class ContextScanner
                     {
                         variableAwaitingType = true;
                     }
-                    else if (frames.Count > 0)
+                    else if (frames.TryPeek(out var colonFrame))
                     {
-                        frames.Peek().AfterColon = true;
+                        colonFrame.AfterColon = true;
                     }
 
                     break;
@@ -197,12 +198,14 @@ static class ContextScanner
                 case '[':
                     frames.Push(new(FrameKind.List)
                     {
-                        CurrentArgument = frames.Count > 0 ? frames.Peek().CurrentArgument : null
+                        CurrentArgument = frames.TryPeek(out var enclosingList)
+                            ? enclosingList.CurrentArgument
+                            : null
                     });
                     break;
 
                 case ']':
-                    if (frames.Count > 0 && frames.Peek().Kind == FrameKind.List)
+                    if (frames.TryPeek(out var openList) && openList.Kind == FrameKind.List)
                     {
                         frames.Pop();
                     }

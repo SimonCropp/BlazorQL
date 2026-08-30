@@ -63,10 +63,15 @@ public static class HoverEngine
             _ => "type"
         };
 
-    static string Markdown(string signature, string? description) =>
-        description is null
-            ? $"```graphql\n{signature}\n```"
-            : $"```graphql\n{signature}\n```\n\n{description}";
+    static string Markdown(string signature, string? description)
+    {
+        if (description is null)
+        {
+            return $"```graphql\n{signature}\n```";
+        }
+
+        return $"```graphql\n{signature}\n```\n\n{description}";
+    }
 
     internal static (string? Word, int Start, int End) WordAt(string text, int offset)
     {

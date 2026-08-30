@@ -1,9 +1,4 @@
-using GraphQLParser.Exceptions;
-
 namespace BlazorQL;
-
-/// <summary>One operation of a parsed document — what run-at-caret and the picker read.</summary>
-public sealed record OperationFact(string? Name, string Kind, int Start, int End);
 
 /// <summary>
 /// A parsed GraphQL document: the AST when the text parses, the syntax error when it does not, and
@@ -40,10 +35,17 @@ public sealed class DocumentInfo
         }
     }
 
-    public IReadOnlyList<OperationFact> Operations =>
-        Document is null
-            ? []
-            : [
+    public IReadOnlyList<OperationFact> Operations
+    {
+        get
+        {
+            if (Document is null)
+            {
+                return [];
+            }
+
+            return
+            [
                 .. Document.Definitions
                     .OfType<GraphQLOperationDefinition>()
                     .Select(_ => new OperationFact(
@@ -52,11 +54,21 @@ public sealed class DocumentInfo
                         _.Location.Start,
                         _.Location.End))
             ];
+        }
+    }
 
-    public IReadOnlyList<GraphQLFragmentDefinition> Fragments =>
-        Document is null
-            ? []
-            : [.. Document.Definitions.OfType<GraphQLFragmentDefinition>()];
+    public IReadOnlyList<GraphQLFragmentDefinition> Fragments
+    {
+        get
+        {
+            if (Document is null)
+            {
+                return [];
+            }
+
+            return [.. Document.Definitions.OfType<GraphQLFragmentDefinition>()];
+        }
+    }
 
     /// <summary>The operation whose span contains <paramref name="offset"/>, else the first.</summary>
     public OperationFact? OperationAt(int offset)
