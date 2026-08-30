@@ -1,4 +1,4 @@
-/// <summary>Playwright conveniences for the browser tests.</summary>
+﻿/// <summary>Playwright conveniences for the browser tests.</summary>
 static class PageExtensions
 {
     /// <summary>
@@ -65,9 +65,10 @@ static class PageExtensions
     public static Task SetModelValueAsync(this IPage page, string uriPart, string text) =>
         page.EvaluateAsync(
             """
-            args => monaco.editor.getModels()
-                .find(m => m.uri.path.includes(args.uriPart))
-                .setValue(args.text)
+            args => monaco.editor
+                    .getModels()
+                    .find(_ => _.uri.path.includes(args.uriPart))
+                    .setValue(args.text)
             """,
             new
             {
@@ -79,9 +80,10 @@ static class PageExtensions
     public static Task<string> GetModelValueAsync(this IPage page, string uriPart) =>
         page.EvaluateAsync<string>(
             """
-            uriPart => monaco.editor.getModels()
-                .find(m => m.uri.path.includes(uriPart))
-                .getValue()
+            uriPart => monaco.editor
+                    .getModels()
+                    .find(_ => _.uri.path.includes(uriPart))
+                    .getValue()
             """,
             uriPart);
 
@@ -105,9 +107,9 @@ static class PageExtensions
         return await page.EvaluateAsync<string[]>(
             """
             () => Array.from(document.querySelectorAll('.suggest-widget .monaco-list-row'))
-                .map(row => row.querySelector('.label-name'))
-                .filter(label => label)
-                .map(label => label.textContent.trim())
+                    .map(_ => _.querySelector('.label-name'))
+                    .filter(_ => _)
+                    .map(_ => _.textContent.trim())
             """);
     }
 }

@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @namespace BlazorQL.Sample
 @using System.Text.Json
 @using BlazorQL
@@ -71,6 +71,10 @@
         </section>
     </div>
 </div>
+
+@* The debug panel belongs to this consuming app: the explorer page is the IDE itself, and
+   deliberately does not render it. *@
+<BlazorQLSidecar />
 
 @code {
 

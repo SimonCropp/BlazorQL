@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// Verify.Playwright captures of the sample at a fixed viewport. These pngs are the images the
 /// docs embed — an <c>&lt;img&gt;</c> in readme/docs points straight at a <c>*.verified.png</c>, so
 /// a published screenshot cannot drift from the UI: a change fails the snapshot, and accepting the
@@ -89,21 +89,6 @@ public class UiScreenshotTests :
             .PageScreenshotOptions(new(), screenshotOnly: true);
     }
 
-    [Test]
-    public async Task Sidecar()
-    {
-        var page = await OpenWithQueryRun("light");
-
-        await page.ClickAsync("[data-testid='blazorql-sidecar-toggle']");
-        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
-        await page.ClickAsync("[data-testid='blazorql-sidecar-entries'] li:last-child");
-        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
-        await PinSidecarDurations(page);
-
-        await Verify(page)
-            .PageScreenshotOptions(new(), screenshotOnly: true);
-    }
-
     // The captured durations differ run to run; pin them so the capture is of the layout.
     static Task PinSidecarDurations(IPage page) =>
         page.EvaluateAsync(
@@ -158,7 +143,12 @@ public class UiScreenshotTests :
         await page.SetEditorValueAsync(query);
         await page.ClickAsync("[data-testid='execute']");
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().length > 2)",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().length > 2)
+            """,
             null,
             new() {Timeout = 30_000});
     }

@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The sample's default page — an ordinary Blazor app consuming the GraphQL schema through the
 /// shared fetcher: its load-time query, mutation, and subscription, the sidecar capturing them,
 /// and the links into the query explorer.
@@ -72,7 +72,11 @@ public class HomeUiTests :
             page.ClickAsync("[data-testid='blazorql-sidecar-ide-link']"));
         await popup.WaitForIdeReadyAsync();
         await popup.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.getValue().includes('query Profile'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.getValue().includes('query Profile'))
+            """,
             null,
             new() {Timeout = 30_000});
 

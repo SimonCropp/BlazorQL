@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The foundation smoke: the published sample boots with the BlazorMonaco editor stack — Monaco
 /// mounted, graphql/json languages present, and, decisively, a console free of errors, which is
 /// where asset and MIME failures land while the page otherwise looks fine.
@@ -15,7 +15,12 @@ public class BootTests :
         await page.GoToAppAsync(BaseUrl);
 
         var languages = await page.EvaluateAsync<string[]>(
-            "() => monaco.languages.getLanguages().map(l => l.id).filter(l => ['graphql', 'json'].includes(l))");
+            """
+            () => monaco.languages
+                    .getLanguages()
+                    .map(_ => _.id)
+                    .filter(_ => ['graphql', 'json'].includes(_))
+            """);
         Assert.That(languages, Is.EquivalentTo(["graphql", "json"]));
 
         Assert.That(ConsoleErrors(), Is.Empty);
@@ -49,7 +54,12 @@ public class SubpathBootTests :
         await page.GoToAppAsync(BaseUrl);
 
         var languages = await page.EvaluateAsync<string[]>(
-            "() => monaco.languages.getLanguages().map(l => l.id).filter(l => ['graphql', 'json'].includes(l))");
+            """
+            () => monaco.languages
+                    .getLanguages()
+                    .map(_ => _.id)
+                    .filter(_ => ['graphql', 'json'].includes(_))
+            """);
         Assert.That(languages, Is.EquivalentTo(["graphql", "json"]));
 
         Assert.That(ConsoleErrors(), Is.Empty);

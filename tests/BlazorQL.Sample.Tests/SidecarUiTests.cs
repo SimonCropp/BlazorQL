@@ -1,50 +1,43 @@
-/// <summary>
-/// The debug sidecar over the published sample: the floating launcher, capture of executed
-/// queries, the detail view, the IDE deep link, the keyboard shortcut, and clearing.
+﻿/// <summary>
+/// The debug sidecar over the published sample: the floating launcher, capture of the app's
+/// requests, the detail view, the IDE deep link, the keyboard shortcut, and clearing. The sample
+/// renders it on its app page only — the query explorer is the IDE itself, so it never shows there.
 /// </summary>
 [TestFixture]
 [Category("Browser")]
 public class SidecarUiTests :
     BrowserFixture
 {
-    static async Task RunAsync(IPage page, string query)
-    {
-        await page.SetEditorValueAsync(query);
-        await page.ClickAsync("[data-testid='execute']");
-        await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().length > 2)",
-            null,
-            new() {Timeout = 30_000});
-    }
-
     [Test]
     public async Task CapturesExecutedQueries()
     {
         var page = await NewPageAsync();
-        await page.GoToAppAsync(BaseUrl);
+        await page.GoToHomeAsync(BaseUrl);
 
-        await RunAsync(page, "query People { person { name } }");
+        // A second request on top of the page's load-time query.
+        await page.FillAsync("[data-testid='home-echo-input']", "from the sidecar test");
+        await page.ClickAsync("[data-testid='home-echo-send']");
+        await page.WaitForSelectorAsync("[data-testid='home-echo-result']", 10);
 
         await page.ClickAsync("[data-testid='blazorql-sidecar-toggle']");
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
 
-        // The IDE introspects on load, so the log holds that request plus the executed one.
         var rows = page.Locator("[data-testid='blazorql-sidecar-entries'] li");
         Assert.That(await rows.CountAsync(), Is.GreaterThanOrEqualTo(2));
-        var row = page.Locator("[data-testid='blazorql-sidecar-entries'] li", new() {HasTextString = "People"});
+        var row = page.Locator("[data-testid='blazorql-sidecar-entries'] li", new() {HasTextString = "Echo"});
         await row.ClickAsync();
 
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
         var query = await page.Locator("[data-testid='blazorql-sidecar-query']").InnerTextAsync();
-        Assert.That(query, Does.Contain("query People"));
+        Assert.That(query, Does.Contain("mutation Echo"));
         var response = await page.Locator("[data-testid='blazorql-sidecar-response']").First.InnerTextAsync();
-        Assert.That(response, Does.Contain("Mark"));
+        Assert.That(response, Does.Contain("from the sidecar test"));
 
         // The deep link routes to the explorer page with a share fragment carrying exactly the
         // captured operation.
         var href = await page.Locator("[data-testid='blazorql-sidecar-ide-link']").GetAttributeAsync("href");
         Assert.That(href, Does.StartWith("explorer#q="));
-        Assert.That(DecodeShareFragment(href!), Does.Contain("query People"));
+        Assert.That(DecodeShareFragment(href!), Does.Contain("mutation Echo"));
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
@@ -67,12 +60,12 @@ public class SidecarUiTests :
     public async Task ShortcutTogglesAndClearEmpties()
     {
         var page = await NewPageAsync();
-        await page.GoToAppAsync(BaseUrl);
+        await page.GoToHomeAsync(BaseUrl);
 
         await page.Keyboard.PressAsync("Alt+g");
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
 
-        // The introspection request is already captured, so clear has something to forget.
+        // The page's load-time query is already captured, so clear has something to forget.
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-entries']", 10);
         await page.ClickAsync("[data-testid='blazorql-sidecar-clear']");
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-empty']", 10);

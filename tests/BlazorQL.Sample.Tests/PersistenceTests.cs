@@ -16,7 +16,12 @@ public class PersistenceTests :
 
     static Task WaitForOperationTextAsync(IPage page, string contains) =>
         page.WaitForFunctionAsync(
-            $"() => monaco.editor.getModels().some(m => m.uri.path.includes('operation') && m.getValue().includes('{contains}'))",
+            $"""
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('operation') &&
+                               _.getValue().includes('{contains}'))
+            """,
             null,
             new() {Timeout = 30_000});
 
@@ -29,7 +34,12 @@ public class PersistenceTests :
         await page.SetEditorValueAsync("query FromHistory { id }");
         await page.ClickAsync("[data-testid='execute']");
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('abc123'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('abc123'))
+            """,
             null,
             new() {Timeout = 30_000});
 
@@ -98,7 +108,10 @@ public class PersistenceTests :
         await page.ClickAsync("[data-testid='theme-toggle']");
         await page.ClickAsync("[data-testid='theme-toggle']");
         await page.WaitForFunctionAsync(
-            "() => document.documentElement.dataset.theme === 'dark' && localStorage.getItem('blazorql:theme') === 'dark'",
+            """
+            () => document.documentElement.dataset.theme === 'dark' &&
+                  localStorage.getItem('blazorql:theme') === 'dark'
+            """,
             null,
             new() {Timeout = 10_000});
 
@@ -106,7 +119,10 @@ public class PersistenceTests :
         await page.GoToAppAsync(BaseUrl);
 
         await page.WaitForFunctionAsync(
-            "() => document.documentElement.dataset.theme === 'dark' && document.querySelector('.monaco-editor').classList.contains('vs-dark')",
+            """
+            () => document.documentElement.dataset.theme === 'dark' &&
+                  document.querySelector('.monaco-editor').classList.contains('vs-dark')
+            """,
             null,
             new() {Timeout = 10_000});
 
@@ -129,7 +145,7 @@ public class PersistenceTests :
 
         // Every namespaced key is gone.
         Assert.That(
-            await page.EvaluateAsync<int>("() => Object.keys(localStorage).filter(k => k.startsWith('blazorql:')).length"),
+            await page.EvaluateAsync<int>("() => Object.keys(localStorage).filter(_ => _.startsWith('blazorql:')).length"),
             Is.Zero);
 
         // A reload boots fresh: one default tab carrying the sample's demo query.

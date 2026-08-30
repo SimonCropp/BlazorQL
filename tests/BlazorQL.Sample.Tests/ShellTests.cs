@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The M4 layout shell: tabs, editor tools, plugin pane toggles, theming, and the variables/headers
 /// wiring into execution — all over the published sample.
 /// </summary>
@@ -17,30 +17,34 @@ public class ShellTests :
 
         // A new tab starts empty and becomes active.
         await page.ClickAsync("[data-testid='tab-add']");
-        await WaitForOperationTextAsync(page, "m.getValue() === ''");
+        await WaitForOperationTextAsync(page, "_.getValue() === ''");
 
         await page.SetEditorValueAsync("query Two { test }");
 
         // Switching back restores the first tab's text.
         await page.ClickAsync(".blazorql-tab-button:has-text('One')");
-        await WaitForOperationTextAsync(page, "m.getValue().includes('One')");
+        await WaitForOperationTextAsync(page, "_.getValue().includes('One')");
 
         // And forward again restores the second's.
         await page.ClickAsync(".blazorql-tab-button:has-text('Two')");
-        await WaitForOperationTextAsync(page, "m.getValue().includes('Two')");
+        await WaitForOperationTextAsync(page, "_.getValue().includes('Two')");
 
         // Closing the active tab falls back to its neighbour.
         await page.ClickAsync(".blazorql-tab.blazorql-active [aria-label='Close Tab']");
-        await WaitForOperationTextAsync(page, "m.getValue().includes('One')");
+        await WaitForOperationTextAsync(page, "_.getValue().includes('One')");
 
         // A single remaining tab has no close button.
         Assert.That(await page.Locator("[aria-label='Close Tab']").CountAsync(), Is.Zero);
     }
 
-    /// <summary>Waits until the operation model (bound as <c>m</c>) satisfies the condition.</summary>
+    /// <summary>Waits until the operation model (bound as <c>_</c>) satisfies the condition.</summary>
     static Task WaitForOperationTextAsync(IPage page, string condition) =>
         page.WaitForFunctionAsync(
-            $"() => monaco.editor.getModels().some(m => m.uri.path.includes('operation') && ({condition}))",
+            $"""
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('operation') && ({condition}))
+            """,
             null,
             new() {Timeout = 30_000});
 
@@ -67,7 +71,12 @@ public class ShellTests :
         await page.ClickAsync("[data-testid='execute']");
 
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('invalid JSON'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('invalid JSON'))
+            """,
             null,
             new() {Timeout = 30_000});
     }
@@ -84,7 +93,11 @@ public class ShellTests :
         // The language mode regenerates the variables JSON Schema from the operation and the json
         // worker flags the mistyped value on the variables model.
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModelMarkers({}).some(m => m.resource.path.includes('variables'))",
+            """
+            () => monaco.editor
+                    .getModelMarkers({})
+                    .some(_ => _.resource.path.includes('variables'))
+            """,
             null,
             new() {Timeout = 30_000});
     }
@@ -126,14 +139,20 @@ public class ShellTests :
         // Light -> Dark: the attribute flips and Monaco editors pick up the dark theme class.
         await page.ClickAsync("[data-testid='theme-toggle']");
         await page.WaitForFunctionAsync(
-            "() => document.documentElement.dataset.theme === 'dark' && document.querySelector('.monaco-editor').classList.contains('vs-dark')",
+            """
+            () => document.documentElement.dataset.theme === 'dark' &&
+                  document.querySelector('.monaco-editor').classList.contains('vs-dark')
+            """,
             null,
             new() {Timeout = 10_000});
 
         // Dark -> System: back to light, dark class gone.
         await page.ClickAsync("[data-testid='theme-toggle']");
         await page.WaitForFunctionAsync(
-            "() => document.documentElement.dataset.theme === 'light' && !document.querySelector('.monaco-editor').classList.contains('vs-dark')",
+            """
+            () => document.documentElement.dataset.theme === 'light' &&
+                  !document.querySelector('.monaco-editor').classList.contains('vs-dark')
+            """,
             null,
             new() {Timeout = 10_000});
     }

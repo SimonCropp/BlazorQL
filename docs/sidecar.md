@@ -1,4 +1,4 @@
-# Debug sidecar
+﻿# Debug sidecar
 
 An opt-out debug panel for apps that use BlazorQL fetchers. It opens on the right and lists every GraphQL request made through a wrapped fetcher — operation text, variables, headers, and each response document, pretty-printed. A subscription's events and incremental-delivery patches accumulate on their entry as they arrive.
 
@@ -73,9 +73,7 @@ Selecting an entry shows its detail: the operation text, variables, headers, and
 - **Copy query** / **Copy variables** — to the clipboard.
 - **Open in BlazorQL** — opens `IdeRoute` in a new tab with the captured query and variables carried in a `#q=` share fragment, exactly like the IDE's own share button. The fragment never reaches a server, and by construction cannot carry headers. The default route (the empty string) targets the current page, which is right when the sidecar sits beside the IDE itself; point it elsewhere when the IDE lives on another route (the sample routes it to its `explorer` page), or set it null to hide the action.
 
-The panel works the same on a page that *is* the IDE — the sample's query explorer renders it too:
-
-<img src="../tests/BlazorQL.Sample.Tests/UiScreenshotTests.Sidecar.verified.png" border="1" alt="The sidecar open beside the IDE, showing a captured query with its response">
+The panel works the same on a page that *is* the IDE, where the default empty `IdeRoute` targets the current page. The sample does not do that: its query explorer is the IDE, so the panel is rendered on the app page alone.
 
 
 ## Options

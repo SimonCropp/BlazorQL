@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 /// <summary>
 /// The M5 documentation explorer over the published sample: stack navigation from the root page
@@ -77,7 +77,12 @@ public class DocExplorerUiTests :
         // The lazily created read-only editor carries the printed schema.
         await page.WaitForSelectorAsync(".blazorql-docs-sdl:not(.blazorql-hidden)", 10);
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('schema.graphql') && m.getValue().includes('type Test'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('schema.graphql') &&
+                               _.getValue().includes('type Test'))
+            """,
             null,
             new() {Timeout = 30_000});
 

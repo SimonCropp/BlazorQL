@@ -1,6 +1,5 @@
-@namespace BlazorQL.Sample
+﻿@namespace BlazorQL.Sample
 @using Microsoft.AspNetCore.Components.Routing
-@using BlazorQL
 
 <Router AppAssembly="typeof(App).Assembly">
     <Found Context="routeData">
@@ -10,5 +9,3 @@
         <p class="route-missing">There is nothing at this address. <a href=".">Back to the sample</a>.</p>
     </NotFound>
 </Router>
-@* Outside the router so the debug panel is on every page. *@
-<BlazorQLSidecar />

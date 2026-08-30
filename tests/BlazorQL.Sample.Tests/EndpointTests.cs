@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The sample's endpoint box: applying an endpoint swaps the IDE's fetcher, which re-introspects.
 /// A dead endpoint fails visibly; clearing it restores the in-browser schema. Console errors are
 /// deliberately not asserted here — the dead endpoint logs network failures.
@@ -18,7 +18,12 @@ public class EndpointTests :
         await page.FillAsync("[data-testid='endpoint']", "http://127.0.0.1:1/graphql");
         await page.ClickAsync("[data-testid='endpoint-apply']");
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('Introspection failed'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('Introspection failed'))
+            """,
             null,
             new() {Timeout = 30_000});
 
@@ -28,7 +33,12 @@ public class EndpointTests :
         await page.SetEditorValueAsync("{ id }");
         await page.ClickAsync("[data-testid='execute']");
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('abc123'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('abc123'))
+            """,
             null,
             new() {Timeout = 30_000});
     }

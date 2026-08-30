@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The M7 toolbar operations over the published sample: prettify, merge, copy, fill-leaves on
 /// execute, share links, the response copy/download overlay, the status footer, and the global
 /// re-fetch shortcut.
@@ -10,13 +10,23 @@ public class ToolbarTests :
 {
     static Task WaitForOperationTextAsync(IPage page, string contains) =>
         page.WaitForFunctionAsync(
-            $"() => monaco.editor.getModels().some(m => m.uri.path.includes('operation') && m.getValue().includes('{contains}'))",
+            $"""
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('operation') &&
+                               _.getValue().includes('{contains}'))
+            """,
             null,
             new() {Timeout = 30_000});
 
     static Task WaitForResponseTextAsync(IPage page, string contains) =>
         page.WaitForFunctionAsync(
-            $"() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('{contains}'))",
+            $"""
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('{contains}'))
+            """,
             null,
             new() {Timeout = 30_000});
 
@@ -32,13 +42,15 @@ public class ToolbarTests :
         // The formatter splits the selection set one indented field per line.
         await page.WaitForFunctionAsync(
             """
-            () => monaco.editor.getModels().some(m => {
-                if (!m.uri.path.includes('operation')) {
-                    return false;
-                }
-                const text = m.getValue();
-                return text.includes('  id') && text.includes('  isTest') && text.split('\n').length >= 4;
-            })
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => {
+                        if (!_.uri.path.includes('operation')) {
+                            return false;
+                        }
+                        const text = _.getValue();
+                        return text.includes('  id') && text.includes('  isTest') && text.split('\n').length >= 4;
+                    })
             """,
             null,
             new() {Timeout = 30_000});
@@ -56,13 +68,15 @@ public class ToolbarTests :
 
         await page.WaitForFunctionAsync(
             """
-            () => monaco.editor.getModels().some(m => {
-                if (!m.uri.path.includes('operation')) {
-                    return false;
-                }
-                const text = m.getValue();
-                return text.includes('query A') && text.includes('id') && !text.includes('fragment');
-            })
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => {
+                        if (!_.uri.path.includes('operation')) {
+                            return false;
+                        }
+                        const text = _.getValue();
+                        return text.includes('query A') && text.includes('id') && !text.includes('fragment');
+                    })
             """,
             null,
             new() {Timeout = 30_000});

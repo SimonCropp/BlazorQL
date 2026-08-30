@@ -38,7 +38,7 @@ var document = await QueryAsync(
     }
     """);
 ```
-<sup><a href='/samples/BlazorQL.Sample/Pages/Home.razor#L96-L111' title='Snippet source file'>snippet source</a> | <a href='#snippet-homeQuery' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/BlazorQL.Sample/Pages/Home.razor#L100-L115' title='Snippet source file'>snippet source</a> | <a href='#snippet-homeQuery' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Because every request goes through the shared fetcher, the [debug sidecar](sidecar.md) shows each one as it happens — which is the page's point: a realistic app to watch through the sidecar. A link in the header opens the query explorer.

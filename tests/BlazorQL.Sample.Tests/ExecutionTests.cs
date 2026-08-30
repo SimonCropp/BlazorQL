@@ -1,4 +1,4 @@
-/// <summary>
+﻿/// <summary>
 /// The core loop against the in-browser schema: schema-aware completion and validation from the
 /// language worker, execution through the local GraphQL.NET fetcher, and subscription streaming —
 /// all with no server anywhere.
@@ -28,7 +28,11 @@ public class ExecutionTests :
 
         await page.SetEditorValueAsync("{ nope }");
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModelMarkers({}).some(m => m.message.includes('Cannot query field'))",
+            """
+            () => monaco.editor
+                    .getModelMarkers({})
+                    .some(_ => _.message.includes('Cannot query field'))
+            """,
             null,
             new() {Timeout = 30_000});
     }
@@ -43,7 +47,12 @@ public class ExecutionTests :
         await page.ClickAsync("[data-testid='execute']");
 
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('abc123'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('abc123'))
+            """,
             null,
             new() {Timeout = 30_000});
 
@@ -61,7 +70,12 @@ public class ExecutionTests :
 
         // The last of the five greetings; each event replaced the response on its way through.
         await page.WaitForFunctionAsync(
-            "() => monaco.editor.getModels().some(m => m.uri.path.includes('response') && m.getValue().includes('Zdravo'))",
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('Zdravo'))
+            """,
             null,
             new() {Timeout = 30_000});
     }
@@ -79,13 +93,15 @@ public class ExecutionTests :
 
         await page.WaitForFunctionAsync(
             """
-            () => monaco.editor.getModels().some(m => {
-                if (!m.uri.path.includes('response')) {
-                    return false;
-                }
-                const text = m.getValue();
-                return text.includes('Nice') && text.includes('longer than I thought');
-            })
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => {
+                        if (!_.uri.path.includes('response')) {
+                            return false;
+                        }
+                        const text = _.getValue();
+                        return text.includes('Nice') && text.includes('longer than I thought');
+                    })
             """,
             null,
             new() {Timeout = 30_000});
