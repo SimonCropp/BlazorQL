@@ -77,7 +77,7 @@ public class SidecarTests
     {
         var store = NewStore();
         var fetcher = new SidecarFetcher(new HangingFetcher("""{"data":{"greeting":"Hi"}}"""), store);
-        using var cancelSource = new CancellationTokenSource();
+        using var cancelSource = new CancelSource();
 
         var caught = false;
         try
@@ -108,7 +108,7 @@ public class SidecarTests
             new FakeFetcher("""{"data":{"n":1}}""", """{"data":{"n":2}}"""),
             store);
 
-        await foreach (var _ in fetcher.FetchAsync(new("{ n }"), noHeaders, CancellationToken.None))
+        await foreach (var _ in fetcher.FetchAsync(new("{ n }"), noHeaders, Cancel.None))
         {
             break;
         }
@@ -213,7 +213,7 @@ public class SidecarTests
         IReadOnlyDictionary<string, string> headers)
     {
         var documents = new List<JsonElement>();
-        await foreach (var document in fetcher.FetchAsync(request, headers, CancellationToken.None))
+        await foreach (var document in fetcher.FetchAsync(request, headers, Cancel.None))
         {
             documents.Add(document);
         }
@@ -233,7 +233,7 @@ public class SidecarTests
         public async IAsyncEnumerable<JsonElement> FetchAsync(
             GraphQLRequest request,
             IReadOnlyDictionary<string, string> headers,
-            [EnumeratorCancellation] CancellationToken cancel)
+            [EnumeratorCancellation] Cancel cancel)
         {
             foreach (var document in documents)
             {
@@ -249,10 +249,11 @@ public class SidecarTests
         public async IAsyncEnumerable<JsonElement> FetchAsync(
             GraphQLRequest request,
             IReadOnlyDictionary<string, string> headers,
-            [EnumeratorCancellation] CancellationToken cancel)
+            [EnumeratorCancellation] Cancel cancel)
         {
             await Task.Yield();
             // The condition keeps the trailing yield reachable to the compiler; it always throws.
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse
             if (message.Length >= 0)
             {
                 throw new InvalidOperationException(message);
@@ -269,7 +270,7 @@ public class SidecarTests
         public async IAsyncEnumerable<JsonElement> FetchAsync(
             GraphQLRequest request,
             IReadOnlyDictionary<string, string> headers,
-            [EnumeratorCancellation] CancellationToken cancel)
+            [EnumeratorCancellation] Cancel cancel)
         {
             foreach (var document in documents)
             {

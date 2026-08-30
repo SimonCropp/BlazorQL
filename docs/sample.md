@@ -12,7 +12,7 @@ The deployed sample is a standalone Blazor WebAssembly app with **no backend**: 
 builder.Services.AddSingleton<IGraphQLFetcher>(_ =>
     new SidecarFetcher(new LocalSchemaFetcher(), _.GetRequiredService<SidecarStore>()));
 ```
-<sup><a href='/samples/BlazorQL.Sample/Program.cs#L16-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/samples/BlazorQL.Sample/Program.cs#L15-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 

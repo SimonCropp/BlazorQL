@@ -85,7 +85,7 @@
     string echoInput = "Hello from Blazor";
     string? echoResult;
     readonly List<string> greetings = [];
-    CancellationTokenSource? feed;
+    CancelSource? feed;
 
     sealed record Profile(string Name, int Age, List<string> Friends);
 
@@ -142,7 +142,7 @@
         }
 
         greetings.Clear();
-        using var cancellation = new CancellationTokenSource();
+        using var cancellation = new CancelSource();
         feed = cancellation;
         try
         {
@@ -166,7 +166,7 @@
     // The fetcher shape is a stream of documents; a query or mutation is the one-document case.
     async Task<JsonElement> QueryAsync(string query, JsonElement? variables = null)
     {
-        await foreach (var document in Fetcher.FetchAsync(new(query, variables), headers, CancellationToken.None))
+        await foreach (var document in Fetcher.FetchAsync(new(query, variables), headers, Cancel.None))
         {
             return document;
         }

@@ -11,9 +11,9 @@ public partial class DocExplorer :
     IAsyncDisposable
 {
     internal const string SdlElementId = "blazorql-doc-sdl-editor";
-    const string SdlModelUri = "inmemory://model/blazorql-schema.graphql";
-    const int SearchDebounceMs = 200;
-    const int SearchResultCap = 100;
+    const string sdlModelUri = "inmemory://model/blazorql-schema.graphql";
+    const int searchDebounceMs = 200;
+    const int searchResultCap = 100;
 
     [Inject]
     public IJSRuntime JS { get; set; } = null!;
@@ -173,7 +173,7 @@ public partial class DocExplorer :
     {
         try
         {
-            await Task.Delay(SearchDebounceMs, cancel);
+            await Task.Delay(searchDebounceMs, cancel);
         }
         catch (OperationCanceledException)
         {
@@ -254,7 +254,7 @@ public partial class DocExplorer :
         bool Add(List<SearchMatch> bucket, SearchMatch match, ref int count)
         {
             bucket.Add(match);
-            if (++count < SearchResultCap)
+            if (++count < searchResultCap)
             {
                 return false;
             }
@@ -332,7 +332,7 @@ public partial class DocExplorer :
         }
 
         lastSdl = SchemaSdl;
-        sdlModel = await Global.CreateModel(JS, SchemaSdl ?? "", "graphql", SdlModelUri);
+        sdlModel = await Global.CreateModel(JS, SchemaSdl ?? "", "graphql", sdlModelUri);
         await sdlEditor.SetModel(sdlModel);
     }
 
