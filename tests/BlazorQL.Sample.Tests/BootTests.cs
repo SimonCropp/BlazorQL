@@ -20,6 +20,15 @@ public class BootTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    [Test]
+    public async Task HomeBootsCleanly()
+    {
+        var page = await NewPageAsync();
+        await page.GoToHomeAsync(BaseUrl);
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
 }
 
 /// <summary>
@@ -42,6 +51,23 @@ public class SubpathBootTests :
         var languages = await page.EvaluateAsync<string[]>(
             "() => monaco.languages.getLanguages().map(l => l.id).filter(l => ['graphql', 'json'].includes(l))");
         Assert.That(languages, Is.EquivalentTo(["graphql", "json"]));
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+
+    /// <summary>
+    /// The home page's explorer link and the sidecar's IDE deep link are relative hrefs; this is
+    /// what keeps them resolving through the base href rather than to the site root.
+    /// </summary>
+    [Test]
+    public async Task HomeLinksResolveUnderTheSubpath()
+    {
+        var page = await NewPageAsync();
+        await page.GoToHomeAsync(BaseUrl);
+
+        await page.ClickAsync("[data-testid='open-explorer']");
+        await page.WaitForIdeReadyAsync();
+        Assert.That(page.Url, Does.Contain("/BlazorQL/explorer"));
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }

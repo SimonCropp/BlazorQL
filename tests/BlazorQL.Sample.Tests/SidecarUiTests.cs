@@ -40,9 +40,10 @@ public class SidecarUiTests :
         var response = await page.Locator("[data-testid='blazorql-sidecar-response']").First.InnerTextAsync();
         Assert.That(response, Does.Contain("Mark"));
 
-        // The deep link is a share fragment carrying exactly the captured operation.
+        // The deep link routes to the explorer page with a share fragment carrying exactly the
+        // captured operation.
         var href = await page.Locator("[data-testid='blazorql-sidecar-ide-link']").GetAttributeAsync("href");
-        Assert.That(href, Does.StartWith("#q="));
+        Assert.That(href, Does.StartWith("explorer#q="));
         Assert.That(DecodeShareFragment(href!), Does.Contain("query People"));
 
         Assert.That(ConsoleErrors(), Is.Empty);
@@ -55,7 +56,7 @@ public class SidecarUiTests :
     /// </summary>
     static string DecodeShareFragment(string href)
     {
-        var payload = href["#q=".Length..]
+        var payload = href[(href.IndexOf("#q=", StringComparison.Ordinal) + "#q=".Length)..]
             .Replace('-', '+')
             .Replace('_', '/');
         payload = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');

@@ -1,0 +1,180 @@
+@page "/"
+@namespace BlazorQL.Sample
+@using System.Text.Json
+@using BlazorQL
+@implements IDisposable
+@inject IGraphQLFetcher Fetcher
+
+<div class="home">
+    <header class="home-header">
+        <div>
+            <h1>BlazorQL sample app</h1>
+            <p>
+                An ordinary Blazor page consuming a GraphQL API — every request below goes through
+                the same fetcher the query explorer uses, so the debug sidecar (<kbd>Alt</kbd>+<kbd>G</kbd>
+                or the corner button) shows each one as it happens: the operation, variables,
+                headers, and every response document.
+            </p>
+        </div>
+        <a class="home-explorer-link" data-testid="open-explorer" href="explorer">Open the query explorer</a>
+    </header>
+
+    <div class="home-cards">
+        <section class="home-card" data-testid="home-profile">
+            <h2>Profile</h2>
+            <p class="home-hint">A query, run when the page loads.</p>
+            @if (profileError is not null)
+            {
+                <p class="home-error" data-testid="home-profile-error">@profileError</p>
+            }
+            else if (profile is null)
+            {
+                <p class="home-hint">Loading…</p>
+            }
+            else
+            {
+                <p class="home-name" data-testid="home-name">@profile.Name <span class="home-age">age @profile.Age</span></p>
+                <ul class="home-friends" data-testid="home-friends">
+                    @foreach (var friend in profile.Friends)
+                    {
+                        <li>@friend</li>
+                    }
+                </ul>
+            }
+        </section>
+
+        <section class="home-card" data-testid="home-echo">
+            <h2>Echo</h2>
+            <p class="home-hint">A mutation, sent when the button is clicked.</p>
+            <div class="home-echo-row">
+                <input data-testid="home-echo-input" @bind="echoInput" />
+                <button type="button" data-testid="home-echo-send" @onclick="SendAsync">Send</button>
+            </div>
+            @if (echoResult is not null)
+            {
+                <p class="home-echo-result" data-testid="home-echo-result">The server echoed: <strong>@echoResult</strong></p>
+            }
+        </section>
+
+        <section class="home-card" data-testid="home-feed">
+            <h2>Live greetings</h2>
+            <p class="home-hint">A subscription — one request, a stream of documents.</p>
+            <button type="button" data-testid="home-feed-toggle" @onclick="ToggleFeedAsync">
+                @(feed is null ? "Start" : "Stop")
+            </button>
+            <ul class="home-greetings" data-testid="home-greetings">
+                @foreach (var greeting in greetings)
+                {
+                    <li>@greeting</li>
+                }
+            </ul>
+        </section>
+    </div>
+</div>
+
+@code {
+
+    // A header the sidecar can show; a real app would carry auth here.
+    static readonly Dictionary<string, string> headers = new()
+    {
+        ["x-sample-app"] = "home"
+    };
+
+    Profile? profile;
+    string? profileError;
+    string echoInput = "Hello from Blazor";
+    string? echoResult;
+    readonly List<string> greetings = [];
+    CancellationTokenSource? feed;
+
+    sealed record Profile(string Name, int Age, List<string> Friends);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // begin-snippet: homeQuery
+            // An ordinary app query through the shared fetcher — the sidecar records it like
+            // any other, alongside everything the query explorer sends.
+            var document = await QueryAsync(
+                """
+                query Profile {
+                  person {
+                    name
+                    age(delay: 21)
+                    friends {
+                      name
+                    }
+                  }
+                }
+                """);
+            // end-snippet
+            var person = document.GetProperty("data").GetProperty("person");
+            profile = new(
+                person.GetProperty("name").GetString()!,
+                person.GetProperty("age").GetInt32(),
+                [.. person.GetProperty("friends").EnumerateArray().Select(_ => _.GetProperty("name").GetString()!)]);
+        }
+        catch (Exception exception)
+        {
+            profileError = exception.Message;
+        }
+    }
+
+    async Task SendAsync()
+    {
+        var document = await QueryAsync(
+            """
+            mutation Echo($value: String) {
+              setString(value: $value)
+            }
+            """,
+            JsonSerializer.SerializeToElement(new {value = echoInput}));
+        echoResult = document.GetProperty("data").GetProperty("setString").GetString();
+    }
+
+    async Task ToggleFeedAsync()
+    {
+        if (feed is not null)
+        {
+            await feed.CancelAsync();
+            return;
+        }
+
+        greetings.Clear();
+        using var cancellation = new CancellationTokenSource();
+        feed = cancellation;
+        try
+        {
+            var request = new GraphQLRequest("subscription Greetings { message(delay: 400) }");
+            await foreach (var document in Fetcher.FetchAsync(request, headers, cancellation.Token))
+            {
+                greetings.Add(document.GetProperty("data").GetProperty("message").GetString()!);
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Stopped by the button or by leaving the page.
+        }
+        finally
+        {
+            feed = null;
+        }
+    }
+
+    // The fetcher shape is a stream of documents; a query or mutation is the one-document case.
+    async Task<JsonElement> QueryAsync(string query, JsonElement? variables = null)
+    {
+        await foreach (var document in Fetcher.FetchAsync(new(query, variables), headers, CancellationToken.None))
+        {
+            return document;
+        }
+
+        throw new InvalidOperationException("The request produced no response document.");
+    }
+
+    public void Dispose() =>
+        feed?.Cancel();
+
+}

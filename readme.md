@@ -2,7 +2,7 @@
 
 An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor Class Library. The editors are Monaco via the BlazorMonaco package, and everything else — shell, panes, state, and every language feature (completion, validation, hover, formatting) — is C#.
 
-**[Try it live](https://simoncropp.github.io/BlazorQL/)** — the sample app on GitHub Pages, executing its whole schema in the browser.
+**[Try it live](https://simoncropp.github.io/BlazorQL/)** — the sample on GitHub Pages, executing its whole schema in the browser: a small Blazor app consuming the schema, with the query explorer and the debug sidecar one click away.
 
 <img src="tests/BlazorQL.Sample.Tests/UiScreenshotTests.HeroLight.verified.png" border="1" alt="BlazorQL running a query: the operation editor, toolbar, and formatted response">
 
@@ -29,20 +29,8 @@ Dark mode:
 
 Add the `BlazorQL` package to a Blazor WebAssembly app, then render the component with a fetcher:
 
-<!-- snippet: sampleFetcher -->
-<a id='snippet-sampleFetcher'></a>
 ```razor
-// The whole schema lives in the browser by default: GraphQL.NET executes it inside the WASM
-// app itself, so the sample deploys to static hosting with subscriptions intact. The sidecar
-// decorator records every request the IDE makes into the debug panel.
-protected override void OnInitialized() =>
-    fetcher = new SidecarFetcher(new LocalSchemaFetcher(), Sidecar);
-```
-<sup><a href='/samples/BlazorQL.Sample/App.razor#L22-L28' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
-<!-- endSnippet -->
-
-```razor
-<BlazorQLIde Fetcher="fetcher" />
+<BlazorQLIde Fetcher="@(new HttpFetcher("https://example.com/graphql"))" />
 ```
 
 A fetcher is one interface covering queries, incremental delivery, and subscriptions:
