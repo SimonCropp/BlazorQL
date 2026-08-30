@@ -1,6 +1,8 @@
-# <img src="icon.png" height="40px" alt="icon"> BlazorQL
+﻿# <img src="icon.png" height="40px" alt="icon"> BlazorQL
 
 An in-browser GraphQL IDE for Blazor — a GraphiQL alternative built as a Razor Class Library. The editors are Monaco via the BlazorMonaco package, and everything else — shell, panes, state, and every language feature (completion, validation, hover, formatting) — is C#.
+
+**[Try it live](https://simoncropp.github.io/BlazorQL/)** — the sample app on GitHub Pages, executing its whole schema in the browser.
 
 <img src="tests/BlazorQL.Sample.Tests/UiScreenshotTests.HeroLight.verified.png" border="1" alt="BlazorQL running a query: the operation editor, toolbar, and formatted response">
 
