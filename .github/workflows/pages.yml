@@ -22,7 +22,7 @@ jobs:
         with:
           global-json-file: global.json
       - name: Publish the sample
-        run: dotnet publish samples/BlazorQL.Sample -c Release -o publish
+        run: dotnet publish src/BlazorQL.Sample -c Release -o publish
       # begin-snippet: pagesRewrite
       # GitHub Pages serves the site under /<repo>/, so the app's base href moves with it; the
       # underscore-prefixed _framework directory needs Jekyll turned off; and a 404 that re-serves

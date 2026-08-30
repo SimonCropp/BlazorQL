@@ -1,4 +1,4 @@
-﻿# Debug sidecar
+# Debug sidecar
 
 An opt-out debug panel for apps that use BlazorQL fetchers. It opens on the right and lists every GraphQL request made through a wrapped fetcher — operation text, variables, headers, and each response document, pretty-printed. A subscription's events and incremental-delivery patches accumulate on their entry as they arrive.
 
@@ -19,7 +19,7 @@ Register in `Program.cs`:
 // "Open in BlazorQL" on a captured request opens the query-explorer page.
 builder.Services.AddBlazorQLSidecar(_ => _.IdeRoute = "explorer");
 ```
-<sup><a href='/samples/BlazorQL.Sample/Program.cs#L10-L13' title='Snippet source file'>snippet source</a> | <a href='#snippet-sidecarRegistrationSample' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/BlazorQL.Sample/Program.cs#L10-L13' title='Snippet source file'>snippet source</a> | <a href='#snippet-sidecarRegistrationSample' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Wrap the fetcher the app already uses — `SidecarFetcher` decorates any `IGraphQLFetcher` and changes nothing about what flows through it:
@@ -34,7 +34,7 @@ Wrap the fetcher the app already uses — `SidecarFetcher` decorates any `IGraph
 builder.Services.AddSingleton<IGraphQLFetcher>(_ =>
     new SidecarFetcher(new LocalSchemaFetcher(), _.GetRequiredService<SidecarStore>()));
 ```
-<sup><a href='/samples/BlazorQL.Sample/Program.cs#L15-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/BlazorQL.Sample/Program.cs#L15-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Render the panel once, anywhere on the page:

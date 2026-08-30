@@ -12,7 +12,7 @@ The deployed sample is a standalone Blazor WebAssembly app with **no backend**: 
 builder.Services.AddSingleton<IGraphQLFetcher>(_ =>
     new SidecarFetcher(new LocalSchemaFetcher(), _.GetRequiredService<SidecarStore>()));
 ```
-<sup><a href='/samples/BlazorQL.Sample/Program.cs#L15-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/BlazorQL.Sample/Program.cs#L15-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 
@@ -38,7 +38,7 @@ var document = await QueryAsync(
     }
     """);
 ```
-<sup><a href='/samples/BlazorQL.Sample/Pages/Home.razor#L100-L115' title='Snippet source file'>snippet source</a> | <a href='#snippet-homeQuery' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/BlazorQL.Sample/Pages/Home.razor#L100-L115' title='Snippet source file'>snippet source</a> | <a href='#snippet-homeQuery' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Because every request goes through the shared fetcher, the [debug sidecar](sidecar.md) shows each one as it happens — which is the page's point: a realistic app to watch through the sidecar. A link in the header opens the query explorer.

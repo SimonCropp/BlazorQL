@@ -11,6 +11,7 @@
     <PackageReference Include="GraphQL.SystemTextJson" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" PrivateAssets="all" />
-    <ProjectReference Include="..\..\src\BlazorQL\BlazorQL.csproj" />
+    
+    <ProjectReference Include="..\BlazorQL\BlazorQL.csproj" />
   </ItemGroup>
 </Project>

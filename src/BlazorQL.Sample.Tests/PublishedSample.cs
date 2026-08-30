@@ -29,7 +29,7 @@ public class PublishedSample
             throw new DirectoryNotFoundException("Could not locate the repository root from the test output directory.");
         }
 
-        var project = Path.Combine(directory.FullName, "samples", "BlazorQL.Sample", "BlazorQL.Sample.csproj");
+        var project = Path.Combine(directory.FullName, "src", "BlazorQL.Sample", "BlazorQL.Sample.csproj");
         publishDirectory = Directory.CreateTempSubdirectory("blazorql_publish_").FullName;
 
         var info = new ProcessStartInfo("dotnet")
