@@ -15,9 +15,11 @@
 
     const string localSchemaUrl = "test-schema/index.js";
 
+    // begin-snippet: sampleFetcher
     // The whole schema lives in the browser by default: graphql-js executes it inside the page, so
     // the sample deploys to static hosting with subscriptions and incremental delivery intact.
     IGraphQLFetcher fetcher = new LocalSchemaFetcher(localSchemaUrl);
+    // end-snippet
 
     string endpoint = "";
 

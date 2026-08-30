@@ -5,6 +5,7 @@ namespace BlazorQL;
 /// query or mutation yields one document; incremental delivery (@defer/@stream) yields the initial
 /// payload then patches; a subscription yields one document per event until cancelled.
 /// </summary>
+// begin-snippet: fetcherInterface
 public interface IGraphQLFetcher
 {
     IAsyncEnumerable<JsonElement> FetchAsync(
@@ -12,3 +13,4 @@ public interface IGraphQLFetcher
         IReadOnlyDictionary<string, string> headers,
         CancellationToken cancel);
 }
+// end-snippet

@@ -40,8 +40,10 @@ public sealed class HistoryStore
 
     sealed record PersistedFavorites(List<HistoryItem?>? Favorites);
 
+    /// <param name="storage">The namespaced store the two history keys live in.</param>
     /// <param name="queryParses">Whether a query text parses as GraphQL — injected so tests can
     /// stub the host module's getOperationFacts.</param>
+    /// <param name="maxLength">The non-favorite cap; favorites are never evicted.</param>
     public HistoryStore(StorageService storage, Func<string, bool> queryParses, int maxLength = 20)
     {
         this.storage = storage;

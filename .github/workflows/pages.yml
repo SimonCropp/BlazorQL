@@ -1,0 +1,40 @@
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Publish the sample
+        run: dotnet publish samples/BlazorQL.Sample -c Release -o publish
+      # begin-snippet: pagesRewrite
+      # GitHub Pages serves the site under /<repo>/, so the app's base href moves with it; the
+      # underscore-prefixed _framework directory needs Jekyll turned off; and a 404 that re-serves
+      # the app keeps deep links working on a static host.
+      - name: Prepare for Pages
+        run: |
+          sed -i 's|<base href="/" />|<base href="/BlazorQL/" />|' publish/wwwroot/index.html
+          touch publish/wwwroot/.nojekyll
+          cp publish/wwwroot/index.html publish/wwwroot/404.html
+      # end-snippet
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/wwwroot
+      - id: deployment
+        uses: actions/deploy-pages@v4

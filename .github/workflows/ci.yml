@@ -1,0 +1,31 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  build:
+    # Windows: the screenshot baselines were rasterized here, and png comparison is
+    # rasterizer-sensitive even with SSIM tolerance.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\ms-playwright
+          key: playwright-${{ hashFiles('Directory.Packages.props') }}
+      - name: Build
+        run: dotnet build BlazorQL.slnx -c Release
+      - name: Test
+        run: dotnet test BlazorQL.slnx -c Release --no-build
+      - name: Upload received snapshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: received
+          path: '**/*.received.*'
+          if-no-files-found: ignore
