@@ -1,0 +1,51 @@
+@page "/explorer"
+@namespace BlazorQL.Sample
+@using BlazorQL
+@inject SidecarStore Sidecar
+@inject IGraphQLFetcher SharedFetcher
+
+<div class="sample-shell">
+    <div class="endpoint-bar">
+        <input data-testid="endpoint"
+               placeholder="GraphQL endpoint url — empty runs the built-in schema in your browser"
+               @bind="endpoint" />
+        <button type="button" data-testid="endpoint-apply" @onclick="Apply">Apply</button>
+    </div>
+    <BlazorQLIde Fetcher="fetcher" DefaultQuery="@DemoQuery.Text" />
+</div>
+
+@code {
+
+    IGraphQLFetcher fetcher = null!;
+
+    string endpoint = "";
+
+    // The registered fetcher runs the built-in schema — the same instance the home page queries
+    // through, so both pages land in the one sidecar log.
+    protected override void OnInitialized() =>
+        fetcher = SharedFetcher;
+
+    // Empty falls back to the in-browser schema; ws(s):// speaks graphql-transport-ws; anything
+    // else posts over http. Swapping the parameter makes the IDE re-introspect.
+    void Apply()
+    {
+        var url = endpoint.Trim();
+        IGraphQLFetcher transport;
+        if (url.Length == 0)
+        {
+            transport = new LocalSchemaFetcher();
+        }
+        else if (url.StartsWith("ws://", StringComparison.OrdinalIgnoreCase) ||
+                 url.StartsWith("wss://", StringComparison.OrdinalIgnoreCase))
+        {
+            transport = new GraphQLWsFetcher(url);
+        }
+        else
+        {
+            transport = new HttpFetcher(url);
+        }
+
+        fetcher = new SidecarFetcher(transport, Sidecar);
+    }
+
+}

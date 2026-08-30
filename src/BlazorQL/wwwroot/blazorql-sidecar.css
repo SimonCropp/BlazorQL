@@ -1,0 +1,238 @@
+/* Debug sidecar. Injected by BlazorQLSidecar.razor.js as a plain stylesheet rather than shipped
+   as scoped CSS, so it reaches the page on hosts that never link {App}.styles.css. Every class is
+   blazorql-sidecar-prefixed to stay out of the host app's way. */
+
+/* The floating toggle button, shown while the panel is closed. It sits outside the panel's DOM,
+   so it carries its own colors rather than the panel's custom properties. */
+.blazorql-sidecar-launcher {
+    position: fixed;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    z-index: 2147483000;
+    padding: 0.3rem 0.7rem;
+    border: 1px solid light-dark(#d8dbe0, #2c3039);
+    border-radius: 999px;
+    background: light-dark(#f6f7f9, #1d2027);
+    color: light-dark(#6a707b, #8a919d);
+    font: 600 12px/1.4 system-ui, sans-serif;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    opacity: 0.75;
+}
+
+.blazorql-sidecar-launcher:hover {
+    opacity: 1;
+    color: light-dark(#6c69ce, #908aff);
+    border-color: light-dark(#6c69ce, #908aff);
+}
+
+.blazorql-sidecar {
+    --blazorql-sidecar-bg: light-dark(#ffffff, #16181d);
+    --blazorql-sidecar-panel: light-dark(#f6f7f9, #1d2027);
+    --blazorql-sidecar-border: light-dark(#d8dbe0, #2c3039);
+    --blazorql-sidecar-text: light-dark(#1c1e22, #d7dae0);
+    --blazorql-sidecar-muted: light-dark(#6a707b, #8a919d);
+    --blazorql-sidecar-accent: light-dark(#6c69ce, #908aff);
+    --blazorql-sidecar-error: light-dark(#b42318, #ff8a80);
+
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(30rem, 92vw);
+    z-index: 2147483000;
+    display: flex;
+    flex-direction: column;
+    background: var(--blazorql-sidecar-bg);
+    color: var(--blazorql-sidecar-text);
+    border-left: 1px solid var(--blazorql-sidecar-border);
+    box-shadow: -6px 0 24px rgba(0, 0, 0, 0.18);
+    font: 13px/1.45 system-ui, sans-serif;
+}
+
+.blazorql-sidecar *,
+.blazorql-sidecar *::before,
+.blazorql-sidecar *::after {
+    box-sizing: border-box;
+}
+
+.blazorql-sidecar-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid var(--blazorql-sidecar-border);
+    background: var(--blazorql-sidecar-panel);
+}
+
+.blazorql-sidecar-header h2 {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    flex: 1;
+}
+
+.blazorql-sidecar-count {
+    color: var(--blazorql-sidecar-muted);
+    font-weight: 400;
+}
+
+.blazorql-sidecar button {
+    background: none;
+    border: 1px solid var(--blazorql-sidecar-border);
+    border-radius: 4px;
+    color: inherit;
+    font: inherit;
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    cursor: pointer;
+}
+
+.blazorql-sidecar button:hover {
+    border-color: var(--blazorql-sidecar-accent);
+    color: var(--blazorql-sidecar-accent);
+}
+
+.blazorql-sidecar-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.blazorql-sidecar-entries {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+    max-height: 40%;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--blazorql-sidecar-border);
+}
+
+.blazorql-sidecar-entries li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--blazorql-sidecar-border);
+}
+
+.blazorql-sidecar-entries li:hover {
+    background: var(--blazorql-sidecar-panel);
+}
+
+.blazorql-sidecar-entries li.blazorql-sidecar-selected {
+    background: color-mix(in srgb, var(--blazorql-sidecar-accent) 12%, transparent);
+}
+
+.blazorql-sidecar-kind {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--blazorql-sidecar-muted);
+    border: 1px solid var(--blazorql-sidecar-border);
+    border-radius: 3px;
+    padding: 0 0.3rem;
+}
+
+.blazorql-sidecar-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blazorql-sidecar-status-error {
+    color: var(--blazorql-sidecar-error);
+}
+
+.blazorql-sidecar-duration {
+    color: var(--blazorql-sidecar-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.blazorql-sidecar-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.6rem 0.75rem;
+}
+
+.blazorql-sidecar-detail h3 {
+    margin: 0.7rem 0 0.25rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--blazorql-sidecar-muted);
+}
+
+.blazorql-sidecar-detail h3:first-child {
+    margin-top: 0;
+}
+
+.blazorql-sidecar pre {
+    margin: 0 0 0.4rem;
+    padding: 0.5rem;
+    background: var(--blazorql-sidecar-panel);
+    border: 1px solid var(--blazorql-sidecar-border);
+    border-radius: 4px;
+    overflow-x: auto;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    white-space: pre;
+}
+
+.blazorql-sidecar table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+}
+
+.blazorql-sidecar th,
+.blazorql-sidecar td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.15rem 0.4rem 0.15rem 0;
+    border-bottom: 1px solid var(--blazorql-sidecar-border);
+    word-break: break-all;
+}
+
+.blazorql-sidecar th {
+    color: var(--blazorql-sidecar-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.blazorql-sidecar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0 0 0.5rem;
+}
+
+.blazorql-sidecar-actions a {
+    border: 1px solid var(--blazorql-sidecar-border);
+    border-radius: 4px;
+    color: var(--blazorql-sidecar-accent);
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    text-decoration: none;
+}
+
+.blazorql-sidecar-actions a:hover {
+    border-color: var(--blazorql-sidecar-accent);
+}
+
+.blazorql-sidecar-error {
+    color: var(--blazorql-sidecar-error);
+}
+
+.blazorql-sidecar-empty {
+    padding: 1rem 0.75rem;
+    color: var(--blazorql-sidecar-muted);
+}
+
+.blazorql-sidecar-note {
+    color: var(--blazorql-sidecar-muted);
+    font-style: italic;
+}

@@ -71,6 +71,51 @@ public class UiScreenshotTests :
     }
 
     [Test]
+    public async Task Home()
+    {
+        var page = await NewSizedPageAsync();
+        await page.GoToHomeAsync(BaseUrl);
+        await ForceTheme(page, "light");
+
+        // The sidecar open on the app's own load-time query — the docs' picture of the sidecar
+        // beside an ordinary consuming app.
+        await page.ClickAsync("[data-testid='blazorql-sidecar-toggle']");
+        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
+        await page.ClickAsync("[data-testid='blazorql-sidecar-entries'] li:last-child");
+        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
+        await PinSidecarDurations(page);
+
+        await Verify(page)
+            .PageScreenshotOptions(new(), screenshotOnly: true);
+    }
+
+    [Test]
+    public async Task Sidecar()
+    {
+        var page = await OpenWithQueryRun("light");
+
+        await page.ClickAsync("[data-testid='blazorql-sidecar-toggle']");
+        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
+        await page.ClickAsync("[data-testid='blazorql-sidecar-entries'] li:last-child");
+        await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
+        await PinSidecarDurations(page);
+
+        await Verify(page)
+            .PageScreenshotOptions(new(), screenshotOnly: true);
+    }
+
+    // The captured durations differ run to run; pin them so the capture is of the layout.
+    static Task PinSidecarDurations(IPage page) =>
+        page.EvaluateAsync(
+            """
+            () => {
+                for (const cell of document.querySelectorAll('.blazorql-sidecar-duration')) {
+                    cell.textContent = '12 ms';
+                }
+            }
+            """);
+
+    [Test]
     public async Task SettingsDialog()
     {
         var page = await NewSizedPageAsync();
@@ -134,7 +179,8 @@ public class UiScreenshotTests :
     static async Task ForceTheme(IPage page, string theme)
     {
         await page.EvaluateAsync("t => document.documentElement.dataset.theme = t", theme);
-        await page.EvaluateAsync("t => monaco.editor.setTheme(t === 'dark' ? 'vs-dark' : 'vs')", theme);
+        // The home page has no editors; globalThis guards the monaco global there.
+        await page.EvaluateAsync("t => globalThis.monaco && monaco.editor.setTheme(t === 'dark' ? 'vs-dark' : 'vs')", theme);
     }
 
     Task<IPage> NewSizedPageAsync() =>

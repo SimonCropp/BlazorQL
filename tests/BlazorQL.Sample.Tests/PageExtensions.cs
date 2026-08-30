@@ -14,15 +14,31 @@ static class PageExtensions
             });
 
     /// <summary>
-    /// Opens the app and waits until it is usable: Monaco mounted and the root component's
-    /// data-ready marker set. Downloading and booting the WASM runtime is slow on a cold load,
-    /// hence the long wait.
+    /// Opens the query-explorer page and waits until it is usable: Monaco mounted and the root
+    /// component's data-ready marker set. Downloading and booting the WASM runtime is slow on a
+    /// cold load, hence the long wait.
     /// </summary>
     public static async Task GoToAppAsync(this IPage page, string baseUrl)
     {
-        await page.GotoAsync(baseUrl);
+        await page.GotoAsync($"{baseUrl}/explorer");
+        await page.WaitForIdeReadyAsync();
+    }
+
+    /// <summary>Waits until an already-navigated-to IDE page is usable.</summary>
+    public static async Task WaitForIdeReadyAsync(this IPage page)
+    {
         await page.WaitForSelectorAsync(".monaco-editor", 60);
         await page.WaitForSelectorAsync("[data-testid='blazorql'][data-ready]", 90);
+    }
+
+    /// <summary>
+    /// Opens the sample's home page — the demo app — and waits for its load-time query to have
+    /// rendered.
+    /// </summary>
+    public static async Task GoToHomeAsync(this IPage page, string baseUrl)
+    {
+        await page.GotoAsync($"{baseUrl}/");
+        await page.WaitForSelectorAsync("[data-testid='home-name']", 90);
     }
 
     /// <summary>

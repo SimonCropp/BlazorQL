@@ -1,44 +1,14 @@
 @namespace BlazorQL.Sample
+@using Microsoft.AspNetCore.Components.Routing
 @using BlazorQL
 
-<div class="sample-shell">
-    <div class="endpoint-bar">
-        <input data-testid="endpoint"
-               placeholder="GraphQL endpoint url — empty runs the built-in schema in your browser"
-               @bind="endpoint" />
-        <button type="button" data-testid="endpoint-apply" @onclick="Apply">Apply</button>
-    </div>
-    <BlazorQLIde Fetcher="fetcher" DefaultQuery="@DemoQuery.Text" />
-</div>
-
-@code {
-
-    // begin-snippet: sampleFetcher
-    // The whole schema lives in the browser by default: GraphQL.NET executes it inside the WASM
-    // app itself, so the sample deploys to static hosting with subscriptions intact.
-    IGraphQLFetcher fetcher = new LocalSchemaFetcher();
-    // end-snippet
-
-    string endpoint = "";
-
-    // Empty falls back to the in-browser schema; ws(s):// speaks graphql-transport-ws; anything
-    // else posts over http. Swapping the parameter makes the IDE re-introspect.
-    void Apply()
-    {
-        var url = endpoint.Trim();
-        if (url.Length == 0)
-        {
-            fetcher = new LocalSchemaFetcher();
-        }
-        else if (url.StartsWith("ws://", StringComparison.OrdinalIgnoreCase) ||
-                 url.StartsWith("wss://", StringComparison.OrdinalIgnoreCase))
-        {
-            fetcher = new GraphQLWsFetcher(url);
-        }
-        else
-        {
-            fetcher = new HttpFetcher(url);
-        }
-    }
-
-}
+<Router AppAssembly="typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" />
+    </Found>
+    <NotFound>
+        <p class="route-missing">There is nothing at this address. <a href=".">Back to the sample</a>.</p>
+    </NotFound>
+</Router>
+@* Outside the router so the debug panel is on every page. *@
+<BlazorQLSidecar />
