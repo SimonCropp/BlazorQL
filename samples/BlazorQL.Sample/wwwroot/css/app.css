@@ -1,0 +1,30 @@
+html, body {
+    margin: 0;
+    height: 100%;
+    font-family: system-ui, sans-serif;
+    color-scheme: light dark;
+}
+
+#app {
+    height: 100%;
+}
+
+.loading {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    color: color-mix(in srgb, currentColor 60%, transparent);
+}
+
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    inset: auto 0 0 0;
+    padding: 0.6rem 1rem;
+    background: #b32121;
+    color: white;
+}
+
+#blazor-error-ui a.reload {
+    color: white;
+}

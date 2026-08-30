@@ -1,0 +1,19 @@
+<Project>
+  <PropertyGroup>
+    <NoWarn>CS1591;NU1608;NU1109;PolyfillTargetsForNuget</NoWarn>
+    <Version>0.1.0-beta.1</Version>
+    <LangVersion>14.0</LangVersion>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <Description>BlazorQL is an in-browser GraphQL IDE for Blazor: a GraphiQL alternative with schema-aware editing, docs, history, tabs, and subscriptions.</Description>
+    <ResolveAssemblyReferencesSilent>true</ResolveAssemblyReferencesSilent>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Audit the full transitive dependency graph. Combined with TreatWarningsAsErrors this fails
+         the build on any package vulnerability advisory (e.g. NU1903). -->
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <!-- Not strong-named: nothing here names internals-friends across a trust boundary, and an
+         unsigned assembly keeps InternalsVisibleTo by simple name. -->
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitattributes" />
+    <File Path="global.json" />
+    <File Path="readme.md" />
+    <File Path=".editorconfig" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="mdsnippets.json" />
+  </Folder>
+  <Project Path="src/BlazorQL/BlazorQL.csproj" />
+  <Project Path="samples/BlazorQL.Sample/BlazorQL.Sample.csproj" />
+  <Project Path="tests/BlazorQL.Tests/BlazorQL.Tests.csproj" />
+  <Project Path="tests/BlazorQL.Sample.Tests/BlazorQL.Sample.Tests.csproj" />
+</Solution>

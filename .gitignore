@@ -1,0 +1,13 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+.idea/
+_ReSharper*/
+*.user
+*.db
+*.db-shm
+*.db-wal
+nugets/
+*.received.*
+*.trx
+BenchmarkDotNet.Artifacts/
