@@ -15,6 +15,9 @@ public sealed class IncrementalMerger
 
     public bool HasResult => result is not null;
 
+    /// <summary>Whether the accumulated document carries a top-level errors member.</summary>
+    public bool HasErrors => result?.ContainsKey("errors") is true;
+
     /// <summary>The accumulated response, serialized.</summary>
     public string Render() =>
         result?.ToJsonString(RenderOptions) ?? "";

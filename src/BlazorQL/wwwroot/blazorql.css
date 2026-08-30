@@ -552,6 +552,52 @@ html[data-theme='dark'] {
     cursor: pointer;
 }
 
+.blazorql-toolbar-button {
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-toolbar-button:hover {
+    color: var(--blazorql-text);
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
+.blazorql-toolbar-button svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+/* Copy/download overlay in the response pane's top-right corner. */
+.blazorql-response-actions {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.9rem;
+    z-index: 20;
+    display: flex;
+    gap: 0.25rem;
+}
+
+.blazorql-status-line {
+    border-top: 1px solid var(--blazorql-border);
+    padding: 0.25rem 0.75rem;
+    background: var(--blazorql-panel);
+    color: var(--blazorql-muted);
+    font-size: 0.8rem;
+}
+
+/* Leaf fields fill-leaves inserted before a run, cleared after a few seconds. */
+.blazorql-auto-inserted-leaf {
+    background: color-mix(in srgb, #ffb100 28%, transparent);
+    border-radius: 2px;
+}
+
 .blazorql-operation-picker {
     position: absolute;
     top: 0;

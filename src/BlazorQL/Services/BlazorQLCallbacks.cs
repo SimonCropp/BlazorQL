@@ -13,6 +13,7 @@ public sealed class BlazorQLCallbacks
     public event Action<string, string>? StreamError;
     public event Action<string, double, double>? PaneResize;
     public event Action<string>? SchemaReference;
+    public event Action<string>? GlobalShortcut;
 
     [JSInvokable]
     public void OnEditorChanged(string uriName, string text) =>
@@ -41,4 +42,8 @@ public sealed class BlazorQLCallbacks
     [JSInvokable]
     public void OnSchemaReference(string referenceJson) =>
         SchemaReference?.Invoke(referenceJson);
+
+    [JSInvokable]
+    public void OnGlobalShortcut(string id) =>
+        GlobalShortcut?.Invoke(id);
 }

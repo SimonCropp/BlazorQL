@@ -71,6 +71,53 @@
                                     </div>
                                 }
                             </div>
+                            <button type="button"
+                                    class="blazorql-toolbar-button"
+                                    data-testid="prettify"
+                                    title="Prettify query (Shift-Ctrl-P)"
+                                    aria-label="Prettify query (Shift-Ctrl-P)"
+                                    @onclick="PrettifyEditors">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M15 4l5 5L7 22H2v-5z"/>
+                                    <path d="M18.5 2.5L21 5"/>
+                                </svg>
+                            </button>
+                            <button type="button"
+                                    class="blazorql-toolbar-button"
+                                    data-testid="merge"
+                                    title="Merge fragments into query (Shift-Ctrl-M)"
+                                    aria-label="Merge fragments into query (Shift-Ctrl-M)"
+                                    @onclick="MergeFragments">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M7 3v6a6 6 0 0 0 6 6h4"/>
+                                    <path d="M13 11l4 4-4 4"/>
+                                    <path d="M7 21v-6"/>
+                                </svg>
+                            </button>
+                            <button type="button"
+                                    class="blazorql-toolbar-button"
+                                    data-testid="copy"
+                                    title="Copy query (Shift-Ctrl-C)"
+                                    aria-label="Copy query (Shift-Ctrl-C)"
+                                    @onclick="CopyQuery">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <rect x="9" y="9" width="12" height="12" rx="2"/>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                </svg>
+                            </button>
+                            <button type="button"
+                                    class="blazorql-toolbar-button"
+                                    data-testid="share"
+                                    title="Copy a link to this query"
+                                    aria-label="Copy a link to this query"
+                                    @onclick="ShareQuery">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <circle cx="18" cy="5" r="3"/>
+                                    <circle cx="6" cy="12" r="3"/>
+                                    <circle cx="18" cy="19" r="3"/>
+                                    <path d="M8.6 10.7l6.8-3.9M8.6 13.3l6.8 3.9"/>
+                                </svg>
+                            </button>
                             @ToolbarContent
                         </div>
                     </div>
@@ -86,6 +133,33 @@
                 <div class="blazorql-response" style="@Grow(1 - sessionPane.Ratio)">
                     <section class="blazorql-editor-host" aria-label="Result Window" aria-live="polite" aria-atomic="true">
                         <div id="@ResponseElementId" class="blazorql-editor"></div>
+                        @if (HasResponse)
+                        {
+                            <div class="blazorql-response-actions">
+                                <button type="button"
+                                        class="blazorql-toolbar-button"
+                                        data-testid="response-copy"
+                                        title="Copy response"
+                                        aria-label="Copy response"
+                                        @onclick="CopyResponse">
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <rect x="9" y="9" width="12" height="12" rx="2"/>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                                    </svg>
+                                </button>
+                                <button type="button"
+                                        class="blazorql-toolbar-button"
+                                        data-testid="response-download"
+                                        title="Download response"
+                                        aria-label="Download response"
+                                        @onclick="DownloadResponse">
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M12 3v12m0 0l-4-4m4 4l4-4"/>
+                                        <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        }
                         @if (running)
                         {
                             <div class="blazorql-spinner" data-testid="spinner">
@@ -93,6 +167,10 @@
                             </div>
                         }
                     </section>
+                    @if (statusLine is not null)
+                    {
+                        <div class="blazorql-status-line" data-testid="status-line">@statusLine</div>
+                    }
                     @if (FooterContent is not null)
                     {
                         <footer class="blazorql-session-footer">@FooterContent</footer>

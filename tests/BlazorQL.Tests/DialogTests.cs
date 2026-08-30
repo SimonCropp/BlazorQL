@@ -127,8 +127,8 @@ public class DialogTests
         var cut = context.Render<ShortKeysDialog>();
 
         Assert.That(cut.Find("[data-testid='shortkeys-dialog']").GetAttribute("role"), Is.EqualTo("dialog"));
-        // Header row plus the eight shortcuts.
-        Assert.That(cut.FindAll(".blazorql-shortkeys-table tbody tr"), Has.Count.EqualTo(8));
+        // Header row plus the nine shortcuts.
+        Assert.That(cut.FindAll(".blazorql-shortkeys-table tbody tr"), Has.Count.EqualTo(9));
         foreach (var expected in (string[])
                  [
                      "Execute query",
@@ -136,6 +136,7 @@ public class DialogTests
                      "Copy query",
                      "Merge fragments",
                      "Re-fetch schema",
+                     "Open settings dialog",
                      "Search in editor",
                      "Open command palette",
                      "Search in documentation"

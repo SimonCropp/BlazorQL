@@ -3,12 +3,20 @@
 // self-hosted beside this file — all URLs relative to import.meta.url, so the app works unchanged
 // under a sub-path host such as GitHub Pages.
 import './process-shim.js';
+// Ported GraphiQL helpers. Factories rather than modules: graphql-js relies on instanceof, so
+// they are bound to the page bundle's own graphql instance during init.
+import { createMergeAst } from './ported/merge-ast.js';
+import { createFillLeafs } from './ported/fill-leafs.js';
 
 let page = null;
 let monaco = null;
 let monacoGraphQL = null;
 let dotNet = null;
 let instancePrefix = '';
+let mergeAst = null;
+let runFillLeafs = null;
+// The lazily imported prettier bundle — a separate vendored file, loaded on first prettify.
+let prettier = null;
 
 // uriName -> { editor, model, listeners: [] }
 const editors = new Map();
@@ -64,6 +72,8 @@ export async function init(dotNetRef, prefix) {
     page = await import('./vendor/page.js');
     monaco = page.monaco;
     globalThis.monaco = monaco;
+    mergeAst = createMergeAst(page.graphql);
+    runFillLeafs = createFillLeafs(page.graphql);
 
     monaco.editor.defineTheme('blazorql-light', themes['blazorql-light']);
     monaco.editor.defineTheme('blazorql-dark', themes['blazorql-dark']);
@@ -373,6 +383,203 @@ export function stopLocalStream(streamId) {
     iterator?.return?.();
 }
 
+// ---- Toolbar operations (prettify, merge, copy) and fill-leaves ----
+
+/// Reformats the editor's content — prettier's GraphQL formatter for graphql models, its JSONC
+/// formatter for the rest. A parse failure is the user's problem to fix, not an exception:
+/// swallowed with a warning, and never thrown to C#.
+export async function prettify(uriName) {
+    const entry = editors.get(uriName);
+    if (!entry) {
+        return;
+    }
+
+    const text = entry.model.getValue();
+    if (text.trim().length === 0) {
+        return;
+    }
+
+    try {
+        prettier ??= await import(new URL('./vendor/prettier.js', import.meta.url).href);
+        const formatted = entry.model.getLanguageId() === 'graphql'
+            ? await prettier.formatGraphQL(text)
+            : await prettier.formatJsonc(text);
+        if (formatted !== text) {
+            entry.model.setValue(formatted);
+        }
+    } catch (error) {
+        console.warn(`prettify(${uriName}) skipped:`, error?.message ?? error);
+    }
+}
+
+/// Inlines every named fragment into the operations, GraphiQL-style. Returns {ok, error?}; a
+/// document that does not parse reports its error for C# to surface in the response pane.
+export function mergeFragments(uriName) {
+    const entry = editors.get(uriName);
+    const text = entry.model.getValue();
+    try {
+        const merged = page.graphql.print(mergeAst(page.graphql.parse(text), pageSchema ?? undefined));
+        if (merged !== text) {
+            entry.model.setValue(merged);
+        }
+
+        return JSON.stringify({ ok: true });
+    } catch (error) {
+        return JSON.stringify({ ok: false, error: String(error?.message ?? error) });
+    }
+}
+
+/// Best-effort clipboard write — denied permission or an insecure context degrade to a no-op.
+export async function copyText(text) {
+    try {
+        await navigator.clipboard.writeText(text);
+    } catch {
+        // Clipboard unavailable; nothing useful to do.
+    }
+}
+
+/// Fills in default leaf selections for fields that need them, returning the text the run should
+/// send. Inserted ranges are highlighted for a few seconds so the user sees what was added.
+/// Simplification vs GraphiQL: the cursor keeps its position rather than being remapped through
+/// the insertion offsets.
+export function fillLeafs(uriName) {
+    const entry = editors.get(uriName);
+    const text = entry.model.getValue();
+    if (!pageSchema) {
+        return text;
+    }
+
+    try {
+        const { insertions, result } = runFillLeafs(pageSchema, text);
+        if (insertions.length === 0) {
+            return text;
+        }
+
+        const position = entry.editor.getPosition();
+        entry.model.setValue(result);
+        if (position) {
+            entry.editor.setPosition(position);
+        }
+
+        decorateInsertions(entry, insertions);
+        return result;
+    } catch (error) {
+        console.warn(`fillLeafs(${uriName}) skipped:`, error?.message ?? error);
+        return text;
+    }
+}
+
+function decorateInsertions(entry, insertions) {
+    // Insertion indices address the original text; earlier insertions shift the later ones.
+    let shift = 0;
+    const decorations = [];
+    for (const { index, string } of insertions) {
+        const start = entry.model.getPositionAt(index + shift);
+        const end = entry.model.getPositionAt(index + shift + string.length);
+        decorations.push({
+            range: new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column),
+            options: {
+                className: 'blazorql-auto-inserted-leaf',
+                hoverMessage: { value: 'Automatically added leaf fields' },
+            },
+        });
+        shift += string.length;
+    }
+
+    const collection = entry.editor.createDecorationsCollection(decorations);
+    setTimeout(() => collection.clear(), 7000);
+}
+
+// ---- Global shortcuts ----
+
+let shortcutListener = null;
+
+/// Document-level shortcuts for commands that live outside any editor. Entries are
+/// {id, key, ctrl, shift, alt, meta}, matched on event.key case-insensitively with an exact
+/// modifier match; a match is consumed (preventDefault) and routed to the callback hub.
+export function registerGlobalShortcuts(jsonArray) {
+    const shortcuts = JSON.parse(jsonArray);
+    shortcutListener = event => {
+        for (const shortcut of shortcuts) {
+            if (event.key?.toLowerCase() === shortcut.key.toLowerCase() &&
+                event.ctrlKey === shortcut.ctrl &&
+                event.shiftKey === shortcut.shift &&
+                event.altKey === shortcut.alt &&
+                event.metaKey === shortcut.meta) {
+                event.preventDefault();
+                dotNet.invokeMethodAsync('OnGlobalShortcut', shortcut.id);
+                return;
+            }
+        }
+    };
+    document.addEventListener('keydown', shortcutListener);
+}
+
+export function focusElement(selector) {
+    document.querySelector(selector)?.focus();
+}
+
+// ---- Share links, downloads, response image hover ----
+
+export function getHash() {
+    return location.hash;
+}
+
+/// Replaces the location's fragment (no history entry) and returns the resulting href — what the
+/// share button copies.
+export function setHash(fragment) {
+    history.replaceState(null, '', location.pathname + location.search + '#' + fragment);
+    return location.href;
+}
+
+export function downloadText(name, text, mimeType) {
+    const url = URL.createObjectURL(new Blob([text], { type: mimeType }));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = name;
+    anchor.click();
+    URL.revokeObjectURL(url);
+}
+
+const imageToken = /\S+\.(png|svg|jpe?g|gif|webp)$/i;
+// Hover providers register per-language; disposed with the module.
+const languageProviders = [];
+
+/// Hovering a value ending in an image extension in the response editor previews the image, via a
+/// markdown image in the hover.
+export function registerResponseImageHover(uriName) {
+    const target = uriFor(uriName).toString();
+    languageProviders.push(monaco.languages.registerHoverProvider('json', {
+        provideHover(model, position) {
+            if (model.uri.toString() !== target) {
+                return null;
+            }
+
+            const line = model.getLineContent(position.lineNumber);
+            const isBoundary = ch => ch === '"' || ch === ' ' || ch === '\t' || ch === ',';
+            let start = position.column - 1;
+            let end = start;
+            while (start > 0 && !isBoundary(line[start - 1])) {
+                start--;
+            }
+
+            while (end < line.length && !isBoundary(line[end])) {
+                end++;
+            }
+
+            const token = line.slice(start, end);
+            if (!imageToken.test(token)) {
+                return null;
+            }
+
+            return {
+                range: new monaco.Range(position.lineNumber, start + 1, position.lineNumber, end + 1),
+                contents: [{ value: `![](${token})` }],
+            };
+        },
+    }));
+}
+
 // ---- localStorage, behind the module seam so C# owns namespacing and policy ----
 
 export function storageGet(key) {
@@ -491,6 +698,15 @@ export function dispose() {
 
     for (const detach of pointerTrackers.splice(0)) {
         detach();
+    }
+
+    if (shortcutListener) {
+        document.removeEventListener('keydown', shortcutListener);
+        shortcutListener = null;
+    }
+
+    for (const provider of languageProviders.splice(0)) {
+        provider.dispose();
     }
 
     dotNet = null;

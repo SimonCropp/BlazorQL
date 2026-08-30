@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Globalization;
 
 namespace BlazorQL;
@@ -111,6 +112,11 @@ public partial class BlazorQLIde :
     bool persistHeaders;
     bool settingsOpen;
     bool shortKeysOpen;
+
+    // M7: the status footer under the response pane, and the pending focus request the Ctrl-Alt-K
+    // shortcut leaves for the render that opens the docs pane.
+    string? statusLine;
+    bool docSearchFocusPending;
     readonly Debouncer stateDebounce = new();
     readonly Debouncer paneDebounce = new();
 
@@ -124,6 +130,13 @@ public partial class BlazorQLIde :
     {
         if (!firstRender)
         {
+            // The docs pane (and its search input) had to render before it could take focus.
+            if (docSearchFocusPending)
+            {
+                docSearchFocusPending = false;
+                await module!.Invoke("focusElement", "#blazorql-doc-search-input");
+            }
+
             return;
         }
 
@@ -133,6 +146,7 @@ public partial class BlazorQLIde :
         callbacks.EditorChanged += OnEditorChanged;
         callbacks.PaneResize += OnPaneResize;
         callbacks.SchemaReference += OnSchemaReference;
+        callbacks.GlobalShortcut += OnGlobalShortcut;
         if (Fetcher is LocalSchemaFetcher local)
         {
             local.Attach(module, callbacks);
@@ -145,6 +159,8 @@ public partial class BlazorQLIde :
         storage = new(new JsStorageBackend(module), StorageNamespace);
         history = new(storage, QueryParses, MaxHistoryLength);
         Rehydrate();
+        // A #q= share link wins over storage for the active tab's query and variables.
+        await ApplySharedLink();
 
         await ApplyTheme();
         await module.Invoke(
@@ -181,6 +197,17 @@ public partial class BlazorQLIde :
 
         // Monaco KeyMod.CtrlCmd | KeyCode.Enter.
         await module.Invoke("addAction", OperationUri, "blazorql-run", "Run Operation", "[2051]");
+        // GraphiQL's editor bindings: Shift-Ctrl-P prettify, Shift-Ctrl-M merge, Shift-Ctrl-C copy
+        // (KeyMod.Shift | KeyMod.WinCtrl | the key).
+        await module.Invoke("addAction", OperationUri, "blazorql-prettify", "Prettify Editors", "[1326]");
+        await module.Invoke("addAction", OperationUri, "blazorql-merge", "Merge Fragments", "[1323]");
+        await module.Invoke("addAction", OperationUri, "blazorql-copy", "Copy Query", "[1313]");
+        await module.Invoke("addAction", VariablesUri, "blazorql-prettify", "Prettify Editors", "[1326]");
+        if (IsHeadersEditorEnabled)
+        {
+            await module.Invoke("addAction", HeadersUri, "blazorql-prettify", "Prettify Editors", "[1326]");
+        }
+
         // Keeps the active tab's Query (and so its derived title) in step with typing.
         await module.Invoke("onChange", OperationUri, 300);
         // The other editors feed the active tab too, so edits persist without a tab switch.
@@ -193,6 +220,17 @@ public partial class BlazorQLIde :
         await module.Invoke("onChange", ResponseUri, 500);
         // Ctrl/Cmd+click on a schema name jumps to its documentation.
         await module.Invoke("registerJumpToDoc", OperationUri);
+        // Hovering an image url in a response previews the image.
+        await module.Invoke("registerResponseImageHover", ResponseUri);
+        // Document-level shortcuts for commands that live outside any editor.
+        await module.Invoke(
+            "registerGlobalShortcuts",
+            JsonSerializer.Serialize(new object[]
+            {
+                new {id = "refetch", key = "r", ctrl = true, shift = true, alt = false, meta = false},
+                new {id = "doc-search", key = "k", ctrl = true, shift = false, alt = true, meta = false},
+                new {id = "settings", key = ",", ctrl = true, shift = false, alt = false, meta = false}
+            }));
 
         await module.Invoke("trackPointer", PluginResizerId, "plugin", "x");
         await module.Invoke("trackPointer", SessionResizerId, "session", "x");
@@ -243,6 +281,27 @@ public partial class BlazorQLIde :
             storage.Get("secondaryEditorFlex") != "collapsed" &&
             (!string.IsNullOrWhiteSpace(tabs.Active.Variables) ||
              (IsHeadersEditorEnabled && !string.IsNullOrWhiteSpace(tabs.Active.Headers)));
+    }
+
+    /// <summary>
+    /// Loads a <c>#q=</c> share link into the active tab, before the editors take their initial
+    /// values. A malformed fragment is ignored silently.
+    /// </summary>
+    async Task ApplySharedLink()
+    {
+        var hash = await module!.Invoke<string>("getHash");
+        if (ShareLinkCodec.TryDecode(hash) is not { } shared)
+        {
+            return;
+        }
+
+        var tab = tabs.Active;
+        tab.Query = shared.Query;
+        tab.Variables = shared.Variables;
+        if (!string.IsNullOrWhiteSpace(shared.Variables))
+        {
+            toolsExpanded = true;
+        }
     }
 
     void RestorePane(PaneState pane, string key)
@@ -652,6 +711,8 @@ public partial class BlazorQLIde :
         }
 
         await module.Invoke("setValue", ResponseUri, tab.Response);
+        // The status line described the previous tab's run.
+        statusLine = null;
         // Tools open themselves for a tab that has content in them, close otherwise.
         toolsExpanded =
             !string.IsNullOrWhiteSpace(tab.Variables) ||
@@ -677,8 +738,10 @@ public partial class BlazorQLIde :
                     tab.Headers = text;
                     break;
                 case ResponseUri:
-                    // Tracked for tab switches, but never persisted.
+                    // Tracked for tab switches, but never persisted. The response-action buttons
+                    // key off this value, so the change still renders.
                     tab.Response = text;
+                    StateHasChanged();
                     return;
                 default:
                     return;
@@ -692,10 +755,102 @@ public partial class BlazorQLIde :
 
     void OnEditorAction(string actionId)
     {
-        if (actionId == "blazorql-run")
+        switch (actionId)
         {
-            _ = InvokeAsync(RunFromKeyboard);
+            case "blazorql-run":
+                _ = InvokeAsync(RunFromKeyboard);
+                break;
+            case "blazorql-prettify":
+                _ = InvokeAsync(PrettifyEditors);
+                break;
+            case "blazorql-merge":
+                _ = InvokeAsync(MergeFragments);
+                break;
+            case "blazorql-copy":
+                _ = InvokeAsync(CopyQuery);
+                break;
         }
+    }
+
+    /// <summary>Document-level shortcuts registered with the host module.</summary>
+    void OnGlobalShortcut(string id) =>
+        _ = InvokeAsync(async () =>
+        {
+            switch (id)
+            {
+                case "refetch":
+                    if (!refetching)
+                    {
+                        await RefetchSchema();
+                    }
+
+                    break;
+                case "doc-search":
+                    visiblePlugin = PluginKind.Docs;
+                    PersistVisiblePlugin();
+                    // Focus lands after the pane has rendered — see OnAfterRenderAsync.
+                    docSearchFocusPending = true;
+                    StateHasChanged();
+                    break;
+                case "settings":
+                    settingsOpen = !settingsOpen;
+                    StateHasChanged();
+                    break;
+            }
+        });
+
+    // ---- Toolbar operations ----
+
+    /// <summary>Prettifies every editor, in GraphiQL's order: variables, headers, then the query.</summary>
+    async Task PrettifyEditors()
+    {
+        await module!.Invoke("prettify", VariablesUri);
+        if (IsHeadersEditorEnabled)
+        {
+            await module.Invoke("prettify", HeadersUri);
+        }
+
+        await module.Invoke("prettify", OperationUri);
+    }
+
+    /// <summary>Inlines named fragments into the operations. A parse failure becomes the response.</summary>
+    async Task MergeFragments()
+    {
+        var resultJson = await module!.Invoke<string>("mergeFragments", OperationUri);
+        using var document = JsonDocument.Parse(resultJson);
+        var root = document.RootElement;
+        if (!root.GetProperty("ok").GetBoolean())
+        {
+            await SetResponse(ErrorDocument(root.GetProperty("error").GetString() ?? "Merge failed."));
+        }
+    }
+
+    async Task CopyQuery()
+    {
+        var query = await module!.Invoke<string>("getValue", OperationUri);
+        await module.Invoke("copyText", query);
+    }
+
+    /// <summary>Writes the query + variables into the location hash and copies the resulting link.</summary>
+    async Task ShareQuery()
+    {
+        var shared = new SharedQuery(
+            await module!.Invoke<string>("getValue", OperationUri),
+            await module.Invoke<string>("getValue", VariablesUri));
+        var href = await module.Invoke<string>("setHash", ShareLinkCodec.Encode(shared));
+        await module.Invoke("copyText", href);
+    }
+
+    async Task CopyResponse()
+    {
+        var response = await module!.Invoke<string>("getValue", ResponseUri);
+        await module.Invoke("copyText", response);
+    }
+
+    async Task DownloadResponse()
+    {
+        var response = await module!.Invoke<string>("getValue", ResponseUri);
+        await module.Invoke("downloadText", "response.json", response, "application/json");
     }
 
     /// <summary>Ctrl-Enter: with several operations in the document the caret decides.</summary>
@@ -760,6 +915,10 @@ public partial class BlazorQLIde :
 
     async Task Run(string query, string? operationName, bool multipleOperations)
     {
+        // Fill in default leaf selections first; the filled text is what runs (and what the user
+        // sees, briefly highlighted).
+        query = await module!.Invoke<string>("fillLeafs", OperationUri);
+
         // The parse errors short-circuit: nothing is sent, the error is the response.
         var variables = await ParseJsonc(VariablesUri, "Variables");
         if (variables.Error is not null)
@@ -805,6 +964,10 @@ public partial class BlazorQLIde :
         StateHasChanged();
 
         var merger = new IncrementalMerger();
+        // Elapsed covers the full fetch; the status text is what the footer line shows. HTTP
+        // status codes arrive with the HTTP fetcher (M8) — until then "OK" stands in for success.
+        var stopwatch = Stopwatch.StartNew();
+        var status = "OK";
         try
         {
             await foreach (var payload in Fetcher.FetchAsync(new(query, variables.Value, operationName), headers, execution.Token))
@@ -812,13 +975,20 @@ public partial class BlazorQLIde :
                 merger.Add(payload);
                 await SetResponse(merger.Render());
             }
+
+            if (merger.HasErrors)
+            {
+                status = "error";
+            }
         }
         catch (OperationCanceledException)
         {
             // Stopped by the user; whatever arrived stays on screen.
+            status = "stopped";
         }
         catch (Exception exception)
         {
+            status = "error";
             await SetResponse(JsonSerializer.Serialize(new
             {
                 errors = new[] {new {message = exception.Message}}
@@ -826,6 +996,8 @@ public partial class BlazorQLIde :
         }
         finally
         {
+            stopwatch.Stop();
+            statusLine = $"{status} · {stopwatch.ElapsedMilliseconds} ms";
             execution.Dispose();
             execution = null;
             running = false;
@@ -905,6 +1077,10 @@ public partial class BlazorQLIde :
     ValueTask SetResponse(string text) =>
         module!.Invoke("setValue", ResponseUri, text);
 
+    /// <summary>Whether the response pane shows anything — gates the copy/download overlay.</summary>
+    bool HasResponse =>
+        ready && !string.IsNullOrWhiteSpace(tabs.Active.Response);
+
     // ---- History + dialogs ----
 
     /// <summary>Clicking a history item loads it into the active tab's editors.</summary>
@@ -948,6 +1124,7 @@ public partial class BlazorQLIde :
         callbacks.EditorChanged -= OnEditorChanged;
         callbacks.PaneResize -= OnPaneResize;
         callbacks.SchemaReference -= OnSchemaReference;
+        callbacks.GlobalShortcut -= OnGlobalShortcut;
         execution?.Cancel();
         stateDebounce.Dispose();
         paneDebounce.Dispose();
