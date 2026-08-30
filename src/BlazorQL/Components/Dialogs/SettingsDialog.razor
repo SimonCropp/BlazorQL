@@ -1,0 +1,126 @@
+@namespace BlazorQL
+
+<DialogShell Title="Settings" TestId="settings-dialog" OnClose="OnClose">
+    @if (ShowPersistHeaders)
+    {
+        <section class="blazorql-dialog-section">
+            <div class="blazorql-dialog-section-text">
+                <div class="blazorql-dialog-section-title">Persist headers</div>
+                <div class="blazorql-dialog-section-description">Save headers upon reloading.</div>
+                <span class="blazorql-dialog-warning">Only enable if you trust this device.</span>
+            </div>
+            <div class="blazorql-dialog-button-group" role="group" aria-label="Persist headers">
+                <button type="button"
+                        class="@(PersistHeaders ? "blazorql-active" : null)"
+                        data-testid="persist-headers-on"
+                        @onclick="() => OnPersistHeadersChanged.InvokeAsync(true)">On</button>
+                <button type="button"
+                        class="@(PersistHeaders ? null : "blazorql-active")"
+                        data-testid="persist-headers-off"
+                        @onclick="() => OnPersistHeadersChanged.InvokeAsync(false)">Off</button>
+            </div>
+        </section>
+    }
+    @if (ShowTheme)
+    {
+        <section class="blazorql-dialog-section">
+            <div class="blazorql-dialog-section-text">
+                <div class="blazorql-dialog-section-title">Theme</div>
+                <div class="blazorql-dialog-section-description">Adjust how the interface adapts to your color scheme.</div>
+            </div>
+            <div class="blazorql-dialog-button-group" role="group" aria-label="Theme">
+                <button type="button"
+                        class="@(Theme == Theme.System ? "blazorql-active" : null)"
+                        data-testid="theme-system"
+                        @onclick="() => OnThemeSelected.InvokeAsync(Theme.System)">System</button>
+                <button type="button"
+                        class="@(Theme == Theme.Light ? "blazorql-active" : null)"
+                        data-testid="theme-light"
+                        @onclick="() => OnThemeSelected.InvokeAsync(Theme.Light)">Light</button>
+                <button type="button"
+                        class="@(Theme == Theme.Dark ? "blazorql-active" : null)"
+                        data-testid="theme-dark"
+                        @onclick="() => OnThemeSelected.InvokeAsync(Theme.Dark)">Dark</button>
+            </div>
+        </section>
+    }
+    <section class="blazorql-dialog-section">
+        <div class="blazorql-dialog-section-text">
+            <div class="blazorql-dialog-section-title">Clear storage</div>
+            <div class="blazorql-dialog-section-description">Remove all locally stored data and start fresh.</div>
+        </div>
+        <div class="blazorql-dialog-button-group">
+            <button type="button"
+                    data-testid="clear-storage"
+                    disabled="@(clearState == ClearState.Cleared)"
+                    @onclick="ClearStorage">@ClearLabel</button>
+        </div>
+    </section>
+</DialogShell>
+
+@code {
+
+    enum ClearState
+    {
+        Idle,
+        Cleared,
+        Failed
+    }
+
+    /// <summary>False hides the whole persist-headers section — no headers editor, nothing to persist.</summary>
+    [Parameter]
+    public bool ShowPersistHeaders { get; set; } = true;
+
+    [Parameter]
+    public bool PersistHeaders { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnPersistHeadersChanged { get; set; }
+
+    /// <summary>False hides the theme section — a forced theme leaves nothing to choose.</summary>
+    [Parameter]
+    public bool ShowTheme { get; set; } = true;
+
+    [Parameter]
+    public Theme Theme { get; set; }
+
+    [Parameter]
+    public EventCallback<Theme> OnThemeSelected { get; set; }
+
+    /// <summary>Clears storage; false = the clear failed.</summary>
+    [Parameter]
+    public Func<bool>? ClearStorageAction { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    ClearState clearState;
+
+    string ClearLabel =>
+        clearState switch
+        {
+            ClearState.Cleared => "Cleared data",
+            ClearState.Failed => "Failed",
+            _ => "Clear data"
+        };
+
+    void ClearStorage()
+    {
+        var ok = ClearStorageAction?.Invoke() ?? false;
+        clearState = ok
+            ? ClearState.Cleared
+            : ClearState.Failed;
+
+        // The confirmation label reverts on its own after a moment, as in GraphiQL. Fired and
+        // forgotten so the click handler itself completes immediately.
+        _ = RevertAfterDelay();
+    }
+
+    async Task RevertAfterDelay()
+    {
+        await Task.Delay(2000);
+        clearState = ClearState.Idle;
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

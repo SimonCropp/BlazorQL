@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace BlazorQL;
@@ -57,6 +59,96 @@ public sealed class TabStore
         {
             ActiveIndex--;
         }
+    }
+
+    static readonly JsonSerializerOptions persistenceOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    // What one tab looks like on disk — GraphiQL's tabState shape. Response is deliberately
+    // absent: results are never persisted.
+    sealed record PersistedTab(
+        Guid Id,
+        string? Title,
+        string? Query,
+        string? Variables,
+        string? Headers,
+        string? OperationName,
+        string? RenameOverride);
+
+    sealed record PersistedState(int ActiveTabIndex, List<PersistedTab?>? Tabs);
+
+    /// <summary>
+    /// The store as its persisted JSON. Headers travel only when <paramref name="includeHeaders"/>
+    /// (the persist-headers setting) allows; responses never do.
+    /// </summary>
+    public string Serialize(bool includeHeaders)
+    {
+        var state = new PersistedState(
+            ActiveIndex,
+            [
+                .. tabs.Select(_ => new PersistedTab(
+                    _.Id,
+                    Title(_),
+                    _.Query,
+                    _.Variables,
+                    includeHeaders ? _.Headers : null,
+                    _.OperationName,
+                    _.RenameOverride))
+            ]);
+        return JsonSerializer.Serialize(state, persistenceOptions);
+    }
+
+    /// <summary>
+    /// Replaces the store's content from persisted JSON. False (invalid, absent, or empty state)
+    /// leaves the store untouched so the caller can seed the default tab. The restored active
+    /// index is clamped into range.
+    /// </summary>
+    public bool TryRestore(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return false;
+        }
+
+        PersistedState? state;
+        try
+        {
+            state = JsonSerializer.Deserialize<PersistedState>(json, persistenceOptions);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+
+        if (state is null ||
+            state.Tabs is null ||
+            state.Tabs.Count == 0 ||
+            state.Tabs.Any(_ => _ is null))
+        {
+            return false;
+        }
+
+        tabs.Clear();
+        foreach (var persisted in state.Tabs.OfType<PersistedTab>())
+        {
+            tabs.Add(new()
+            {
+                Id = persisted.Id == Guid.Empty
+                    ? Guid.NewGuid()
+                    : persisted.Id,
+                Query = persisted.Query ?? "",
+                Variables = persisted.Variables ?? "",
+                Headers = persisted.Headers ?? "",
+                OperationName = persisted.OperationName,
+                RenameOverride = persisted.RenameOverride
+            });
+        }
+
+        ActiveIndex = Math.Clamp(state.ActiveTabIndex, 0, tabs.Count - 1);
+        return true;
     }
 
     // GraphiQL's fuzzy operation-name extraction: the first non-comment line that declares a named

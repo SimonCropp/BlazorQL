@@ -1,0 +1,44 @@
+@namespace BlazorQL
+
+<DialogShell Title="Short Keys" TestId="shortkeys-dialog" OnClose="OnClose">
+    <table class="blazorql-shortkeys-table">
+        <thead>
+            <tr>
+                <th>Short Key</th>
+                <th>Function</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var (keys, function) in shortKeys)
+            {
+                <tr>
+                    <td><code>@keys</code></td>
+                    <td>@function</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="blazorql-dialog-section-description">
+        The editors use Monaco/VS Code keybindings — the full set is available through the editor's
+        own command palette and context menu.
+    </p>
+</DialogShell>
+
+@code {
+
+    static readonly (string Keys, string Function)[] shortKeys =
+    [
+        ("Ctrl-Enter", "Execute query"),
+        ("Shift-Ctrl-P", "Prettify editors"),
+        ("Shift-Ctrl-C", "Copy query"),
+        ("Shift-Ctrl-M", "Merge fragments"),
+        ("Shift-Ctrl-R", "Re-fetch schema"),
+        ("Ctrl-F", "Search in editor"),
+        ("F1", "Open command palette"),
+        ("Ctrl-Alt-K", "Search in documentation")
+    ];
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+}

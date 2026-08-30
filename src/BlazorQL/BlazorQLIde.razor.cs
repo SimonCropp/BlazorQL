@@ -37,6 +37,21 @@ public partial class BlazorQLIde :
     [Parameter]
     public bool IsHeadersEditorEnabled { get; set; } = true;
 
+    /// <summary>
+    /// Whether headers persist across reloads. A value the user chose in the settings dialog is
+    /// stored and wins over this parameter on the next boot.
+    /// </summary>
+    [Parameter]
+    public bool ShouldPersistHeaders { get; set; }
+
+    /// <summary>How many non-favorite history items are kept before the oldest is evicted.</summary>
+    [Parameter]
+    public int MaxHistoryLength { get; set; } = 20;
+
+    /// <summary>Prefix for every localStorage key this instance writes.</summary>
+    [Parameter]
+    public string StorageNamespace { get; set; } = "blazorql";
+
     /// <summary>Pins the theme, overriding the user's toggle. Null leaves the toggle in charge.</summary>
     [Parameter]
     public Theme? ForcedTheme { get; set; }
@@ -88,6 +103,17 @@ public partial class BlazorQLIde :
     bool pickerOpen;
     IReadOnlyList<OperationInfo> pickerOperations = [];
 
+    // M6 persistence: storage + history exist only after the host module is imported (the storage
+    // backend is the module's localStorage seam). Writes are debounced so typing does not thrash
+    // localStorage.
+    StorageService? storage;
+    HistoryStore? history;
+    bool persistHeaders;
+    bool settingsOpen;
+    bool shortKeysOpen;
+    readonly Debouncer stateDebounce = new();
+    readonly Debouncer paneDebounce = new();
+
     /// <summary>The schema printed as SDL, once loaded.</summary>
     public string? SchemaSdl { get; private set; }
 
@@ -112,13 +138,14 @@ public partial class BlazorQLIde :
             local.Attach(module, callbacks);
         }
 
-        themes.Current = DefaultTheme;
-
-        // The very first tab is the only one seeded with the welcome text.
-        tabs.Add(DefaultQuery ?? WelcomeQuery, DefaultHeaders ?? "");
-        toolsExpanded = !string.IsNullOrWhiteSpace(DefaultHeaders);
-
         await module.Invoke<JsonElement>("init", reference, "blazorql");
+
+        // Storage rides the freshly imported module, so everything persisted is rehydrated here —
+        // before the editors take their initial values.
+        storage = new(new JsStorageBackend(module), StorageNamespace);
+        history = new(storage, QueryParses, MaxHistoryLength);
+        Rehydrate();
+
         await ApplyTheme();
         await module.Invoke(
             "createEditor",
@@ -156,6 +183,14 @@ public partial class BlazorQLIde :
         await module.Invoke("addAction", OperationUri, "blazorql-run", "Run Operation", "[2051]");
         // Keeps the active tab's Query (and so its derived title) in step with typing.
         await module.Invoke("onChange", OperationUri, 300);
+        // The other editors feed the active tab too, so edits persist without a tab switch.
+        await module.Invoke("onChange", VariablesUri, 500);
+        if (IsHeadersEditorEnabled)
+        {
+            await module.Invoke("onChange", HeadersUri, 500);
+        }
+
+        await module.Invoke("onChange", ResponseUri, 500);
         // Ctrl/Cmd+click on a schema name jumps to its documentation.
         await module.Invoke("registerJumpToDoc", OperationUri);
 
@@ -167,6 +202,190 @@ public partial class BlazorQLIde :
 
         ready = true;
         StateHasChanged();
+    }
+
+    // ---- Persistence ----
+
+    /// <summary>Restores everything M6 persists, seeding defaults where storage is empty.</summary>
+    void Rehydrate()
+    {
+        // The stored persist-headers choice wins over the parameter; absent, the parameter decides.
+        persistHeaders = storage!.Get("shouldPersistHeaders") is { } storedPersist
+            ? storedPersist == "true"
+            : ShouldPersistHeaders;
+
+        themes.Current = storage.Get("theme") switch
+        {
+            "light" => Theme.Light,
+            "dark" => Theme.Dark,
+            _ => DefaultTheme
+        };
+
+        visiblePlugin = storage.Get("visiblePlugin") switch
+        {
+            "docs" => PluginKind.Docs,
+            "history" => PluginKind.History,
+            _ => null
+        };
+
+        RestorePane(pluginPane, "docExplorerFlex");
+        RestorePane(sessionPane, "editorFlex");
+        RestorePane(toolsPane, "secondaryEditorFlex");
+
+        if (!tabs.TryRestore(storage.Get("tabState")))
+        {
+            // Nothing usable stored: the very first tab is the only one seeded with the welcome text.
+            tabs.Add(DefaultQuery ?? WelcomeQuery, DefaultHeaders ?? "");
+        }
+
+        // Tools open when a tab has content for them, unless the user had collapsed the strip.
+        toolsExpanded =
+            storage.Get("secondaryEditorFlex") != "collapsed" &&
+            (!string.IsNullOrWhiteSpace(tabs.Active.Variables) ||
+             (IsHeadersEditorEnabled && !string.IsNullOrWhiteSpace(tabs.Active.Headers)));
+    }
+
+    void RestorePane(PaneState pane, string key)
+    {
+        var value = storage!.Get(key);
+        if (value is not null &&
+            double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var ratio) &&
+            ratio is > 0 and < 1)
+        {
+            pane.Ratio = ratio;
+        }
+    }
+
+    /// <summary>Whether a query parses as GraphQL — the history's gate against garbage entries.</summary>
+    bool QueryParses(string query) =>
+        module!.InvokeSync<string?>("getOperationFacts", query) is not null;
+
+    void SchedulePersist() =>
+        stateDebounce.Run(() =>
+        {
+            PersistState();
+            return Task.CompletedTask;
+        });
+
+    /// <summary>Writes the tab state plus GraphiQL's flat mirrors of the active tab.</summary>
+    void PersistState()
+    {
+        if (storage is null)
+        {
+            return;
+        }
+
+        storage.Set("tabState", tabs.Serialize(persistHeaders));
+        var tab = tabs.Active;
+        storage.Set("query", tab.Query);
+        storage.Set("variables", tab.Variables);
+        if (persistHeaders)
+        {
+            storage.Set("headers", tab.Headers);
+        }
+    }
+
+    void SchedulePersistPanes() =>
+        paneDebounce.Run(() =>
+        {
+            if (storage is not null)
+            {
+                storage.Set("docExplorerFlex", FormatRatio(pluginPane.Ratio));
+                storage.Set("editorFlex", FormatRatio(sessionPane.Ratio));
+                storage.Set(
+                    "secondaryEditorFlex",
+                    toolsExpanded
+                        ? FormatRatio(toolsPane.Ratio)
+                        : "collapsed");
+            }
+
+            return Task.CompletedTask;
+        });
+
+    static string FormatRatio(double ratio) =>
+        ratio.ToString("0.####", CultureInfo.InvariantCulture);
+
+    void PersistVisiblePlugin()
+    {
+        if (storage is null)
+        {
+            return;
+        }
+
+        switch (visiblePlugin)
+        {
+            case PluginKind.Docs:
+                storage.Set("visiblePlugin", "docs");
+                break;
+            case PluginKind.History:
+                storage.Set("visiblePlugin", "history");
+                break;
+            default:
+                storage.Remove("visiblePlugin");
+                break;
+        }
+    }
+
+    void PersistTheme()
+    {
+        if (storage is null)
+        {
+            return;
+        }
+
+        switch (themes.Current)
+        {
+            case Theme.Light:
+                storage.Set("theme", "light");
+                break;
+            case Theme.Dark:
+                storage.Set("theme", "dark");
+                break;
+            default:
+                // Absent = follow the system.
+                storage.Remove("theme");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// The settings dialog's persist-headers switch. Turning on snapshots the current headers;
+    /// turning off scrubs every stored header.
+    /// </summary>
+    async Task SetPersistHeaders(bool value)
+    {
+        if (persistHeaders == value)
+        {
+            return;
+        }
+
+        persistHeaders = value;
+        storage?.Set("shouldPersistHeaders", value ? "true" : "false");
+        if (value)
+        {
+            // Snapshot what the headers editor holds right now.
+            await SaveActiveTab();
+        }
+        else
+        {
+            storage?.Remove("headers");
+        }
+
+        // Rewrites tabState — with headers included, or nulled out.
+        PersistState();
+    }
+
+    bool ClearStorage()
+    {
+        try
+        {
+            storage?.Clear();
+            return true;
+        }
+        catch (JSException)
+        {
+            return false;
+        }
     }
 
     async Task LoadSchema()
@@ -223,6 +442,15 @@ public partial class BlazorQLIde :
     async Task CycleTheme()
     {
         themes.Cycle();
+        PersistTheme();
+        await ApplyTheme();
+    }
+
+    /// <summary>The settings dialog's explicit theme choice — same service as the sidebar cycle.</summary>
+    async Task SelectTheme(Theme theme)
+    {
+        themes.Current = theme;
+        PersistTheme();
         await ApplyTheme();
     }
 
@@ -239,10 +467,13 @@ public partial class BlazorQLIde :
 
     // ---- Plugin pane ----
 
-    void TogglePlugin(PluginKind plugin) =>
+    void TogglePlugin(PluginKind plugin)
+    {
         visiblePlugin = visiblePlugin == plugin
             ? null
             : plugin;
+        PersistVisiblePlugin();
+    }
 
     /// <summary>Jump-to-doc: opens the docs plugin and navigates to the referenced schema member.</summary>
     void OnSchemaReference(string referenceJson) =>
@@ -268,20 +499,26 @@ public partial class BlazorQLIde :
         if (toolsExpanded && activeTool == tool)
         {
             toolsExpanded = false;
+            SchedulePersistPanes();
             return;
         }
 
         activeTool = tool;
         toolsExpanded = true;
+        SchedulePersistPanes();
     }
 
-    void ToggleTools() =>
+    void ToggleTools()
+    {
         toolsExpanded = !toolsExpanded;
+        SchedulePersistPanes();
+    }
 
     void ResetToolsPane()
     {
         toolsPane.Reset();
         toolsExpanded = true;
+        SchedulePersistPanes();
     }
 
     // ---- Pane resizing ----
@@ -298,6 +535,7 @@ public partial class BlazorQLIde :
                         // Collapsing the plugin pane closes the plugin.
                         visiblePlugin = null;
                         pluginPane.Reset();
+                        PersistVisiblePlugin();
                     }
                     else
                     {
@@ -322,6 +560,7 @@ public partial class BlazorQLIde :
                     break;
             }
 
+            SchedulePersistPanes();
             StateHasChanged();
         });
 
@@ -346,6 +585,7 @@ public partial class BlazorQLIde :
         await SaveActiveTab();
         tabs.Activate(index);
         await LoadActiveTab();
+        SchedulePersist();
     }
 
     async Task AddTab()
@@ -356,6 +596,7 @@ public partial class BlazorQLIde :
         // New tabs start empty; only the very first default tab carries the welcome text.
         tabs.Add("", DefaultHeaders ?? "");
         await LoadActiveTab();
+        SchedulePersist();
     }
 
     async Task CloseTab(int index)
@@ -377,10 +618,15 @@ public partial class BlazorQLIde :
         {
             await LoadActiveTab();
         }
+
+        SchedulePersist();
     }
 
-    void RenameTab((int Index, string? Title) rename) =>
+    void RenameTab((int Index, string? Title) rename)
+    {
         tabs.Tabs[rename.Index].RenameOverride = rename.Title;
+        SchedulePersist();
+    }
 
     async Task SaveActiveTab()
     {
@@ -412,20 +658,35 @@ public partial class BlazorQLIde :
             (IsHeadersEditorEnabled && !string.IsNullOrWhiteSpace(tab.Headers));
     }
 
-    void OnEditorChanged(string uriName, string text)
-    {
-        if (uriName != OperationUri)
-        {
-            return;
-        }
-
+    void OnEditorChanged(string uriName, string text) =>
         _ = InvokeAsync(() =>
         {
-            // Keeps the derived tab title live while the user types.
-            tabs.Active.Query = text;
+            // Every editor routes through the active tab, so its state (and the persisted
+            // tabState) stays current without waiting for a tab switch.
+            var tab = tabs.Active;
+            switch (uriName)
+            {
+                case OperationUri:
+                    // Also keeps the derived tab title live while the user types.
+                    tab.Query = text;
+                    break;
+                case VariablesUri:
+                    tab.Variables = text;
+                    break;
+                case HeadersUri:
+                    tab.Headers = text;
+                    break;
+                case ResponseUri:
+                    // Tracked for tab switches, but never persisted.
+                    tab.Response = text;
+                    return;
+                default:
+                    return;
+            }
+
+            SchedulePersist();
             StateHasChanged();
         });
-    }
 
     // ---- Execution ----
 
@@ -525,7 +786,19 @@ public partial class BlazorQLIde :
         if (multipleOperations)
         {
             tabs.Active.OperationName = operationName;
+            SchedulePersist();
         }
+
+        // The history records every execution start, whether or not its pane is open.
+        var variablesText = await module!.Invoke<string>("getValue", VariablesUri);
+        var headersText = IsHeadersEditorEnabled
+            ? await module.Invoke<string>("getValue", HeadersUri)
+            : "";
+        history?.Record(
+            query,
+            string.IsNullOrWhiteSpace(variablesText) ? null : variablesText,
+            string.IsNullOrWhiteSpace(headersText) ? null : headersText,
+            operationName);
 
         execution = new();
         running = true;
@@ -632,6 +905,41 @@ public partial class BlazorQLIde :
     ValueTask SetResponse(string text) =>
         module!.Invoke("setValue", ResponseUri, text);
 
+    // ---- History + dialogs ----
+
+    /// <summary>Clicking a history item loads it into the active tab's editors.</summary>
+    async Task LoadHistoryItem(HistoryItem item)
+    {
+        var tab = tabs.Active;
+        tab.Query = item.Query;
+        tab.Variables = item.Variables ?? "";
+        if (IsHeadersEditorEnabled && item.Headers is not null)
+        {
+            tab.Headers = item.Headers;
+        }
+
+        await module!.Invoke("setValue", OperationUri, tab.Query);
+        await module.Invoke("setValue", VariablesUri, tab.Variables);
+        if (IsHeadersEditorEnabled)
+        {
+            await module.Invoke("setValue", HeadersUri, tab.Headers);
+        }
+
+        SchedulePersist();
+    }
+
+    void OpenSettings() =>
+        settingsOpen = true;
+
+    void CloseSettings() =>
+        settingsOpen = false;
+
+    void OpenShortKeys() =>
+        shortKeysOpen = true;
+
+    void CloseShortKeys() =>
+        shortKeysOpen = false;
+
     static readonly Dictionary<string, string> EmptyHeaders = [];
 
     public async ValueTask DisposeAsync()
@@ -641,6 +949,8 @@ public partial class BlazorQLIde :
         callbacks.PaneResize -= OnPaneResize;
         callbacks.SchemaReference -= OnSchemaReference;
         execution?.Cancel();
+        stateDebounce.Dispose();
+        paneDebounce.Dispose();
         reference?.Dispose();
         if (module is not null)
         {

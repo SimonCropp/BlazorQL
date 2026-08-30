@@ -7,7 +7,9 @@
              Refetching="refetching"
              OnRefetch="RefetchSchema"
              Theme="themes.Current"
-             OnThemeToggle="CycleTheme" />
+             OnThemeToggle="CycleTheme"
+             OnOpenShortKeys="OpenShortKeys"
+             OnOpenSettings="OpenSettings" />
     <div class="blazorql-main">
         @if (visiblePlugin is not null)
         {
@@ -16,7 +18,9 @@
                             Style="@Grow(pluginPane.Ratio)"
                             Schema="Schema"
                             SchemaSdl="@SchemaSdl"
-                            Navigator="docNavigator" />
+                            Navigator="docNavigator"
+                            History="history"
+                            OnHistorySelect="LoadHistoryItem" />
             </CascadingValue>
         }
         <PaneResizer Id="@PluginResizerId" Direction="x" Hidden="visiblePlugin is null" OnReset="() => ResetPane(pluginPane)" />
@@ -97,4 +101,19 @@
             </div>
         </div>
     </div>
+    @if (settingsOpen)
+    {
+        <SettingsDialog ShowPersistHeaders="IsHeadersEditorEnabled"
+                        PersistHeaders="persistHeaders"
+                        OnPersistHeadersChanged="SetPersistHeaders"
+                        ShowTheme="ForcedTheme is null"
+                        Theme="themes.Current"
+                        OnThemeSelected="SelectTheme"
+                        ClearStorageAction="ClearStorage"
+                        OnClose="CloseSettings" />
+    }
+    @if (shortKeysOpen)
+    {
+        <ShortKeysDialog OnClose="CloseShortKeys" />
+    }
 </div>

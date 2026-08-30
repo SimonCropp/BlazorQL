@@ -680,6 +680,270 @@ html[data-theme='dark'] {
     background: var(--blazorql-panel);
 }
 
+/* ---- History pane ---- */
+
+.blazorql-history {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.blazorql-history-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+}
+
+.blazorql-history-search {
+    flex: 1;
+    min-width: 0;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    font: inherit;
+}
+
+.blazorql-history-clear {
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+}
+
+.blazorql-history-clear:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
+.blazorql-history-clear:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.blazorql-history-list {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.blazorql-history-row {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+    border-radius: 4px;
+}
+
+.blazorql-history-row:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 10%, transparent);
+}
+
+.blazorql-history-spacer {
+    height: 0;
+    margin: 0.4rem 0;
+    border-top: 1px solid var(--blazorql-border);
+}
+
+.blazorql-history-item {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    text-align: left;
+    padding: 0.3rem 0.4rem;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.blazorql-history-actions {
+    display: none;
+    align-items: center;
+    gap: 0.1rem;
+}
+
+.blazorql-history-row:hover .blazorql-history-actions,
+.blazorql-history-row:focus-within .blazorql-history-actions {
+    display: flex;
+}
+
+.blazorql-history-action {
+    display: grid;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-history-action svg {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+.blazorql-history-action:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 14%, transparent);
+    color: var(--blazorql-text);
+}
+
+.blazorql-history-action.blazorql-active {
+    color: var(--blazorql-accent);
+}
+
+.blazorql-history-label-input {
+    flex: 1;
+    min-width: 0;
+    margin: 0.15rem 0.2rem;
+    padding: 0.2rem 0.4rem;
+    border: 1px solid var(--blazorql-accent);
+    border-radius: 4px;
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    font: inherit;
+}
+
+/* ---- Dialogs ---- */
+
+.blazorql-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    background: rgb(0 0 0 / 0.4);
+}
+
+.blazorql-dialog {
+    width: min(32rem, calc(100vw - 2rem));
+    max-height: calc(100vh - 4rem);
+    overflow: auto;
+    padding: 1rem 1.2rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 10px;
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    box-shadow: 0 10px 34px rgb(0 0 0 / 0.3);
+    font: 14px/1.45 system-ui, sans-serif;
+    outline: none;
+}
+
+.blazorql-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.blazorql-dialog-title {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.blazorql-dialog-close {
+    display: grid;
+    place-items: center;
+    width: 1.8rem;
+    height: 1.8rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-dialog-close svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.blazorql-dialog-close:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+    color: var(--blazorql-text);
+}
+
+.blazorql-dialog-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--blazorql-border);
+}
+
+.blazorql-dialog-section-title {
+    font-weight: 600;
+}
+
+.blazorql-dialog-section-description {
+    color: var(--blazorql-muted);
+}
+
+.blazorql-dialog-warning {
+    color: var(--blazorql-error);
+    font-size: 0.85rem;
+}
+
+.blazorql-dialog-button-group {
+    display: flex;
+    gap: 0.25rem;
+    flex: none;
+}
+
+.blazorql-dialog-button-group button {
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    padding: 0.25rem 0.7rem;
+    cursor: pointer;
+}
+
+.blazorql-dialog-button-group button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
+.blazorql-dialog-button-group button.blazorql-active {
+    color: var(--blazorql-accent);
+    border-color: var(--blazorql-accent);
+}
+
+.blazorql-dialog-button-group button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.blazorql-shortkeys-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.blazorql-shortkeys-table th,
+.blazorql-shortkeys-table td {
+    text-align: left;
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid var(--blazorql-border);
+}
+
+.blazorql-shortkeys-table code {
+    font-family: "Fira Code", monospace;
+    font-size: 0.85em;
+}
+
 /* ---- Editor hosts ---- */
 
 .blazorql-editor-host {

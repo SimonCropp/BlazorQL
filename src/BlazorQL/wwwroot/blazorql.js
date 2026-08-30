@@ -373,6 +373,43 @@ export function stopLocalStream(streamId) {
     iterator?.return?.();
 }
 
+// ---- localStorage, behind the module seam so C# owns namespacing and policy ----
+
+export function storageGet(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch {
+        return null;
+    }
+}
+
+/// Returns {ok, error?} as JSON: quota (and privacy-mode) failures surface as a result rather than
+/// an interop exception, so C# can report them as a boolean.
+export function storageSet(key, value) {
+    try {
+        localStorage.setItem(key, value);
+        return JSON.stringify({ ok: true });
+    } catch (error) {
+        return JSON.stringify({ ok: false, error: String(error?.message ?? error) });
+    }
+}
+
+export function storageRemove(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch {
+        // Nothing to remove when storage itself is unavailable.
+    }
+}
+
+export function storageKeys(prefix) {
+    try {
+        return Object.keys(localStorage).filter(key => key.startsWith(prefix));
+    } catch {
+        return [];
+    }
+}
+
 // Detachers for the pane-resizer pointerdown listeners, run on dispose.
 const pointerTrackers = [];
 

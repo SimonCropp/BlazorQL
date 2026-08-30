@@ -29,6 +29,31 @@ public sealed class JsModule(IJSRuntime js) :
         return await target.InvokeAsync<T>(identifier, args);
     }
 
+    /// <summary>
+    /// Synchronous invoke, for the storage backend's synchronous contract. Only valid after the
+    /// module is imported and only on an in-process (WebAssembly) runtime.
+    /// </summary>
+    public T InvokeSync<T>(string identifier, params object?[] args)
+    {
+        if (module is not IJSInProcessObjectReference inProcess)
+        {
+            throw new InvalidOperationException("The host module is not loaded, or the JS runtime is not in-process.");
+        }
+
+        return inProcess.Invoke<T>(identifier, args);
+    }
+
+    /// <summary>Synchronous void invoke — see <see cref="InvokeSync{T}"/>.</summary>
+    public void InvokeSync(string identifier, params object?[] args)
+    {
+        if (module is not IJSInProcessObjectReference inProcess)
+        {
+            throw new InvalidOperationException("The host module is not loaded, or the JS runtime is not in-process.");
+        }
+
+        inProcess.InvokeVoid(identifier, args);
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (module is null)
