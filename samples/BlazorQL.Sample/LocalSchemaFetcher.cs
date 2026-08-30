@@ -1,10 +1,3 @@
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Channels;
-using GraphQL;
-using GraphQL.SystemTextJson;
-
 namespace BlazorQL.Sample;
 
 /// <summary>

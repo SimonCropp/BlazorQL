@@ -34,6 +34,21 @@ public class BootTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    /// <summary>
+    /// An address the router cannot match renders the sample's not-found page — the host serves
+    /// the app for any extensionless path, so the 404 is the router's to answer.
+    /// </summary>
+    [Test]
+    public async Task AnUnknownRouteRendersTheNotFoundPage()
+    {
+        var page = await NewPageAsync();
+        await page.GotoAsync($"{BaseUrl}/nothing-here");
+
+        await page.WaitForSelectorAsync(".route-missing", 90);
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
 }
 
 /// <summary>
