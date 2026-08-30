@@ -27,7 +27,7 @@ public sealed partial class LocalSchemaFetcher :
     public async IAsyncEnumerable<JsonElement> FetchAsync(
         GraphQLRequest request,
         IReadOnlyDictionary<string, string> headers,
-        [EnumeratorCancellation] CancellationToken cancel)
+        [EnumeratorCancellation] Cancel cancel)
     {
         var query = request.Query;
         // Two GraphQL.NET introspection gaps, patched over in the IDE's introspection query only.

@@ -8,8 +8,8 @@ static class StreamHelperExtensions
     const int maxReadBufferSize = 1024 * 4;
 
     /// <summary>Reads the specified <paramref name="stream"/> to the end.</summary>
-    public static Task DrainAsync(this Stream stream, Cancel cancellationToken) =>
-        stream.DrainAsync(limit: null, cancellationToken);
+    public static Task DrainAsync(this Stream stream, Cancel cancel) =>
+        stream.DrainAsync(limit: null, cancel);
 
     /// <summary>
     /// Reads the specified <paramref name="stream"/> to the end, throwing if it is larger than

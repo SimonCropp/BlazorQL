@@ -210,10 +210,10 @@ sealed class MultipartReaderStream :
         }
     }
 
-    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Cancel cancellationToken) =>
-        ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Cancel cancel) =>
+        ReadAsync(buffer.AsMemory(offset, count), cancel).AsTask();
 
-    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, Cancel cancellationToken)
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, Cancel cancel)
     {
         if (finished)
         {
@@ -221,7 +221,7 @@ sealed class MultipartReaderStream :
         }
 
         PositionInnerStream();
-        if (!await innerStream.EnsureBufferedAsync(boundary.FinalBoundaryLength, cancellationToken))
+        if (!await innerStream.EnsureBufferedAsync(boundary.FinalBoundaryLength, cancel))
         {
             throw new IOException("Unexpected end of Stream, the content may have already been read by another component. ");
         }
@@ -242,7 +242,7 @@ sealed class MultipartReaderStream :
                 return UpdatePosition(readAmount);
             }
 
-            return await ReadBoundaryAsync(this, boundary.BoundaryBytes.Length, cancellationToken);
+            return await ReadBoundaryAsync(this, boundary.BoundaryBytes.Length, cancel);
         }
 
         // Scan for a boundary match, full or partial.
@@ -259,25 +259,25 @@ sealed class MultipartReaderStream :
                 return UpdatePosition(read);
             }
 
-            return await ReadBoundaryAsync(this, boundary.BoundaryBytes.Length, cancellationToken);
+            return await ReadBoundaryAsync(this, boundary.BoundaryBytes.Length, cancel);
         }
 
         // No possible boundary match within the buffered data, return the data from the buffer.
         read = innerStream.Read(buffer.Span[..Math.Min(buffer.Length, bufferedData.Count)]);
         return UpdatePosition(read);
 
-        static async Task<int> ReadBoundaryAsync(MultipartReaderStream stream, int length, Cancel cancellationToken)
+        static async Task<int> ReadBoundaryAsync(MultipartReaderStream stream, int length, Cancel cancel)
         {
             // "The boundary may be followed by zero or more characters of linear whitespace. It is
             // then terminated by either another CRLF" or -- for the final boundary.
             var boundary = stream.bytePool.Rent(length);
-            var read = await stream.innerStream.ReadAsync(boundary, 0, length, cancellationToken);
+            var read = await stream.innerStream.ReadAsync(boundary, 0, length, cancel);
             stream.bytePool.Return(boundary);
             // It should have all been buffered.
             Debug.Assert(read == length);
 
             // Whitespace may exceed the buffer.
-            var remainder = await stream.innerStream.ReadLineAsync(lengthLimit: 100, cancellationToken);
+            var remainder = await stream.innerStream.ReadLineAsync(lengthLimit: 100, cancel);
             remainder = remainder.Trim();
             if (string.Equals("--", remainder, StringComparison.Ordinal))
             {
@@ -331,11 +331,11 @@ sealed class MultipartReaderStream :
         base.CopyTo(destination, bufferSize);
     }
 
-    public override Task CopyToAsync(Stream destination, int bufferSize, Cancel cancellationToken)
+    public override Task CopyToAsync(Stream destination, int bufferSize, Cancel cancel)
     {
         // Set a minimum buffer size of 4K since the base Stream implementation has weird behavior
         // when the stream is seekable *and* the length is 0 (it passes in a buffer size of 1).
         bufferSize = Math.Max(4096, bufferSize);
-        return base.CopyToAsync(destination, bufferSize, cancellationToken);
+        return base.CopyToAsync(destination, bufferSize, cancel);
     }
 }

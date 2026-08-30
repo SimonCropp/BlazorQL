@@ -127,7 +127,7 @@ public class HttpFetcherTests
         Dictionary<string, string>? headers = null)
     {
         List<JsonElement> results = [];
-        await foreach (var element in fetcher.FetchAsync(request, headers ?? [], CancellationToken.None))
+        await foreach (var element in fetcher.FetchAsync(request, headers ?? [], Cancel.None))
         {
             results.Add(element);
         }
@@ -142,7 +142,7 @@ public class HttpFetcherTests
 
         public string? RequestBody { get; private set; }
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, Cancel cancel)
         {
             Request = request;
             RequestBody = await request.Content!.ReadAsStringAsync(cancel);

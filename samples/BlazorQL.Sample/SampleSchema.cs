@@ -241,7 +241,7 @@ public sealed class SampleSchema :
         {
             Name = "longDescriptionType",
             ResolvedType = testType,
-            Description = LongDescription,
+            Description = longDescription,
             Resolver = new FuncFieldResolver<object?>(_ => new object())
         });
         testType.AddField(new()
@@ -284,7 +284,7 @@ public sealed class SampleSchema :
             Name = "alsoDeprecated",
             ResolvedType = testType,
             Description = "This field is an example of a deprecated field with markdown in its deprecation reason",
-            DeprecationReason = LongDescription,
+            DeprecationReason = longDescription,
             Resolver = new FuncFieldResolver<object?>(_ => null)
         });
         testType.AddField(new()
@@ -394,12 +394,12 @@ public sealed class SampleSchema :
     {
         public IDisposable Subscribe(IObserver<string> observer)
         {
-            var cancellation = new CancellationTokenSource();
+            var cancellation = new CancelSource();
             _ = EmitAsync(observer, cancellation.Token);
             return new Subscription(cancellation);
         }
 
-        async Task EmitAsync(IObserver<string> observer, CancellationToken cancel)
+        async Task EmitAsync(IObserver<string> observer, Cancel cancel)
         {
             try
             {
@@ -425,7 +425,7 @@ public sealed class SampleSchema :
             }
         }
 
-        sealed class Subscription(CancellationTokenSource cancellation) :
+        sealed class Subscription(CancelSource cancellation) :
             IDisposable
         {
             public void Dispose()
@@ -463,7 +463,7 @@ public sealed class SampleSchema :
 
     sealed record GreetingSource(string Text);
 
-    const string LongDescription =
+    const string longDescription =
         """
         The `longDescriptionType` field on the `Test` type has a long, verbose, description to test inline field docs.
 

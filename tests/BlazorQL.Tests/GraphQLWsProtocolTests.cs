@@ -69,7 +69,7 @@ public class GraphQLWsProtocolTests
     [Test]
     public void CancelSendsComplete()
     {
-        using var cancelSource = new CancellationTokenSource();
+        using var cancelSource = new CancelSource();
         var socket = new HangingSocket(cancelSource);
 
         Assert.CatchAsync<OperationCanceledException>(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token));
@@ -81,7 +81,7 @@ public class GraphQLWsProtocolTests
         IWsSocket socket,
         GraphQLRequest request,
         Dictionary<string, string> headers,
-        CancellationToken cancel = default)
+        Cancel cancel = default)
     {
         List<JsonElement> results = [];
         await foreach (var element in GraphQLWsProtocol.Run(socket, request, headers, cancel))
@@ -99,13 +99,13 @@ public class GraphQLWsProtocolTests
 
         public List<string> Sent { get; } = [];
 
-        public Task SendAsync(string json, CancellationToken cancel)
+        public Task SendAsync(string json, Cancel cancel)
         {
             Sent.Add(json);
             return Task.CompletedTask;
         }
 
-        public Task<string?> ReceiveAsync(CancellationToken cancel) =>
+        public Task<string?> ReceiveAsync(Cancel cancel) =>
             Task.FromResult(frames.TryDequeue(out var frame) ? frame : null);
     }
 
@@ -113,20 +113,20 @@ public class GraphQLWsProtocolTests
     /// Acks, then cancels the caller's own token on the next receive and hangs on it — the shape of
     /// a user stopping a live subscription mid-wait.
     /// </summary>
-    sealed class HangingSocket(CancellationTokenSource cancelSource) :
+    sealed class HangingSocket(CancelSource cancelSource) :
         IWsSocket
     {
         bool acked;
 
         public List<string> Sent { get; } = [];
 
-        public Task SendAsync(string json, CancellationToken cancel)
+        public Task SendAsync(string json, Cancel cancel)
         {
             Sent.Add(json);
             return Task.CompletedTask;
         }
 
-        public async Task<string?> ReceiveAsync(CancellationToken cancel)
+        public async Task<string?> ReceiveAsync(Cancel cancel)
         {
             if (!acked)
             {
