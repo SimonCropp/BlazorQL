@@ -1,0 +1,14 @@
+﻿{
+  "data": {
+    "a": 1,
+    "b": 2
+  },
+  "errors": [
+    {
+      "message": "first"
+    },
+    {
+      "message": "second"
+    }
+  ]
+}

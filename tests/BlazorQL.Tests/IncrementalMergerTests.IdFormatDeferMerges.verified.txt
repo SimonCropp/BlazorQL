@@ -1,0 +1,8 @@
+﻿{
+  "data": {
+    "deferrable": {
+      "normalString": "Nice",
+      "deferredString": "later"
+    }
+  }
+}

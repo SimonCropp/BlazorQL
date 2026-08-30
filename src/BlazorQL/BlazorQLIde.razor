@@ -7,4 +7,17 @@
             <div id="@OperationElementId" class="blazorql-editor"></div>
         </section>
     </div>
+    <div class="blazorql-toolbar" role="toolbar" aria-label="Editor Commands">
+        <button type="button"
+                class="blazorql-execute"
+                data-testid="execute"
+                title="@(running ? "Stop query" : "Execute query (Ctrl-Enter)")"
+                aria-label="@(running ? "Stop query" : "Execute query (Ctrl-Enter)")"
+                @onclick="RunOrStop">@(running ? "■" : "▶")</button>
+    </div>
+    <div class="blazorql-response">
+        <section class="blazorql-editor-host" aria-label="Result Window" aria-live="polite" aria-atomic="true">
+            <div id="@ResponseElementId" class="blazorql-editor"></div>
+        </section>
+    </div>
 </div>

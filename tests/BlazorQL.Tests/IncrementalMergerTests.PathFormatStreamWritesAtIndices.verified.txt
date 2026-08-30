@@ -1,0 +1,15 @@
+﻿{
+  "data": {
+    "streamable": [
+      {
+        "text": "Hi"
+      },
+      {
+        "text": "Hola"
+      },
+      {
+        "text": "Ciao"
+      }
+    ]
+  }
+}

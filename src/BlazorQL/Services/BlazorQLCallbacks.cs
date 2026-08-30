@@ -7,8 +7,28 @@ namespace BlazorQL;
 public sealed class BlazorQLCallbacks
 {
     public event Action<string, string>? EditorChanged;
+    public event Action<string>? EditorAction;
+    public event Action<string, string>? StreamNext;
+    public event Action<string>? StreamComplete;
+    public event Action<string, string>? StreamError;
 
     [JSInvokable]
     public void OnEditorChanged(string uriName, string text) =>
         EditorChanged?.Invoke(uriName, text);
+
+    [JSInvokable]
+    public void OnEditorAction(string actionId) =>
+        EditorAction?.Invoke(actionId);
+
+    [JSInvokable]
+    public void OnStreamNext(string streamId, string resultJson) =>
+        StreamNext?.Invoke(streamId, resultJson);
+
+    [JSInvokable]
+    public void OnStreamComplete(string streamId) =>
+        StreamComplete?.Invoke(streamId);
+
+    [JSInvokable]
+    public void OnStreamError(string streamId, string message) =>
+        StreamError?.Invoke(streamId, message);
 }

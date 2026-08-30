@@ -167,8 +167,156 @@ export function setSchema(sdl) {
     ]);
 }
 
+/// Builds the language-mode schema from an introspection result and returns the printed SDL —
+/// the SDL view's content, produced by graphql-js so it is spec-correct for free.
+export function setSchemaFromIntrospection(introspectionJson) {
+    const parsed = JSON.parse(introspectionJson);
+    const data = parsed.data ?? parsed;
+    const schema = page.graphql.buildClientSchema(data);
+    const sdl = page.graphql.printSchema(schema);
+    setSchema(sdl);
+    return sdl;
+}
+
+/// Wires the variables editor's JSON-Schema validation to the operation editor's declared
+/// variables. The mode regenerates the JSON Schema in the worker on every operation change.
+export function linkVariablesValidation(operationUriName, variablesUriName) {
+    monacoGraphQL.setDiagnosticSettings({
+        validateVariablesJSON: {
+            [uriFor(operationUriName).toString()]: [uriFor(variablesUriName).toString()],
+        },
+        jsonDiagnosticSettings: {
+            validate: true,
+            schemaValidation: 'error',
+            allowComments: true,
+            trailingCommas: 'ignore',
+        },
+    });
+}
+
+/// The operations in a document and their variable types — what run-at-caret and the operation
+/// picker read. Null when the document does not parse.
+export function getOperationFacts(text) {
+    try {
+        const facts = page.languageService.getOperationASTFacts(page.graphql.parse(text));
+        return JSON.stringify({
+            operations: (facts.operations ?? []).map(op => ({
+                name: op.name?.value ?? null,
+                operation: op.operation,
+                start: op.loc?.start ?? 0,
+                end: op.loc?.end ?? 0,
+            })),
+        });
+    } catch {
+        return null;
+    }
+}
+
+/// Parses JSONC (comments and trailing commas tolerated, as in GraphiQL's variables/headers
+/// editors). Returns {ok, value?, error?}; a non-object root is refused like tryParseJSONC.
+export function parseJsonc(text, what) {
+    if (!text || text.trim().length === 0) {
+        return JSON.stringify({ ok: true, value: null });
+    }
+
+    const errors = [];
+    const value = page.jsoncParser.parse(text, errors, { allowTrailingComma: true });
+    if (errors.length > 0) {
+        return JSON.stringify({ ok: false, error: `${what} are invalid JSON: parse error at offset ${errors[0].offset}.` });
+    }
+
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        return JSON.stringify({ ok: false, error: `${what} are not a JSON object.` });
+    }
+
+    return JSON.stringify({ ok: true, value });
+}
+
+// ---- Local (in-browser) schema execution, for the sample and any offline demo ----
+
+let localSchema = null;
+let localExecute = null;
+// streamId -> async iterator (for cancellation)
+const localStreams = new Map();
+
+export async function initLocalSchema(moduleUrl) {
+    // Resolved against the app's <base href>, so a sub-path host serves it unchanged.
+    const module = await import(new URL(moduleUrl, document.baseURI).href);
+    localSchema = module.createSchema(page.graphql);
+    localExecute = module.createExecute
+        ? module.createExecute(page.graphql)
+        : page.graphql.execute;
+}
+
+export async function executeLocal(streamId, requestJson) {
+    const request = JSON.parse(requestJson);
+    try {
+        const document = page.graphql.parse(request.query);
+        const args = {
+            schema: localSchema,
+            document,
+            variableValues: request.variables ?? undefined,
+            operationName: request.operationName ?? undefined,
+        };
+
+        const operation = page.graphql.getOperationAST(document, request.operationName ?? undefined);
+        const result = operation?.operation === 'subscription'
+            ? await page.graphql.subscribe(args)
+            : await localExecute(args);
+
+        if (result != null && typeof result === 'object' && Symbol.asyncIterator in result) {
+            const iterator = result[Symbol.asyncIterator]();
+            localStreams.set(streamId, iterator);
+            try {
+                while (true) {
+                    const next = await iterator.next();
+                    if (next.done) {
+                        break;
+                    }
+
+                    await dotNet.invokeMethodAsync('OnStreamNext', streamId, JSON.stringify(next.value));
+                }
+
+                await dotNet.invokeMethodAsync('OnStreamComplete', streamId);
+            } finally {
+                localStreams.delete(streamId);
+            }
+
+            return;
+        }
+
+        await dotNet.invokeMethodAsync('OnStreamNext', streamId, JSON.stringify(result));
+        await dotNet.invokeMethodAsync('OnStreamComplete', streamId);
+    } catch (error) {
+        await dotNet.invokeMethodAsync('OnStreamError', streamId, String(error?.message ?? error));
+    }
+}
+
+export function stopLocalStream(streamId) {
+    const iterator = localStreams.get(streamId);
+    localStreams.delete(streamId);
+    iterator?.return?.();
+}
+
 export function focusEditor(uriName) {
     editors.get(uriName)?.editor.focus();
+}
+
+export function addAction(uriName, actionId, label, keybindingsJson) {
+    const entry = editors.get(uriName);
+    entry.listeners.push(entry.editor.addAction({
+        id: actionId,
+        label,
+        contextMenuGroupId: 'graphql',
+        keybindings: JSON.parse(keybindingsJson),
+        run: () => dotNet.invokeMethodAsync('OnEditorAction', actionId),
+    }));
+}
+
+export function getCursorOffset(uriName) {
+    const entry = editors.get(uriName);
+    const position = entry.editor.getPosition();
+    return position ? entry.model.getOffsetAt(position) : 0;
 }
 
 export function updateEditorOptions(uriName, optionsJson) {

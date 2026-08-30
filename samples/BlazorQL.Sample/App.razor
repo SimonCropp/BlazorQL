@@ -1,4 +1,12 @@
 @namespace BlazorQL.Sample
 @using BlazorQL
 
-<BlazorQLIde />
+<BlazorQLIde Fetcher="fetcher" />
+
+@code {
+
+    // The whole schema lives in the browser: graphql-js executes it inside the page, so the sample
+    // deploys to static hosting with subscriptions and incremental delivery intact.
+    readonly LocalSchemaFetcher fetcher = new("test-schema/index.js");
+
+}
