@@ -15,6 +15,7 @@
     <PackageReference Include="Verify.DiffPlex" />
     <PackageReference Include="Verify.Playwright" />
     <PackageReference Include="DiffEngine" />
+    <PackageReference Include="ProjectFiles" PrivateAssets="all" />
     <!-- Build ordering only: the fixture publishes and serves the sample app. -->
     <ProjectReference Include="..\BlazorQL.Sample\BlazorQL.Sample.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>

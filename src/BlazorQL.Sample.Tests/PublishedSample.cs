@@ -13,23 +13,12 @@ public class PublishedSample
     [OneTimeSetUp]
     public void Publish()
     {
-        // .../tests/BlazorQL.Sample.Tests/bin/<config>/<tfm>/ — mirror <config> onto the publish.
-        var baseDirectory = new DirectoryInfo(AppContext.BaseDirectory);
-        var configuration = baseDirectory.Parent!.Name;
+        // .../bin/<config>/<tfm>/ — mirror <config> onto the publish.
+        var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
 
-        var directory = baseDirectory;
-        while (directory is not null &&
-               !Directory.Exists(Path.Combine(directory.FullName, "samples")))
-        {
-            directory = directory.Parent;
-        }
+        var project = Path.GetFullPath(
+            Path.Combine(ProjectFiles.ProjectDirectory.FullPath, "..", "BlazorQL.Sample", "BlazorQL.Sample.csproj"));
 
-        if (directory is null)
-        {
-            throw new DirectoryNotFoundException("Could not locate the repository root from the test output directory.");
-        }
-
-        var project = Path.Combine(directory.FullName, "src", "BlazorQL.Sample", "BlazorQL.Sample.csproj");
         publishDirectory = Directory.CreateTempSubdirectory("blazorql_publish_").FullName;
 
         var info = new ProcessStartInfo("dotnet")

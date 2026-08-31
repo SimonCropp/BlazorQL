@@ -23,6 +23,7 @@
     <PackageVersion Include="DiffEngine" Version="20.1.2" />
     <PackageVersion Include="Polyfill" Version="11.2.0" />
     <PackageVersion Include="ProjectDefaults" Version="1.0.180" />
+    <PackageVersion Include="ProjectFiles" Version="1.4.0" />
     <PackageVersion Include="MarkdownSnippets.MsBuild" Version="28.4.2" />
   </ItemGroup>
 </Project>
