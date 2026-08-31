@@ -332,7 +332,7 @@ public partial class DocExplorer :
         }
 
         lastSdl = SchemaSdl;
-        sdlModel = await Global.CreateModel(JS, SchemaSdl ?? "", "graphql", sdlModelUri);
+        sdlModel = await NamedModels.Create(JS, SchemaSdl ?? "", "graphql", sdlModelUri);
         await sdlEditor.SetModel(sdlModel);
     }
 
@@ -355,24 +355,8 @@ public partial class DocExplorer :
     {
         Navigator?.Navigated -= OnNavigated;
         searchDebounce?.Cancel();
-        if (sdlModel is null)
-        {
-            return;
-        }
-
         // The pane can close and reopen; the model must go with the component or the next
         // creation would collide with the leaked model's uri.
-        try
-        {
-            await sdlModel.DisposeModel();
-        }
-        catch (JSException)
-        {
-            // Best-effort cleanup; the editor may already be gone.
-        }
-        catch (JSDisconnectedException)
-        {
-            // The page is gone, and the editor with it.
-        }
+        await NamedModels.Dispose(sdlModel);
     }
 }

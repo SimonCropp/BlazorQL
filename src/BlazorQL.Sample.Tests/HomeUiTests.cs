@@ -94,4 +94,27 @@ public class HomeUiTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    /// <summary>
+    /// Leaving the explorer disposes the ide, and its monaco models are keyed by page-global
+    /// uris — so coming back only works if the first visit handed those uris back.
+    /// </summary>
+    [Test]
+    public async Task ExplorerRelaunchesAfterReturningHome()
+    {
+        var page = await NewPageAsync();
+        await page.GoToHomeAsync(BaseUrl);
+
+        await page.ClickAsync("[data-testid='open-explorer']");
+        await page.WaitForIdeReadyAsync();
+
+        // Both hops are client-side routing, so the runtime — and monaco with it — stays loaded.
+        await page.GoBackAsync();
+        await page.WaitForSelectorAsync("[data-testid='home-name']", 30);
+
+        await page.ClickAsync("[data-testid='open-explorer']");
+        await page.WaitForIdeReadyAsync();
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
 }

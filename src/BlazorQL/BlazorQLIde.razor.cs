@@ -264,7 +264,7 @@ public partial class BlazorQLIde :
     /// </summary>
     async Task<TextModel> SwapModel(StandaloneCodeEditor editor, string value, string language, string uri)
     {
-        var model = await Global.CreateModel(JS, value, language, uri);
+        var model = await NamedModels.Create(JS, value, language, uri);
         await editor.SetModel(model);
         return model;
     }
@@ -1779,6 +1779,12 @@ public partial class BlazorQLIde :
         }
 
         reference?.Dispose();
+        // The editors can close and reopen — a route change is enough. The models must go with
+        // them or the next instance would collide with the leaked models' uris.
+        await NamedModels.Dispose(operationModel);
+        await NamedModels.Dispose(variablesModel);
+        await NamedModels.Dispose(headersModel);
+        await NamedModels.Dispose(responseModel);
         if (module is not null)
         {
             await module.DisposeAsync();
