@@ -26,9 +26,9 @@ jobs:
         shell: bash
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
       - name: Build
-        run: dotnet build BlazorQL.slnx -c Release -p:Version=${{ env.version }}
+        run: dotnet build src/BlazorQL.slnx -c Release -p:Version=${{ env.version }}
       - name: Test
-        run: dotnet test BlazorQL.slnx -c Release --no-build
+        run: dotnet test src/BlazorQL.slnx -c Release --no-build
       - name: Upload received snapshots on failure
         if: failure()
         uses: actions/upload-artifact@v4

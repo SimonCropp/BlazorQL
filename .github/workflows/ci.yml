@@ -19,9 +19,9 @@ jobs:
           path: ~\AppData\Local\ms-playwright
           key: playwright-${{ hashFiles('Directory.Packages.props') }}
       - name: Build
-        run: dotnet build BlazorQL.slnx -c Release
+        run: dotnet build src/BlazorQL.slnx -c Release
       - name: Test
-        run: dotnet test BlazorQL.slnx -c Release --no-build
+        run: dotnet test src/BlazorQL.slnx -c Release --no-build
       - name: Upload received snapshots on failure
         if: failure()
         uses: actions/upload-artifact@v4
