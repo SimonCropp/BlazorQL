@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using BlazorQL;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Logging;
@@ -40,6 +41,15 @@ public abstract class BundledFixture
     /// <summary>Turns on the consumer's own response compression, which must not double-encode.</summary>
     protected virtual bool UseResponseCompression => false;
 
+    /// <summary>The key the host stashes a request's CSP nonce under.</summary>
+    protected const string NonceKey = "CspNonce";
+
+    /// <summary>
+    /// The Content-Security-Policy the host sets on every response, with <c>{nonce}</c> standing in
+    /// for the request's nonce. Null sends no policy, which is what most of the suite wants.
+    /// </summary>
+    protected virtual string? ContentSecurityPolicy => null;
+
     protected virtual void Configure(BlazorQLIdeOptions options)
     {
     }
@@ -65,6 +75,17 @@ public abstract class BundledFixture
         if (PathBase.Length > 0)
         {
             host.UsePathBase(PathBase);
+        }
+
+        if (ContentSecurityPolicy is {Length: > 0} policy)
+        {
+            host.Use((context, next) =>
+            {
+                var nonce = RandomNumberGenerator.GetHexString(32);
+                context.Items[NonceKey] = nonce;
+                context.Response.Headers.ContentSecurityPolicy = policy.Replace("{nonce}", nonce);
+                return next();
+            });
         }
 
         host.MapSampleSchema();

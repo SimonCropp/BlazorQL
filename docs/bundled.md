@@ -50,6 +50,7 @@ Everything is configured through `MapBlazorQL`:
 | `DocumentTitle` | `GraphQL IDE` | The browser tab title. |
 | `BasePathOverride` | null | Overrides the base path baked into the page. See *Behind a proxy*. |
 | `MapUnknownPathsToIde` | false | Serves the IDE for unknown extensionless paths under the mount instead of answering 404. |
+| `Nonce` | null | `Func<HttpContext, string?>` supplying the CSP nonce to stamp on every script element. See *Content Security Policy*. |
 
 The endpoint is resolved in the browser against the page it was served from, so a root-relative
 `/graphql` follows the app wherever it is hosted.
@@ -66,6 +67,25 @@ app.MapBlazorQL("/graphql-ide").RequireAuthorization("Admin");
 This works with cookie authentication. It does **not** work with a bearer-only scheme: the
 WebAssembly application's own asset requests are ordinary browser fetches and carry no bearer token,
 so they would be rejected with 401.
+
+
+## Content Security Policy
+
+An app that sets a `Content-Security-Policy` header has to widen it for the mount: the IDE is a
+WebAssembly application and needs `'wasm-unsafe-eval'`, `data:` fonts and `blob:` workers on top of
+a `'self'` policy. [The whole policy, and what each directive is for](csp.md).
+
+Because this package renders the page rather than the consumer, it can put a CSP nonce on the
+page's scripts itself — set `Nonce` and drop `'unsafe-inline'`:
+
+```csharp
+app.MapBlazorQL("/graphql-ide", _ => _.Nonce = context => (string?) context.Items["CspNonce"]);
+```
+
+The nonce lands on every script element, not only the two inline ones, so a policy that names a
+nonce and no host source works too. Rendering is cached per base path and the nonce is not, so a
+mount that uses one pays a small copy per request; a mount that does not is byte-identical to
+before.
 
 
 ## Behind a proxy

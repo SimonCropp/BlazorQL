@@ -56,4 +56,19 @@ public sealed class BlazorQLIdeOptions
     /// default: the IDE has no client-side routes, and share links travel in the fragment.
     /// </summary>
     public bool MapUnknownPathsToIde { get; set; }
+
+    /// <summary>
+    /// The CSP nonce for a request, stamped onto every script element in the page. Set it to serve
+    /// the IDE under a policy that names a nonce instead of allowing <c>unsafe-inline</c>; null,
+    /// the default, renders no nonce attributes at all.
+    /// </summary>
+    /// <remarks>
+    /// The value has to be the one in that response's own Content-Security-Policy header, which
+    /// this package never writes - the policy belongs to the consumer. Returning null or an empty
+    /// string for a request renders that page without the attributes.
+    /// </remarks>
+    /// <example>
+    /// <code>_.Nonce = context =&gt; (string?) context.Items["CspNonce"];</code>
+    /// </example>
+    public Func<HttpContext, string?>? Nonce { get; set; }
 }
