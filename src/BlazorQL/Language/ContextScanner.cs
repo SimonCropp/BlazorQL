@@ -59,7 +59,7 @@ static class ContextScanner
         var fragments = new List<string>();
 
         // What the token BEFORE the caret's word was — decides the modes a bare name cannot.
-        var pendingRoot = (string?) null;
+        string? pendingRoot = null;
         var afterEllipsis = false;
         var afterOn = false;
         var afterAt = false;
