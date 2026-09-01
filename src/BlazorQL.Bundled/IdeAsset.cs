@@ -1,5 +1,3 @@
-using System.Reflection;
-
 /// <summary>
 /// One embedded file, served straight out of the assembly's resource table. The brotli bytes are
 /// what is stored; identity bytes are decompressed on demand and cached under a cap.

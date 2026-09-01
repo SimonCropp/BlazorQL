@@ -11,3 +11,4 @@ global using static VerifyNUnit.Verifier;
 global using System.Threading.Channels;
 global using GraphQL;
 global using GraphQL.SystemTextJson;
+global using Microsoft.AspNetCore.Http;

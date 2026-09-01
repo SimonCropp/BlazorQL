@@ -1,7 +1,3 @@
-using System.Diagnostics;
-using System.Globalization;
-using BlazorMonaco;
-using BlazorMonaco.Editor;
 using BlazorMonaco.Languages;
 using Global = BlazorMonaco.Editor.Global;
 
@@ -92,7 +88,7 @@ public partial class BlazorQLIde :
     JsModule? module;
     readonly BlazorQLCallbacks callbacks = new();
     DotNetObjectReference<BlazorQLCallbacks>? reference;
-    CancellationTokenSource? execution;
+    CancelSource? execution;
 
     // Editor components and the named models they are moved onto — the models carry stable uris
     // so tests and the language providers can address each editor.
@@ -119,7 +115,9 @@ public partial class BlazorQLIde :
     readonly TabStore tabs = new();
     readonly ThemeService themes = new();
     readonly PaneState pluginPane = new(1.0 / 3);
+
     readonly PaneState sessionPane = new(0.5);
+
     // The operation editor's share of the editors column; 3:1 over the editor tools.
     readonly PaneState toolsPane = new(0.75);
     PluginKind? visiblePlugin;
@@ -208,12 +206,11 @@ public partial class BlazorQLIde :
         await module.Invoke(
             "registerGlobalShortcuts",
             JsonSerializer.Serialize(
-                new Shortcut[]
-                {
+                [
                     new("refetch", "r", Ctrl: true, Shift: true, Alt: false, Meta: false),
                     new("doc-search", "k", Ctrl: true, Shift: false, Alt: true, Meta: false),
                     new("settings", ",", Ctrl: true, Shift: false, Alt: false, Meta: false)
-                },
+                ],
                 WebJson.Default.ShortcutArray));
     }
 
@@ -221,18 +218,18 @@ public partial class BlazorQLIde :
     /// A swapped-in fetcher instance (an endpoint change in the host app) re-attaches and
     /// re-introspects, so the schema always describes what requests will actually hit.
     /// </summary>
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync()
     {
         if (!hydrated ||
             ReferenceEquals(attachedFetcher, Fetcher))
         {
-            return;
+            return Task.CompletedTask;
         }
 
         attachedFetcher = Fetcher;
         // A run in flight belongs to the old fetcher.
         execution?.Cancel();
-        await LoadSchema();
+        return LoadSchema();
     }
 
     // ---- Editor construction and init ----
@@ -275,32 +272,35 @@ public partial class BlazorQLIde :
     {
         operationModel = await SwapModel(operationEditor!, tabs.Active.Query, "graphql", operationModelUri);
 
-        await operationEditor!.AddAction(new ActionDescriptor
-        {
-            Id = "blazorql-run",
-            Label = "Run Operation",
-            ContextMenuGroupId = "graphql",
-            Keybindings = [(int)KeyMod.CtrlCmd | (int)KeyCode.Enter],
-            Run = _ => InvokeAsync(RunFromKeyboard)
-        });
+        await operationEditor!.AddAction(
+            new()
+            {
+                Id = "blazorql-run",
+                Label = "Run Operation",
+                ContextMenuGroupId = "graphql",
+                Keybindings = [(int)KeyMod.CtrlCmd | (int)KeyCode.Enter],
+                Run = _ => InvokeAsync(RunFromKeyboard)
+            });
         // GraphiQL's editor bindings: Shift-Ctrl-P prettify, Shift-Ctrl-M merge, Shift-Ctrl-C copy.
         await AddPrettifyAction(operationEditor);
-        await operationEditor.AddAction(new ActionDescriptor
-        {
-            Id = "blazorql-merge",
-            Label = "Merge Fragments",
-            ContextMenuGroupId = "graphql",
-            Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyM],
-            Run = _ => InvokeAsync(MergeFragments)
-        });
-        await operationEditor.AddAction(new ActionDescriptor
-        {
-            Id = "blazorql-copy",
-            Label = "Copy Query",
-            ContextMenuGroupId = "graphql",
-            Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyC],
-            Run = _ => InvokeAsync(CopyQuery)
-        });
+        await operationEditor.AddAction(
+            new()
+            {
+                Id = "blazorql-merge",
+                Label = "Merge Fragments",
+                ContextMenuGroupId = "graphql",
+                Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyM],
+                Run = _ => InvokeAsync(MergeFragments)
+            });
+        await operationEditor.AddAction(
+            new()
+            {
+                Id = "blazorql-copy",
+                Label = "Copy Query",
+                ContextMenuGroupId = "graphql",
+                Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyC],
+                Run = _ => InvokeAsync(CopyQuery)
+            });
 
         await EditorReady();
     }
@@ -326,14 +326,15 @@ public partial class BlazorQLIde :
     }
 
     Task AddPrettifyAction(StandaloneCodeEditor editor) =>
-        editor.AddAction(new ActionDescriptor
-        {
-            Id = "blazorql-prettify",
-            Label = "Prettify Editors",
-            ContextMenuGroupId = "graphql",
-            Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyP],
-            Run = _ => InvokeAsync(PrettifyEditors)
-        });
+        editor.AddAction(
+            new()
+            {
+                Id = "blazorql-prettify",
+                Label = "Prettify Editors",
+                ContextMenuGroupId = "graphql",
+                Keybindings = [(int)KeyMod.Shift | (int)KeyMod.WinCtrl | (int)KeyCode.KeyP],
+                Run = _ => InvokeAsync(PrettifyEditors)
+            });
 
     int ExpectedEditors =>
         IsHeadersEditorEnabled ? 4 : 3;
@@ -369,21 +370,21 @@ public partial class BlazorQLIde :
         var provider = new CompletionItemProvider(
             [" ", "(", "$", "@", ":", "{", "."],
             (modelUri, position, context) =>
-                active?.ProvideCompletions(modelUri, position, context) ?? Task.FromResult(EmptyCompletions()));
+                active?.ProvideCompletions(modelUri, position) ?? Task.FromResult(EmptyCompletions()));
         await BlazorMonaco.Languages.Global.RegisterCompletionItemProvider(JS, "graphql", provider);
 
         await BlazorMonaco.Languages.Global.RegisterHoverProviderAsync(
             JS,
             "graphql",
-            (modelUri, position, context) =>
-                active?.ProvideOperationHover(modelUri, position, context) ?? Task.FromResult<Hover>(null!));
+            (modelUri, position, _) =>
+                active?.ProvideOperationHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
 
         // Hovering a value ending in an image extension in the response editor previews the image.
         await BlazorMonaco.Languages.Global.RegisterHoverProviderAsync(
             JS,
             "json",
-            (modelUri, position, context) =>
-                active?.ProvideResponseImageHover(modelUri, position, context) ?? Task.FromResult<Hover>(null!));
+            (modelUri, position, _) =>
+                active?.ProvideResponseImageHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
     }
 
     static CompletionList EmptyCompletions() =>
@@ -392,7 +393,7 @@ public partial class BlazorQLIde :
             Suggestions = []
         };
 
-    async Task<CompletionList> ProvideCompletions(string modelUri, Position position, CompletionContext context)
+    async Task<CompletionList> ProvideCompletions(string modelUri, Position position)
     {
         // Monaco invokes this on every keystroke/trigger; never let an exception escape into the
         // JS interop boundary (it would surface as an unhandled Blazor error).
@@ -435,7 +436,7 @@ public partial class BlazorQLIde :
         }
     }
 
-    async Task<Hover> ProvideOperationHover(string modelUri, Position position, HoverContext context)
+    async Task<Hover> ProvideOperationHover(string modelUri, Position position)
     {
         try
         {
@@ -456,7 +457,13 @@ public partial class BlazorQLIde :
 
             return new()
             {
-                Contents = [new MarkdownString {Value = hover.Markdown}],
+                Contents =
+                [
+                    new()
+                    {
+                        Value = hover.Markdown
+                    }
+                ],
                 Range = ToRange(text, hover.Start, hover.End)
             };
         }
@@ -466,10 +473,10 @@ public partial class BlazorQLIde :
         }
     }
 
-    static readonly System.Text.RegularExpressions.Regex imageToken =
-        new(@"\S+\.(png|svg|jpe?g|gif|webp)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    static readonly Regex imageToken =
+        new(@"\S+\.(png|svg|jpe?g|gif|webp)$", RegexOptions.IgnoreCase);
 
-    async Task<Hover> ProvideResponseImageHover(string modelUri, Position position, HoverContext context)
+    async Task<Hover> ProvideResponseImageHover(string modelUri, Position position)
     {
         try
         {
@@ -502,7 +509,13 @@ public partial class BlazorQLIde :
 
             return new()
             {
-                Contents = [new MarkdownString {Value = $"![]({token})"}],
+                Contents =
+                [
+                    new()
+                    {
+                        Value = $"![]({token})"
+                    }
+                ],
                 Range = new()
                 {
                     StartLineNumber = position.LineNumber,
@@ -940,9 +953,9 @@ public partial class BlazorQLIde :
     {
         try
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+            using var cancelSource = new CancelSource(TimeSpan.FromSeconds(60));
             JsonElement? introspection = null;
-            await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery), emptyHeaders, cts.Token))
+            await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery), emptyHeaders, cancelSource.Token))
             {
                 introspection = payload;
                 break;
@@ -991,19 +1004,19 @@ public partial class BlazorQLIde :
 
     // ---- Theme ----
 
-    async Task CycleTheme()
+    Task CycleTheme()
     {
         themes.Cycle();
         PersistTheme();
-        await ApplyTheme();
+        return ApplyTheme();
     }
 
     /// <summary>The settings dialog's explicit theme choice — same service as the sidebar cycle.</summary>
-    async Task SelectTheme(Theme theme)
+    Task SelectTheme(Theme theme)
     {
         themes.Current = theme;
         PersistTheme();
-        await ApplyTheme();
+        return ApplyTheme();
     }
 
     async Task ApplyTheme()
@@ -1037,7 +1050,7 @@ public partial class BlazorQLIde :
             operationEditor is null ||
             pointer is null ||
             position is null ||
-            (!pointer.CtrlKey && !pointer.MetaKey) ||
+            pointer is { CtrlKey: false, MetaKey: false } ||
             pointer.RightButton)
         {
             return;
@@ -1255,14 +1268,14 @@ public partial class BlazorQLIde :
 
     /// <summary>Document-level shortcuts registered with the host module.</summary>
     void OnGlobalShortcut(string id) =>
-        _ = InvokeAsync(async () =>
+        _ = InvokeAsync(() =>
         {
             switch (id)
             {
                 case "refetch":
                     if (!refetching)
                     {
-                        await RefetchSchema();
+                        return RefetchSchema();
                     }
 
                     break;
@@ -1278,6 +1291,8 @@ public partial class BlazorQLIde :
                     StateHasChanged();
                     break;
             }
+
+            return Task.CompletedTask;
         });
 
     // ---- Toolbar operations ----
@@ -1529,7 +1544,7 @@ public partial class BlazorQLIde :
                 ? sidecar.Inner
                 : Fetcher;
             // The HTTP status code replaces "OK" outright; error/stopped wording still wins a slot.
-            statusLine = transport is HttpFetcher {LastStatus: { } httpStatus}
+            statusLine = transport is HttpFetcher { LastStatus: { } httpStatus }
                 ? status == "OK"
                     ? $"{httpStatus.StatusCode} · {stopwatch.ElapsedMilliseconds} ms"
                     : $"{httpStatus.StatusCode} · {status} · {stopwatch.ElapsedMilliseconds} ms"
@@ -1592,7 +1607,13 @@ public partial class BlazorQLIde :
                 Options = new()
                 {
                     ClassName = "blazorql-auto-inserted-leaf",
-                    HoverMessage = [new() {Value = "Automatically added leaf fields"}]
+                    HoverMessage =
+                    [
+                        new()
+                        {
+                            Value = "Automatically added leaf fields"
+                        }
+                    ]
                 }
             });
             shift += insertion.Text.Length;
@@ -1634,7 +1655,7 @@ public partial class BlazorQLIde :
     static Dictionary<string, string> ToHeaderDictionary(JsonElement? parsed)
     {
         Dictionary<string, string> headers = [];
-        if (parsed is not {ValueKind: JsonValueKind.Object} element)
+        if (parsed is not { ValueKind: JsonValueKind.Object } element)
         {
             return headers;
         }

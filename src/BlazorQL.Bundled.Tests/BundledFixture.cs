@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using BlazorQL;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using NUnit.Framework.Interfaces;
 
@@ -145,13 +144,16 @@ public abstract class BundledFixture
     [OneTimeTearDown]
     public async Task Stop()
     {
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (browser is not null)
         {
             await browser.DisposeAsync();
         }
 
+        // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
         playwright?.Dispose();
 
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (host is not null)
         {
             await host.DisposeAsync();

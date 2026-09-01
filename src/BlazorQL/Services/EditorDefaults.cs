@@ -1,5 +1,3 @@
-using BlazorMonaco.Editor;
-
 /// <summary>
 /// GraphiQL's shared editor construction defaults (create-editor.ts), where BlazorMonaco supports
 /// them: tabIndex -1 keeps editors out of the tab order (their wrappers are focusable instead).

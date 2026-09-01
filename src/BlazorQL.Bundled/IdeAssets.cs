@@ -1,6 +1,3 @@
-using System.Collections.Frozen;
-using System.Reflection;
-
 /// <summary>
 /// Every embedded file, indexed by the path it is served at. Built once per assembly rather than
 /// per mount, because the payload is frozen at build time and two mounts serve identical bytes.

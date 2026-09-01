@@ -12,11 +12,11 @@ static class GraphQLWsProtocol
         [EnumeratorCancellation] Cancel cancel)
     {
         await socket.SendAsync(
-            JsonSerializer.Serialize(new InitFrame("connection_init", headers), WebJson.Default.InitFrame),
+            JsonSerializer.Serialize(new("connection_init", headers), WebJson.Default.InitFrame),
             cancel);
         await AwaitAck(socket, cancel);
         await socket.SendAsync(
-            JsonSerializer.Serialize(new SubscribeFrame("1", "subscribe", request), WebJson.Default.SubscribeFrame),
+            JsonSerializer.Serialize(new("1", "subscribe", request), WebJson.Default.SubscribeFrame),
             cancel);
 
         while (true)

@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>
 /// Source-generated metadata for everything the IDE puts on, or takes off, the wire.
 /// </summary>

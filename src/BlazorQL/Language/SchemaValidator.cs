@@ -578,9 +578,12 @@ public sealed class SchemaValidator(SchemaIndex index)
         {
             if (actual is GraphQLNonNullType nonNullActual)
             {
-                return expected.Kind == "NON_NULL"
-                    ? Accepts(expected.OfType!, nonNullActual.Type)
-                    : Accepts(expected, nonNullActual.Type);
+                if (expected.Kind == "NON_NULL")
+                {
+                    return Accepts(expected.OfType!, nonNullActual.Type);
+                }
+
+                return Accepts(expected, nonNullActual.Type);
             }
 
             if (expected.Kind == "NON_NULL")

@@ -1,7 +1,3 @@
-using System.Collections.Concurrent;
-using System.Text.Encodings.Web;
-using System.Text.Json;
-
 /// <summary>
 /// Serves one mount of the IDE. Everything except index.html is written straight out of the
 /// assembly as brotli; index.html is rendered per base path and cached.

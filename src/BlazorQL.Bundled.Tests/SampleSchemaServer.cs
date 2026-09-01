@@ -1,7 +1,3 @@
-using System.Text.RegularExpressions;
-using GraphQL.Types;
-using Microsoft.AspNetCore.Http;
-
 /// <summary>
 /// A real GraphQL endpoint over the GraphiQL test schema, for the IDE to talk to. This is the half
 /// of the loop the WebAssembly sample cannot provide: its schema runs in the browser, so nothing

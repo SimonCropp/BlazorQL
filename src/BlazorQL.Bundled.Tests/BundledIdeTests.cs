@@ -147,7 +147,7 @@ public class RootMountBundledIdeTests :
     [Test]
     public async Task BootsAtTheRoot()
     {
-        var page = await OpenIdeAsync();
+        await OpenIdeAsync();
         Assert.That(ConsoleErrors(), Is.Empty);
     }
 }
@@ -169,7 +169,7 @@ public class CompressedBundledIdeTests :
     [Test]
     public async Task SurvivesTheHostsOwnResponseCompression()
     {
-        var page = await OpenIdeAsync();
+        await OpenIdeAsync();
         Assert.That(ConsoleErrors(), Is.Empty);
     }
 }

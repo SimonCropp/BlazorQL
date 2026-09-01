@@ -1,4 +1,3 @@
-using BlazorMonaco.Editor;
 using Global = BlazorMonaco.Editor.Global;
 
 /// <summary>

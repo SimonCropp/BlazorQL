@@ -1,6 +1,3 @@
-using System.Text;
-using BlazorMonaco.Editor;
-
 namespace BlazorQL;
 
 /// <summary>
@@ -39,7 +36,7 @@ public partial class DocExplorer :
     string searchTerm = "";
     List<SearchMatch>? withinResults;
     List<SearchMatch>? otherResults;
-    CancellationTokenSource? searchDebounce;
+    CancelSource? searchDebounce;
 
     // SDL view state. The editor is created once, on the first toggle, and then only shown/hidden.
     bool sdlVisible;
@@ -51,8 +48,7 @@ public partial class DocExplorer :
     DocEntry Previous => stack[^2];
 
     bool ShowSearch =>
-        Current is DocRootEntry ||
-        (Current is DocTypeEntry entry && entry.Type.Kind is "OBJECT" or "INTERFACE" or "INPUT_OBJECT");
+        Current is DocRootEntry or DocTypeEntry { Type.Kind: "OBJECT" or "INTERFACE" or "INPUT_OBJECT" };
 
     string SearchPlaceholder =>
         Current is DocTypeEntry entry
@@ -77,7 +73,7 @@ public partial class DocExplorer :
         }
     }
 
-    protected override async Task OnParametersSetAsync()
+    protected override Task OnParametersSetAsync()
     {
         // A reloaded schema resets the stack to the root; rebuilding the old stack against the new
         // schema is not attempted.
@@ -91,8 +87,10 @@ public partial class DocExplorer :
         if (sdlModel is not null && SchemaSdl != lastSdl)
         {
             lastSdl = SchemaSdl;
-            await sdlModel.SetValue(SchemaSdl ?? "");
+            return sdlModel.SetValue(SchemaSdl ?? "");
         }
+
+        return Task.CompletedTask;
     }
 
     // ---- Navigation ----

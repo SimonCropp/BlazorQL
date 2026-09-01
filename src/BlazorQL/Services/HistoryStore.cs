@@ -81,8 +81,8 @@ public sealed partial class HistoryStore
 
     void Save()
     {
-        storage.Set("queries", JsonSerializer.Serialize(new PersistedQueries([.. items]), HistoryJson.Default.PersistedQueries));
-        storage.Set("favorites", JsonSerializer.Serialize(new PersistedFavorites([.. favorites]), HistoryJson.Default.PersistedFavorites));
+        storage.Set("queries", JsonSerializer.Serialize(new([.. items]), HistoryJson.Default.PersistedQueries));
+        storage.Set("favorites", JsonSerializer.Serialize(new([.. favorites]), HistoryJson.Default.PersistedFavorites));
     }
 
     /// <summary>
