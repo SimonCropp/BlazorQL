@@ -1,0 +1,12 @@
+@using BlazorQL
+@inject IJSRuntime JS
+
+<BlazorQLIde Fetcher="fetcher"
+             DefaultQuery="@config.DefaultQuery"
+             DefaultHeaders="@config.DefaultHeaders"
+             IsHeadersEditorEnabled="config.IsHeadersEditorEnabled"
+             ShouldPersistHeaders="config.ShouldPersistHeaders"
+             MaxHistoryLength="config.MaxHistoryLength"
+             StorageNamespace="@config.StorageNamespace"
+             DefaultTheme="ParseTheme(config.DefaultTheme) ?? Theme.System"
+             ForcedTheme="ParseTheme(config.ForcedTheme)" />

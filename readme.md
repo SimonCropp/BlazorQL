@@ -51,10 +51,18 @@ public interface IGraphQLFetcher
 
 Built-in fetchers: `HttpFetcher(url)` and `GraphQLWsFetcher(url)`. Anything else — like the sample's in-browser `LocalSchemaFetcher` — is one interface implementation away.
 
+For a site that is not a Blazor app, `BlazorQL.Bundled` ships the same IDE as a single dependency-free
+assembly with the whole WebAssembly application embedded — one package reference and one line:
+
+```csharp
+app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql");
+```
+
 
 ## Documentation
 
 - [Getting started](docs/getting-started.md)
+- [BlazorQL.Bundled, for non-Blazor sites](docs/bundled.md)
 - [Features](docs/features.md)
 - [Fetchers](docs/fetchers.md)
 - [Theming](docs/theming.md)
@@ -66,7 +74,7 @@ Built-in fetchers: `HttpFetcher(url)` and `GraphQLWsFetcher(url)`. Anything else
 
 ## Attribution
 
-The editors are [monaco-editor](https://github.com/microsoft/monaco-editor) (Microsoft, MIT) via the [BlazorMonaco](https://github.com/serdarciplak/BlazorMonaco) package (MIT). Parsing is [GraphQL-Parser](https://github.com/graphql-dotnet/parser) and validation [GraphQL.NET](https://github.com/graphql-dotnet/graphql-dotnet) (both MIT); markdown rendering is [Markdig](https://github.com/xoofx/markdig) (BSD-2-Clause). The sample's schema is a C# port of GraphiQL's own test schema (GraphQL Contributors, MIT).
+The editors are [monaco-editor](https://github.com/microsoft/monaco-editor) (Microsoft, MIT) via the [BlazorMonaco](https://github.com/serdarciplak/BlazorMonaco) package (MIT). Parsing is [GraphQL-Parser](https://github.com/graphql-dotnet/parser) (MIT), with the validation rules implemented over it here; markdown rendering is [Markdig](https://github.com/xoofx/markdig) (BSD-2-Clause). The sample's schema is a C# port of GraphiQL's own test schema (GraphQL Contributors, MIT).
 
 
 ## Icon

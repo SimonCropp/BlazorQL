@@ -9,8 +9,6 @@ global using System.Text.RegularExpressions;
 global using Microsoft.AspNetCore.Components;
 global using Microsoft.JSInterop;
 global using BlazorQL;
-global using GraphQL.Types;
-global using GraphQL.Validation;
 global using GraphQLParser;
 global using GraphQLParser.AST;
 global using GraphQLParser.Exceptions;

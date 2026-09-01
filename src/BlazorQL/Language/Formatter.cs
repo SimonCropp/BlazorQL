@@ -40,6 +40,10 @@ public static class Formatter
         return formatted.EndsWith('\n') ? formatted : formatted + '\n';
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "JsonElement has a built-in converter, so nothing here is discovered by reflection.")]
     public static string FormatJson(string text)
     {
         if (string.IsNullOrWhiteSpace(text))

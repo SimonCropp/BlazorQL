@@ -11,11 +11,7 @@ public static class ShareLinkCodec
     /// <summary>The fragment (no leading <c>#</c>) for the given content, e.g. <c>q=eyJ…</c>.</summary>
     public static string Encode(SharedQuery shared)
     {
-        var json = JsonSerializer.Serialize(new
-        {
-            query = shared.Query,
-            variables = shared.Variables
-        });
+        var json = JsonSerializer.Serialize(shared, WebJson.Default.SharedQuery);
         var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
             .TrimEnd('=')
             .Replace('+', '-')

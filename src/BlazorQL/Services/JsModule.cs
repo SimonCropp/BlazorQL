@@ -7,6 +7,11 @@ namespace BlazorQL;
 public sealed class JsModule(IJSRuntime js) :
     IAsyncDisposable
 {
+    const DynamicallyAccessedMemberTypes interopMembers =
+        DynamicallyAccessedMemberTypes.PublicConstructors |
+        DynamicallyAccessedMemberTypes.PublicFields |
+        DynamicallyAccessedMemberTypes.PublicProperties;
+
     IJSObjectReference? module;
 
     public async ValueTask<IJSObjectReference> Get()
@@ -23,7 +28,12 @@ public sealed class JsModule(IJSRuntime js) :
         await target.InvokeVoidAsync(identifier, args);
     }
 
-    public async ValueTask<T> Invoke<T>(string identifier, params object?[] args)
+    /// <remarks>
+    /// T is only ever a primitive or a string array here — what blazorql.js hands back. The
+    /// annotation forwards the interop contract so a caller with a richer type is the one told about
+    /// it, rather than the failure surfacing as an empty object in a trimmed build.
+    /// </remarks>
+    public async ValueTask<T> Invoke<[DynamicallyAccessedMembers(interopMembers)] T>(string identifier, params object?[] args)
     {
         var target = await Get();
         return await target.InvokeAsync<T>(identifier, args);
@@ -33,7 +43,11 @@ public sealed class JsModule(IJSRuntime js) :
     /// Synchronous invoke, for the storage backend's synchronous contract. Only valid after the
     /// module is imported and only on an in-process (WebAssembly) runtime.
     /// </summary>
-    public T InvokeSync<T>(string identifier, params object?[] args)
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "T is a primitive or a string array, which the interop serializer handles without reflection.")]
+    public T InvokeSync<[DynamicallyAccessedMembers(interopMembers)] T>(string identifier, params object?[] args)
     {
         if (module is not IJSInProcessObjectReference inProcess)
         {

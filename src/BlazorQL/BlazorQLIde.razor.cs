@@ -207,12 +207,14 @@ public partial class BlazorQLIde :
         // Document-level shortcuts for commands that live outside any editor.
         await module.Invoke(
             "registerGlobalShortcuts",
-            JsonSerializer.Serialize(new object[]
-            {
-                new {id = "refetch", key = "r", ctrl = true, shift = true, alt = false, meta = false},
-                new {id = "doc-search", key = "k", ctrl = true, shift = false, alt = true, meta = false},
-                new {id = "settings", key = ",", ctrl = true, shift = false, alt = false, meta = false}
-            }));
+            JsonSerializer.Serialize(
+                new Shortcut[]
+                {
+                    new("refetch", "r", Ctrl: true, Shift: true, Alt: false, Meta: false),
+                    new("doc-search", "k", Ctrl: true, Shift: false, Alt: true, Meta: false),
+                    new("settings", ",", Ctrl: true, Shift: false, Alt: false, Meta: false)
+                },
+                WebJson.Default.ShortcutArray));
     }
 
     /// <summary>
@@ -649,7 +651,7 @@ public partial class BlazorQLIde :
             var markers = new List<MarkerData>();
             if (validator is not null)
             {
-                foreach (var diagnostic in await validator.Validate(document))
+                foreach (var diagnostic in validator.Validate(document))
                 {
                     markers.Add(ToMarker(text, diagnostic.Message, diagnostic.IsError, diagnostic.Line, diagnostic.Column));
                 }
@@ -961,17 +963,14 @@ public partial class BlazorQLIde :
 
             Schema = schema;
             SchemaSdl = SdlPrinter.Print(schema);
-            validator = SchemaValidator.TryCreate(schema, SchemaSdl);
+            validator = new(schema);
             // Revalidate whatever is in the editors against the fresh schema.
             ScheduleDiagnostics();
             await OnSchemaLoaded.InvokeAsync();
         }
         catch (Exception exception)
         {
-            await SetResponse(JsonSerializer.Serialize(new
-            {
-                errors = new[] {new {message = $"Introspection failed: {exception.Message}"}}
-            }));
+            await SetResponse(ErrorJson($"Introspection failed: {exception.Message}"));
         }
     }
 
@@ -1342,7 +1341,7 @@ public partial class BlazorQLIde :
         var (ok, merged, error) = FragmentMerger.Merge(text);
         if (!ok)
         {
-            await SetResponse(ErrorDocument(error ?? "Merge failed."));
+            await SetResponse(ErrorJson(error ?? "Merge failed."));
             return;
         }
 
@@ -1452,7 +1451,7 @@ public partial class BlazorQLIde :
         var variables = await ParseEditorJson(editorTools?.VariablesEditor, "Variables");
         if (variables.Error is not null)
         {
-            await SetResponse(ErrorDocument(variables.Error));
+            await SetResponse(ErrorJson(variables.Error));
             return;
         }
 
@@ -1462,7 +1461,7 @@ public partial class BlazorQLIde :
             var parsedHeaders = await ParseEditorJson(editorTools?.HeadersEditor, "Request headers");
             if (parsedHeaders.Error is not null)
             {
-                await SetResponse(ErrorDocument(parsedHeaders.Error));
+                await SetResponse(ErrorJson(parsedHeaders.Error));
                 return;
             }
 
@@ -1520,10 +1519,7 @@ public partial class BlazorQLIde :
         catch (Exception exception)
         {
             status = "error";
-            await SetResponse(JsonSerializer.Serialize(new
-            {
-                errors = new[] {new {message = exception.Message}}
-            }));
+            await SetResponse(ErrorJson(exception.Message));
         }
         finally
         {
@@ -1631,11 +1627,9 @@ public partial class BlazorQLIde :
             : (null, error);
     }
 
-    static string ErrorDocument(string message) =>
-        JsonSerializer.Serialize(new
-        {
-            errors = new[] {new {message}}
-        });
+    /// <summary>One synthesized error, rendered into the response pane like any other result.</summary>
+    static string ErrorJson(string message) =>
+        JsonSerializer.Serialize(ErrorDocument.From(message), WebJson.Default.ErrorDocument);
 
     static Dictionary<string, string> ToHeaderDictionary(JsonElement? parsed)
     {

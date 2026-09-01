@@ -4,7 +4,7 @@ namespace BlazorQL;
 /// The execution history, mirroring GraphiQL's HistoryStore: capped LRU for ordinary items,
 /// unlimited favorites kept apart, both persisted newest-first.
 /// </summary>
-public sealed class HistoryStore
+public sealed partial class HistoryStore
 {
     // Queries longer than this are noise (a pasted schema, generated documents) and are not
     // worth a history slot — GraphiQL's MAX_QUERY_SIZE.
@@ -16,15 +16,21 @@ public sealed class HistoryStore
     readonly List<HistoryItem> items = [];
     readonly List<HistoryItem> favorites = [];
 
-    static readonly JsonSerializerOptions persistenceOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
     sealed record PersistedQueries(List<HistoryItem?>? Queries);
 
     sealed record PersistedFavorites(List<HistoryItem?>? Favorites);
+
+    /// <summary>
+    /// Nested so the persisted shapes can stay private: what one history entry looks like on disk
+    /// is not part of this type's surface, and a sibling context could not see them.
+    /// </summary>
+    [JsonSourceGenerationOptions(
+        PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonSerializable(typeof(PersistedQueries))]
+    [JsonSerializable(typeof(PersistedFavorites))]
+    partial class HistoryJson :
+        JsonSerializerContext;
 
     /// <param name="storage">The namespaced store the two history keys live in.</param>
     /// <param name="queryParses">Whether a query text parses as GraphQL — injected so tests can
@@ -47,9 +53,9 @@ public sealed class HistoryStore
     void Load()
     {
         items.AddRange(Parse(storage.Get("queries"), static _ =>
-            JsonSerializer.Deserialize<PersistedQueries>(_, persistenceOptions)?.Queries));
+            JsonSerializer.Deserialize(_, HistoryJson.Default.PersistedQueries)?.Queries));
         favorites.AddRange(Parse(storage.Get("favorites"), static _ =>
-            JsonSerializer.Deserialize<PersistedFavorites>(_, persistenceOptions)?.Favorites));
+            JsonSerializer.Deserialize(_, HistoryJson.Default.PersistedFavorites)?.Favorites));
         foreach (var favorite in favorites)
         {
             favorite.Favorite = true;
@@ -75,8 +81,8 @@ public sealed class HistoryStore
 
     void Save()
     {
-        storage.Set("queries", JsonSerializer.Serialize(new PersistedQueries([.. items]), persistenceOptions));
-        storage.Set("favorites", JsonSerializer.Serialize(new PersistedFavorites([.. favorites]), persistenceOptions));
+        storage.Set("queries", JsonSerializer.Serialize(new PersistedQueries([.. items]), HistoryJson.Default.PersistedQueries));
+        storage.Set("favorites", JsonSerializer.Serialize(new PersistedFavorites([.. favorites]), HistoryJson.Default.PersistedFavorites));
     }
 
     /// <summary>

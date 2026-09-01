@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    Imported by Microsoft.Common.props before the ProjectDefaults props, which is the only window in
+    which IsPackageProject is still settable: ProjectDefaults latches GeneratePackageOnBuild and
+    PackageOutputPath off it, so setting it in the csproj body is too late and this project would
+    pack itself into nugets/ alongside the real packages.
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <IsPackageProject>false</IsPackageProject>
+  </PropertyGroup>
+
+</Project>
