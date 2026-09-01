@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+  <PropertyGroup>
+    <RootNamespace>BlazorQL.Bundled.Host</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <!--
+      No culture-sensitive work happens in BlazorQL: every comparison is ordinal or a char overload,
+      and the only numeric format is an integral "0". Drops the three icu .dat shards.
+    -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      BlazorQL.Bundled embeds the brotli and serves it pre-compressed, so gzip copies would be dead
+      weight inside the assembly.
+    -->
+    <EnableDefaultCompressionFormats>false</EnableDefaultCompressionFormats>
+    <PublishCompressionFormats>brotli</PublishCompressionFormats>
+  </PropertyGroup>
+  <ItemGroup>
+    <!--
+      Direct, not transitive. blazor.webassembly.js is a static web asset of this package, and it
+      only reaches the publish output when the app references the package itself; inherited through
+      the RCL alone the boot script is missing and the page never starts.
+    -->
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
+    <ProjectReference Include="..\BlazorQL\BlazorQL.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Nothing here references GraphQL.NET, so the trimmable set is wider than the sample's: the IDE
+      validates with its own rules over GraphQLParser.
+
+      BlazorMonaco stays out. It runs reflection-based System.Text.Json over its own option DTOs, so
+      full trimming removes property getters that only the serializer calls, and the editor's
+      minimap, sticky-scroll and font-size settings would silently stop applying.
+    -->
+    <TrimmableAssembly Include="BlazorQL" />
+    <TrimmableAssembly Include="GraphQLParser" />
+    <TrimmableAssembly Include="Markdig" />
+  </ItemGroup>
+  <Import Project="../MonacoAssets.targets" />
+</Project>

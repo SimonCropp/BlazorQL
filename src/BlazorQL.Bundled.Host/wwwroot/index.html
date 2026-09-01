@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GraphQL IDE</title>
+    <base href="/" />
+    <link rel="stylesheet" href="_content/BlazorQL/blazorql.css" />
+    <link rel="stylesheet" href="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.css" />
+    <style>
+        html, body { height: 100%; margin: 0; }
+        #app { height: 100%; display: flex; flex-direction: column; }
+        #app > .blazorql { flex: 1; min-height: 0; }
+        .loading { font: 1rem system-ui, sans-serif; padding: 2rem; }
+        #blazor-error-ui { display: none; position: fixed; bottom: 0; width: 100%; padding: 0.6rem 1.25rem; background: #ffe0e0; color: #4a0000; z-index: 1000; }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="loading">Loading…</div>
+    </div>
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+    </div>
+    <script src="blazorql-host.js"></script>
+    <script src="_content/BlazorMonaco/jsInterop.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
+    <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <!--
+        Blazor is started by hand, once Monaco is actually there. The script tag above only *registers*
+        editor.main.js with the AMD loader; the loader then fetches the bundle's chunks and publishes
+        window.monaco some time later. Blazor's own boot races that, and the editor components call
+        monaco.editor.create the moment they first render — so whichever finishes second decides whether
+        the page gets editors at all. Requiring the module before starting Blazor removes the race in
+        both directions; the errorback still starts the app if Monaco genuinely fails to load.
+    -->
+    <script>
+        require(['vs/editor/editor.main'], () => Blazor.start(), () => Blazor.start());
+    </script>
+</body>
+
+</html>

@@ -6,8 +6,6 @@ namespace BlazorQL;
 /// </summary>
 public sealed class SchemaIndex
 {
-    static readonly JsonSerializerOptions options = new(JsonSerializerDefaults.Web);
-
     readonly Dictionary<string, IntrospectionType> byName;
 
     SchemaIndex(IntrospectionSchema schema)
@@ -61,9 +59,15 @@ public sealed class SchemaIndex
             return null;
         }
 
-        var schema = schemaElement.Deserialize<IntrospectionSchema>(options);
-        return schema is null
-            ? null
-            : new(schema);
+        var schema = schemaElement.Deserialize(WebJson.Default.IntrospectionSchema);
+        if (schema is null)
+        {
+            // An empty schema is indistinguishable from a server with nothing to say, so it is
+            // worth a word in the console rather than nothing at all.
+            Console.Error.WriteLine("BlazorQL: the introspection result deserialized to nothing.");
+            return null;
+        }
+
+        return new(schema);
     }
 }

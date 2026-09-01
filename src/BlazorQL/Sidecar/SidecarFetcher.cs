@@ -107,6 +107,10 @@ public sealed class SidecarFetcher(IGraphQLFetcher inner, SidecarStore store) :
         };
     }
 
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "JsonElement has a built-in converter, so nothing here is discovered by reflection.")]
     static string Pretty(JsonElement element) =>
         JsonSerializer.Serialize(element, prettyOptions);
 }

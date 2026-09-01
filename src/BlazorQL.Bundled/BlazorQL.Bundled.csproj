@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>BlazorQL</RootNamespace>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Description>Hosts the BlazorQL GraphQL IDE in any ASP.NET Core app from a single assembly: the whole WebAssembly application is embedded, so there are no static files to deploy and no Blazor SDK to adopt.</Description>
+    <PackageReadmeFile>nuget-readme.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Polyfill" PrivateAssets="all" />
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <!--
+      Build ordering only. The embedded payload is produced by publishing BlazorQL.Bundled.Host out
+      of process, which builds the RCL itself; without this edge the solution could be building the
+      RCL at the same moment, giving two writers on one obj directory. ReferenceOutputAssembly and
+      the asset exclusions keep it out of the compile and out of the nuspec - this package ships
+      with no dependencies at all.
+    -->
+    <ProjectReference Include="..\BlazorQL\BlazorQL.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all"
+                      ExcludeAssets="all" />
+    <InternalsVisibleTo Include="BlazorQL.Bundled.Tests" />
+    <None Include="nuget-readme.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  <Import Project="BundledHost.targets" />
+</Project>

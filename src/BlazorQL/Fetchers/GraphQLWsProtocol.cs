@@ -5,11 +5,6 @@
 /// </summary>
 static class GraphQLWsProtocol
 {
-    static readonly JsonSerializerOptions payloadOptions = new(JsonSerializerDefaults.Web)
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
     public static async IAsyncEnumerable<JsonElement> Run(
         IWsSocket socket,
         GraphQLRequest request,
@@ -17,29 +12,11 @@ static class GraphQLWsProtocol
         [EnumeratorCancellation] Cancel cancel)
     {
         await socket.SendAsync(
-            JsonSerializer.Serialize(
-                new
-                {
-                    type = "connection_init",
-                    payload = headers
-                },
-                payloadOptions),
+            JsonSerializer.Serialize(new("connection_init", headers), WebJson.Default.InitFrame),
             cancel);
         await AwaitAck(socket, cancel);
         await socket.SendAsync(
-            JsonSerializer.Serialize(
-                new
-                {
-                    id = "1",
-                    type = "subscribe",
-                    payload = new
-                    {
-                        query = request.Query,
-                        variables = request.Variables,
-                        operationName = request.OperationName
-                    }
-                },
-                payloadOptions),
+            JsonSerializer.Serialize(new("1", "subscribe", request), WebJson.Default.SubscribeFrame),
             cancel);
 
         while (true)

@@ -3,12 +3,18 @@
     <RootNamespace>BlazorQL</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
     <PackageReadmeFile>nuget-readme.md</PackageReadmeFile>
+    <!--
+      Every serialization site here is source-generated, so the analyzer has nothing to complain
+      about today. Leaving it on is what keeps that true: with TreatWarningsAsErrors, a new
+      reflection-based JsonSerializer call becomes a build error rather than a schema that silently
+      deserializes to nothing in a trimmed browser build.
+    -->
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <SupportedPlatform Include="browser" />
     <InternalsVisibleTo Include="BlazorQL.Tests" />
     <PackageReference Include="BlazorMonaco" />
-    <PackageReference Include="GraphQL" />
     <PackageReference Include="GraphQL-Parser" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />

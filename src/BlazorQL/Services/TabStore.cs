@@ -16,7 +16,7 @@ public sealed record TabState
 /// The ordered tabs and which one is active. Pure state — the component moves editor content in
 /// and out of the active tab around activation changes.
 /// </summary>
-public sealed class TabStore
+public sealed partial class TabStore
 {
     readonly List<TabState> tabs = [];
 
@@ -57,12 +57,6 @@ public sealed class TabStore
         }
     }
 
-    static readonly JsonSerializerOptions persistenceOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
     // What one tab looks like on disk — GraphiQL's tabState shape. Response is deliberately
     // absent: results are never persisted.
     sealed record PersistedTab(
@@ -76,6 +70,17 @@ public sealed class TabStore
         string? RenameOverride);
 
     sealed record PersistedState(int ActiveTabIndex, List<PersistedTab?>? Tabs);
+
+    /// <summary>
+    /// Nested so the persisted shapes can stay private: what one tab looks like on disk is not part
+    /// of this type's surface, and a sibling context could not see them.
+    /// </summary>
+    [JsonSourceGenerationOptions(
+        PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+    [JsonSerializable(typeof(PersistedState))]
+    partial class TabJson :
+        JsonSerializerContext;
 
     /// <summary>
     /// The store as its persisted JSON. Headers travel only when <paramref name="includeHeaders"/>
@@ -95,7 +100,7 @@ public sealed class TabStore
                     _.OperationName,
                     _.RenameOverride))
             ]);
-        return JsonSerializer.Serialize(state, persistenceOptions);
+        return JsonSerializer.Serialize(state, TabJson.Default.PersistedState);
     }
 
     /// <summary>
@@ -113,7 +118,7 @@ public sealed class TabStore
         PersistedState? state;
         try
         {
-            state = JsonSerializer.Deserialize<PersistedState>(json, persistenceOptions);
+            state = JsonSerializer.Deserialize(json, TabJson.Default.PersistedState);
         }
         catch (JsonException)
         {

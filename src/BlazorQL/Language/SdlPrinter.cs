@@ -220,6 +220,11 @@ public static class SdlPrinter
         builder.AppendLine($"{indent}\"\"\"");
     }
 
+    /// <summary>Escapes a string as a JSON string literal, which is also GraphQL's escaping.</summary>
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "string has a built-in converter, so nothing here is discovered by reflection.")]
     static string Quote(string text) =>
         JsonSerializer.Serialize(text);
 }

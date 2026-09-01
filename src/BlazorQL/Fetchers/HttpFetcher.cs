@@ -10,11 +10,6 @@ public sealed class HttpFetcher(HttpClient http, string url) :
 {
     const string accept = "application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8";
 
-    static readonly JsonSerializerOptions bodyOptions = new(JsonSerializerDefaults.Web)
-    {
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
     public HttpFetcher(string url)
         : this(new(), url)
     {
@@ -42,14 +37,7 @@ public sealed class HttpFetcher(HttpClient http, string url) :
             message.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
 
-        var body = JsonSerializer.Serialize(
-            new
-            {
-                query = request.Query,
-                variables = request.Variables,
-                operationName = request.OperationName
-            },
-            bodyOptions);
+        var body = JsonSerializer.Serialize(request, WebJson.Default.GraphQLRequest);
         message.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
         using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancel);

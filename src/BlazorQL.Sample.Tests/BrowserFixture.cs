@@ -35,6 +35,15 @@ public abstract class BrowserFixture
         var page = await browser.NewPageAsync(options);
         page.Console += (_, message) => console.Enqueue($"[{message.Type}] {message.Text}");
         page.PageError += (_, error) => console.Enqueue($"[pageerror] {error}");
+        // A failed asset is otherwise near-invisible: the AMD loader swallows a missing monaco
+        // chunk into a bare "[object Event]" and the console message for a 404 never names the url.
+        page.Response += (_, response) =>
+        {
+            if (response.Status >= 400)
+            {
+                console.Enqueue($"[error] {response.Status} {response.Url}");
+            }
+        };
         return page;
     }
 

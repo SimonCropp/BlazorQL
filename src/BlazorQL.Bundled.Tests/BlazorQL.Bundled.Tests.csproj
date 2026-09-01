@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="Microsoft.Playwright" />
+    <PackageReference Include="Verify.NUnit" />
+    <PackageReference Include="Verify.DiffPlex" />
+    <PackageReference Include="Verify.Playwright" />
+    <PackageReference Include="DiffEngine" />
+    <!-- The host app under test is a real GraphQL server, which is what the sample cannot be. -->
+    <PackageReference Include="GraphQL" />
+    <PackageReference Include="GraphQL.SystemTextJson" />
+    <ProjectReference Include="..\BlazorQL.Bundled\BlazorQL.Bundled.csproj" />
+    <!--
+      The GraphiQL test schema, already ported for the sample. Linked rather than copied so the two
+      suites cannot drift into testing different schemas.
+    -->
+    <Compile Include="..\BlazorQL.Sample\SampleSchema.cs" Link="SampleSchema.cs" />
+  </ItemGroup>
+</Project>

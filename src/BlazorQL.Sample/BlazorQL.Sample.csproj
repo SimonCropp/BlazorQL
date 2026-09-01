@@ -5,6 +5,18 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsPackable>false</IsPackable>
+    <!--
+      No culture-sensitive work happens here: every comparison is ordinal or a char overload, and the
+      only numeric format is an integral "0" in the sidecar. Drops the three icu .dat shards, which
+      are 3.96 MB of the published artifact.
+    -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      Only brotli is worth carrying. Github Pages ignores the endpoint manifest and applies its own
+      gzip, and the bundled package embeds the brotli, so the gzip copies are pure artifact weight.
+    -->
+    <EnableDefaultCompressionFormats>false</EnableDefaultCompressionFormats>
+    <PublishCompressionFormats>brotli</PublishCompressionFormats>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="GraphQL" />
@@ -14,4 +26,23 @@
     
     <ProjectReference Include="..\BlazorQL\BlazorQL.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!--
+      TrimMode stays partial, so opting assemblies in one at a time keeps each step bisectable.
+      BlazorQL is safe here only because every serialization site is source-generated; the shapes
+      that used to be anonymous are concrete records registered in WebJson.
+
+      BlazorMonaco is deliberately absent. It runs reflection-based System.Text.Json over its own
+      option DTOs, so full trimming removes property getters that only the serializer calls, and
+      EditorDefaults' minimap, sticky-scroll and font-size settings would silently stop applying.
+      267 KB is not worth that failure mode.
+
+      GraphQL is absent because the sample runs it as a real server: SampleSchema names graph types
+      through typeof(), which roots the type but not its constructor.
+    -->
+    <TrimmableAssembly Include="BlazorQL" />
+    <TrimmableAssembly Include="GraphQLParser" />
+    <TrimmableAssembly Include="Markdig" />
+  </ItemGroup>
+  <Import Project="../MonacoAssets.targets" />
 </Project>

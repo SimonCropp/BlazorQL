@@ -1,0 +1,91 @@
+<Project>
+
+  <PropertyGroup>
+    <BundledHostProject>$(MSBuildThisFileDirectory)..\BlazorQL.Bundled.Host\BlazorQL.Bundled.Host.csproj</BundledHostProject>
+    <BundledHostPublishDir>$(MSBuildThisFileDirectory)obj\bundled-host\</BundledHostPublishDir>
+    <BundledHostWwwRoot>$(BundledHostPublishDir)wwwroot\</BundledHostWwwRoot>
+    <BundledHostStamp>$(MSBuildThisFileDirectory)obj\bundled-host.stamp</BundledHostStamp>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Deliberately broad. A missed input ships a stale IDE, and that is invisible until someone
+      reports that a fix never reached the package. A false positive only costs a rebuild.
+    -->
+    <BundledHostInput Include="$(MSBuildThisFileDirectory)..\BlazorQL.Bundled.Host\**\*"
+                      Exclude="$(MSBuildThisFileDirectory)..\BlazorQL.Bundled.Host\bin\**;$(MSBuildThisFileDirectory)..\BlazorQL.Bundled.Host\obj\**" />
+    <BundledHostInput Include="$(MSBuildThisFileDirectory)..\BlazorQL\**\*"
+                      Exclude="$(MSBuildThisFileDirectory)..\BlazorQL\bin\**;$(MSBuildThisFileDirectory)..\BlazorQL\obj\**" />
+    <BundledHostInput Include="$(MSBuildThisFileDirectory)..\Directory.Build.props;
+                               $(MSBuildThisFileDirectory)..\Directory.Packages.props;
+                               $(MSBuildThisFileDirectory)..\MonacoAssets.targets;
+                               $(MSBuildThisFileDirectory)BundledHost.targets" />
+  </ItemGroup>
+
+  <!--
+    The IDE is a Blazor WebAssembly app, and `dotnet publish` out of process is the only supported
+    way in to that pipeline. It sets _IsPublishing, which invoking the Publish target directly does
+    not, and the pipeline re-enters MSBuild for its own nested publish - layering the MSBuild task
+    over that makes the SDK treat it as another configuration of the same project and build it, and
+    the RCL, a second time inside the same session.
+
+    Always Release, so the embedded payload never depends on how the package itself is being built.
+  -->
+  <Target Name="_PublishBundledHost"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(BlazorQLSkipHostPublish)' != 'true'"
+          Inputs="@(BundledHostInput)"
+          Outputs="$(BundledHostStamp)">
+
+    <RemoveDir Directories="$(BundledHostPublishDir)" />
+
+    <Message Importance="high" Text="Publishing the bundled IDE host. The first one takes a minute." />
+
+    <Exec Command="dotnet publish &quot;$(BundledHostProject)&quot; -c Release -o &quot;$(BundledHostPublishDir.TrimEnd('\'))&quot; --nologo -v quiet"
+          WorkingDirectory="$(MSBuildThisFileDirectory)"
+          StandardOutputImportance="low" />
+    <Touch Files="$(BundledHostStamp)" AlwaysCreate="true" />
+  </Target>
+
+  <!--
+    AssignTargetPaths is the first target that reads @(EmbeddedResource), and the item list has to
+    exist on every build, including the ones where the publish above was skipped as up to date.
+  -->
+  <Target Name="_EmbedBundledHost"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="_PublishBundledHost">
+
+    <ItemGroup>
+      <!--
+        Brotli only. Every published file has a .br sibling, and brotli is lossless, so the bytes the
+        browser decodes are the exact bytes blazor's integrity hashes were computed over. index.html
+        is the one file the middleware rewrites per request, so it goes in raw and its .br is
+        dropped.
+      -->
+      <_BundledAsset Include="$(BundledHostWwwRoot)**\*.br"
+                     Exclude="$(BundledHostWwwRoot)index.html.br" />
+      <_BundledAsset Include="$(BundledHostWwwRoot)index.html" />
+
+      <!--
+        MakeRelative rather than %(RecursiveDir): inside a target, metadata declared on an item does
+        not see the values the include glob captured, and %(RecursiveDir) silently evaluates to
+        empty - which collapses every logical name onto the same identifier.
+
+        WithCulture and Type stop AssignCulture reading a path segment as a culture and diverting a
+        resource into a satellite assembly that SatelliteResourceLanguages would then drop.
+      -->
+      <EmbeddedResource Include="@(_BundledAsset)">
+        <LogicalName>BlazorQL.Ide/$([MSBuild]::MakeRelative('$(BundledHostWwwRoot)', '%(FullPath)'))</LogicalName>
+        <WithCulture>false</WithCulture>
+        <Type>Non-Resx</Type>
+      </EmbeddedResource>
+
+      <FileWrites Include="$(BundledHostStamp)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_BundledAsset->Count())' &lt; '100'"
+           Text="The bundled IDE host published only @(_BundledAsset->Count()) assets to $(BundledHostWwwRoot), which is far below the expected count. The publish likely failed, or wrote somewhere else." />
+
+    <Message Importance="normal" Text="Embedded @(_BundledAsset->Count()) IDE assets." />
+  </Target>
+
+</Project>
