@@ -46,10 +46,7 @@ public sealed class HttpFetcher(HttpClient http, string url) :
         var contentType = response.Content.Headers.ContentType;
         if (string.Equals(contentType?.MediaType, "multipart/mixed", StringComparison.OrdinalIgnoreCase))
         {
-            var boundary = contentType!.Parameters
-                .FirstOrDefault(_ => string.Equals(_.Name, "boundary", StringComparison.OrdinalIgnoreCase))
-                ?.Value;
-            if (string.IsNullOrEmpty(boundary))
+            if (!response.Content.TryGetMultipartBoundary(out var boundary))
             {
                 throw new InvalidOperationException("The multipart/mixed response declares no boundary.");
             }
@@ -57,7 +54,7 @@ public sealed class HttpFetcher(HttpClient http, string url) :
             var stream = await response.Content.ReadAsStreamAsync(cancel);
             await using (stream)
             {
-                var reader = new MultipartReader(boundary, stream);
+                using var reader = new MultipartReader(boundary, stream);
                 while (await reader.ReadNextSectionAsync(cancel) is { } section)
                 {
                     using var sectionReader = new StreamReader(section.Body, Encoding.UTF8);

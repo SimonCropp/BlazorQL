@@ -16,6 +16,7 @@
     <InternalsVisibleTo Include="BlazorQL.Tests" />
     <PackageReference Include="BlazorMonaco" />
     <PackageReference Include="GraphQL-Parser" />
+    <PackageReference Include="HttpMultipart" PrivateAssets="all" />
     <PackageReference Include="Markdig" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" />
     <!-- For SetBrowserResponseStreamingEnabled: streams multipart responses in the browser. -->
