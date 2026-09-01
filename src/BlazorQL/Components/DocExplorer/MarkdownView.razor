@@ -18,6 +18,8 @@ else if (Fallback is not null)
 
     static readonly MarkdownPipeline pipeline = new MarkdownPipelineBuilder()
         .UseAutoLinks()
+        // Schema descriptions are endpoint-controlled and the result is rendered as a MarkupString.
+        .DisableHtml()
         .Build();
 
     string? html;
