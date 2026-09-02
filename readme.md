@@ -1,5 +1,8 @@
 # <img src="icon.png" height="40px" alt="icon"> BlazorQL
 
+[![NuGet Status](https://img.shields.io/nuget/v/BlazorQL.svg?label=BlazorQL)](https://www.nuget.org/packages/BlazorQL/)
+[![NuGet Status](https://img.shields.io/nuget/v/BlazorQL.Bundled.svg?label=BlazorQL.Bundled)](https://www.nuget.org/packages/BlazorQL.Bundled/)
+
 An in-browser GraphQL IDE built in Blazor WASM. The editors are Monaco via the BlazorMonaco package, and everything else — shell, panes, state, and every language feature (completion, validation, hover, formatting) — is C#.
 
 **[Try it live](https://simoncropp.github.io/BlazorQL/)** — the sample on GitHub Pages, executing its whole schema in the browser: a small Blazor app consuming the schema, with the query explorer and the debug sidecar one click away.
