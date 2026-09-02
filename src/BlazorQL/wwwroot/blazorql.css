@@ -190,6 +190,38 @@ html[data-theme='dark'] .blazorql {
     border-color: var(--blazorql-accent);
 }
 
+.blazorql-docs-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* The generate-query icon: after a type link in a list row, or in the header of a type page. */
+.blazorql-doc-generate {
+    display: inline-grid;
+    place-items: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-left: 0.3rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.blazorql-doc-generate:hover {
+    color: var(--blazorql-text);
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
+.blazorql-doc-generate svg {
+    width: 0.95rem;
+    height: 0.95rem;
+}
+
 .blazorql-docs-body {
     flex: 1;
     min-height: 0;

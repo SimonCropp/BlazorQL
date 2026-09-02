@@ -1,0 +1,14 @@
+﻿query Query {
+  person {
+    name
+  }
+  search {
+    ... on Person {
+      name
+    }
+    ... on Post {
+      title
+    }
+  }
+  hasArgs
+}

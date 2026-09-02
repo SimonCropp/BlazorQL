@@ -94,6 +94,43 @@ public class DocExplorerUiTests :
     }
 
     [Test]
+    public async Task GenerateQueryOpensTheDocumentInATab()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+        await OpenDocsAsync(page);
+
+        // The default tab carries the welcome text, so the generated query lands in a new tab.
+        await page.ClickAsync("[data-testid='doc-generate'][aria-label='Generate a query for Person']");
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('blazorql-operation') &&
+                               _.getValue().startsWith('query Person {'))
+            """,
+            null,
+            new() {Timeout = 30_000});
+        Assert.That(await page.Locator(".blazorql-tab").CountAsync(), Is.EqualTo(2));
+        await page.WaitForSelectorAsync(".blazorql-tab.blazorql-active .blazorql-tab-button:text-is('Person')", 10);
+
+        var query = await page.GetModelValueAsync("blazorql-operation");
+        Assert.That(query, Does.Contain("  person {"));
+        Assert.That(query, Does.Contain("    friends {"));
+
+        // From the type page, the header button generates the same document into a fresh tab.
+        await page.ClickAsync(".blazorql-type-link:text-is('Person')");
+        await page.WaitForSelectorAsync("[data-testid='doc-type']", 10);
+        await page.ClickAsync(".blazorql-docs-header [data-testid='doc-generate']");
+        await page.WaitForFunctionAsync(
+            "() => document.querySelectorAll('.blazorql-tab').length === 3",
+            null,
+            new() {Timeout = 10_000});
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+
+    [Test]
     public async Task CtrlClickOnAFieldJumpsToItsDocumentation()
     {
         var page = await NewPageAsync();

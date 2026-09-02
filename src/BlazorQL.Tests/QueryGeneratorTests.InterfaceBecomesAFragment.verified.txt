@@ -1,0 +1,3 @@
+﻿fragment NamedFields on Named {
+  name
+}

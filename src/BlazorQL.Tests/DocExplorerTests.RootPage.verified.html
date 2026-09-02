@@ -3,6 +3,7 @@
     <div class="blazorql-docs-nav">
       <div class="blazorql-doc-title">Docs</div>
     </div>
+    <div class="blazorql-docs-actions"></div>
   </div>
   <div class="blazorql-docs-body ">
     <div class="blazorql-doc-search" data-testid="doc-search">
@@ -23,53 +24,83 @@
           <span class="blazorql-type-ref">
             <button type="button" class="blazorql-type-link" blazor:onclick="2">Query</button>
           </span>
+          <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for Query" aria-label="Generate a query for Query" blazor:onclick="3">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 6l-5 6 5 6"></path>
+              <path d="M16 6l5 6-5 6"></path>
+            </svg>
+          </button>
         </div>
       </div>
       <div class="blazorql-doc-section-title">All Schema Types</div>
       <div class="blazorql-doc-type-list">
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="3">Color</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="4">Color</button>
           </span>
         </div>
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="4">Int</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="5">Int</button>
           </span>
         </div>
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="5">JSON</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="6">JSON</button>
           </span>
         </div>
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="6">Named</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="7">Named</button>
+          </span>
+          <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for Named" aria-label="Generate a query for Named" blazor:onclick="8">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 6l-5 6 5 6"></path>
+              <path d="M16 6l5 6-5 6"></path>
+            </svg>
+          </button>
+        </div>
+        <div>
+          <span class="blazorql-type-ref">
+            <button type="button" class="blazorql-type-link" blazor:onclick="9">Person</button>
+          </span>
+          <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for Person" aria-label="Generate a query for Person" blazor:onclick="10">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 6l-5 6 5 6"></path>
+              <path d="M16 6l5 6-5 6"></path>
+            </svg>
+          </button>
+        </div>
+        <div>
+          <span class="blazorql-type-ref">
+            <button type="button" class="blazorql-type-link" blazor:onclick="11">PetInput</button>
           </span>
         </div>
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="7">Person</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="12">Post</button>
           </span>
+          <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for Post" aria-label="Generate a query for Post" blazor:onclick="13">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 6l-5 6 5 6"></path>
+              <path d="M16 6l5 6-5 6"></path>
+            </svg>
+          </button>
         </div>
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="8">PetInput</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="14">SearchResult</button>
           </span>
+          <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for SearchResult" aria-label="Generate a query for SearchResult" blazor:onclick="15">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M8 6l-5 6 5 6"></path>
+              <path d="M16 6l5 6-5 6"></path>
+            </svg>
+          </button>
         </div>
         <div>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="9">Post</button>
-          </span>
-        </div>
-        <div>
-          <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="10">SearchResult</button>
-          </span>
-        </div>
-        <div>
-          <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="11">String</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="16">String</button>
           </span>
         </div>
       </div>

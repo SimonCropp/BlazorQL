@@ -144,7 +144,7 @@ public static class LeafFiller
         return builder.ToString();
     }
 
-    static IReadOnlyList<string> DefaultFieldNames(IntrospectionType type)
+    internal static IReadOnlyList<string> DefaultFieldNames(IntrospectionType type)
     {
         var fields = type.Fields ?? [];
         if (fields.Any(_ => _.Name == "id"))

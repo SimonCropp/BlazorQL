@@ -1,0 +1,14 @@
+﻿query User($id: ID!, $size: Int!, $userId: ID!, $avatarSize: Int!, $ids: [ID!]!, $avatarSize2: Int!) {
+  node(id: $id) {
+    id
+    avatar(size: $size)
+  }
+  user(id: $userId) {
+    id
+    avatar(size: $avatarSize)
+  }
+  users(ids: $ids) {
+    id
+    avatar(size: $avatarSize2)
+  }
+}

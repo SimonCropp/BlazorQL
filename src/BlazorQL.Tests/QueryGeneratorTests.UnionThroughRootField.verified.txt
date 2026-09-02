@@ -1,0 +1,13 @@
+﻿query SearchResult {
+  search {
+    ... on Person {
+      name
+      friends {
+        name
+      }
+    }
+    ... on Post {
+      title
+    }
+  }
+}

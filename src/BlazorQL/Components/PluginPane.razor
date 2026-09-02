@@ -4,7 +4,7 @@
     <div class="blazorql-plugin-title">@Title</div>
     @if (Kind == PluginKind.Docs)
     {
-        <DocExplorer Schema="Schema" SchemaSdl="@SchemaSdl" Navigator="Navigator" />
+        <DocExplorer Schema="Schema" SchemaSdl="@SchemaSdl" Navigator="Navigator" OnGenerateQuery="OnGenerateQuery" />
     }
     else if (History is not null)
     {

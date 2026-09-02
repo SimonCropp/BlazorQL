@@ -13,6 +13,10 @@ public partial class SchemaDoc
     [Parameter]
     public EventCallback<string> OnNavigateType { get; set; }
 
+    /// <summary>Raised with the type whose generate-query button was clicked.</summary>
+    [Parameter]
+    public EventCallback<IntrospectionType> OnGenerateQuery { get; set; }
+
     IEnumerable<(string Operation, string TypeName)> RootTypes()
     {
         if (Schema.QueryTypeName is not null)

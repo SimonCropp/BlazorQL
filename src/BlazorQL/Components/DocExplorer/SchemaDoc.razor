@@ -17,6 +17,7 @@
             <div class="blazorql-doc-root-type">
                 <span class="blazorql-doc-keyword">@operation</span><span>: </span>
                 <TypeLink Type="new() {Kind = type.Kind, Name = type.Name}" OnNavigate="OnNavigateType" />
+                <GenerateQueryButton Type="type" OnClick="OnGenerateQuery" />
             </div>
         }
     </div>
@@ -27,6 +28,10 @@
         {
             <div>
                 <TypeLink Type="new() {Kind = type.Kind, Name = type.Name}" OnNavigate="OnNavigateType" />
+                @if (QueryGenerator.CanGenerate(type))
+                {
+                    <GenerateQueryButton Type="type" OnClick="OnGenerateQuery" />
+                }
             </div>
         }
     </div>

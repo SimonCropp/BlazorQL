@@ -199,6 +199,45 @@ public class DocExplorerTests
     }
 
     [Test]
+    public void GenerateButtonOnTheRootPageRaisesTheDocument()
+    {
+        using var context = new BunitContext();
+        string? generated = null;
+        var cut = context.Render<DocExplorer>(_ => _
+            .Add(component => component.Schema, schema)
+            .Add(component => component.OnGenerateQuery, query => generated = query));
+
+        // Only types a selection can be built over carry the button.
+        var buttons = cut.FindAll("[data-testid='doc-generate']").Select(_ => _.GetAttribute("aria-label")).ToList();
+        Assert.That(buttons, Does.Contain("Generate a query for Person"));
+        Assert.That(buttons, Does.Not.Contain("Generate a query for Color"));
+        Assert.That(buttons, Does.Not.Contain("Generate a query for PetInput"));
+
+        cut.Find("[data-testid='doc-generate'][aria-label='Generate a query for Person']").Click();
+        Assert.That(generated, Does.StartWith("query Person {"));
+        Assert.That(generated, Does.Contain("  person {"));
+    }
+
+    [Test]
+    public void GenerateButtonOnATypePageRaisesTheDocument()
+    {
+        using var context = new BunitContext();
+        string? generated = null;
+        var cut = context.Render<DocExplorer>(_ => _
+            .Add(component => component.Schema, schema)
+            .Add(component => component.OnGenerateQuery, query => generated = query));
+        NavigateToType(cut, "Query");
+
+        cut.Find(".blazorql-docs-header [data-testid='doc-generate']").Click();
+        Assert.That(generated, Does.StartWith("query Query {"));
+
+        // An enum page has no button in the header.
+        cut.Find("[data-testid='doc-back']").Click();
+        NavigateToType(cut, "Color");
+        Assert.That(cut.FindAll(".blazorql-docs-header [data-testid='doc-generate']"), Is.Empty);
+    }
+
+    [Test]
     public void NoSchemaShowsThePlaceholder()
     {
         using var context = new BunitContext();

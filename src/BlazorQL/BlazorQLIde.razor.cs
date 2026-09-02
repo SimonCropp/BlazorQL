@@ -1748,6 +1748,30 @@ public partial class BlazorQLIde :
         SchedulePersist();
     }
 
+    /// <summary>
+    /// A document generated from the documentation explorer goes into a new tab, unless the active
+    /// tab is blank — then it takes the blank tab rather than leaving it behind.
+    /// </summary>
+    async Task LoadGeneratedQuery(string query)
+    {
+        if (operationEditor is null)
+        {
+            return;
+        }
+
+        execution?.Cancel();
+        pickerOpen = false;
+        await SaveActiveTab();
+        if (!string.IsNullOrWhiteSpace(tabs.Active.Query))
+        {
+            tabs.Add("", DefaultHeaders ?? "");
+        }
+
+        tabs.Active.Query = query;
+        await LoadActiveTab();
+        SchedulePersist();
+    }
+
     void OpenSettings() =>
         settingsOpen = true;
 

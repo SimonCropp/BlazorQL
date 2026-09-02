@@ -20,15 +20,21 @@ else
                 }
                 <div class="blazorql-doc-title">@Current.Title</div>
             </div>
-            @if (SchemaSdl is not null)
-            {
-                <button type="button"
-                        class="blazorql-doc-sdl-toggle @(sdlVisible ? "blazorql-active" : null)"
-                        data-testid="doc-sdl"
-                        title="@(sdlVisible ? "Show documentation" : "Show schema definition")"
-                        aria-label="@(sdlVisible ? "Show documentation" : "Show schema definition")"
-                        @onclick="ToggleSdl">SDL</button>
-            }
+            <div class="blazorql-docs-actions">
+                @if (!sdlVisible && Current is DocTypeEntry {Type: var currentType} && QueryGenerator.CanGenerate(currentType))
+                {
+                    <GenerateQueryButton Type="currentType" OnClick="GenerateQuery" />
+                }
+                @if (SchemaSdl is not null)
+                {
+                    <button type="button"
+                            class="blazorql-doc-sdl-toggle @(sdlVisible ? "blazorql-active" : null)"
+                            data-testid="doc-sdl"
+                            title="@(sdlVisible ? "Show documentation" : "Show schema definition")"
+                            aria-label="@(sdlVisible ? "Show documentation" : "Show schema definition")"
+                            @onclick="ToggleSdl">SDL</button>
+                }
+            </div>
         </div>
         <div class="blazorql-docs-body @(sdlVisible ? "blazorql-hidden" : null)">
             @if (ShowSearch)
@@ -81,7 +87,7 @@ else
                               OnNavigateType="NavigateToTypeName" />
                     break;
                 default:
-                    <SchemaDoc Schema="Schema" OnNavigateType="NavigateToTypeName" />
+                    <SchemaDoc Schema="Schema" OnNavigateType="NavigateToTypeName" OnGenerateQuery="GenerateQuery" />
                     break;
             }
         </div>

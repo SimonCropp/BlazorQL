@@ -13,7 +13,7 @@ An in-browser GraphQL IDE built in Blazor WASM. The editors are Monaco via the B
 ## Features
 
 - **Schema-aware editing**: completion (fields, arguments, input objects, enums, variables, fragments, directives), live validation with deprecation warnings, and hover docs — computed in C#, against the introspected schema.
-- **Documentation explorer**: navigable schema docs with markdown descriptions, deprecated sections, argument defaults, bucketed search, an SDL view, and Ctrl-click jump-to-doc from the editor.
+- **Documentation explorer**: navigable schema docs with markdown descriptions, deprecated sections, argument defaults, bucketed search, an SDL view, generate-a-query buttons per type, and Ctrl-click jump-to-doc from the editor.
 - **Tabs** with derived titles, rename, and full persistence across reloads.
 - **Variables and headers editors** — JSONC tolerated, with variables validated against the operation's declarations.
 - **Execution**: run-at-caret, an operation picker for multi-operation documents, subscriptions, and incremental delivery (`@defer`/`@stream`) merged live into the response.

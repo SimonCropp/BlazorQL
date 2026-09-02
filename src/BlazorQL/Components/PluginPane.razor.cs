@@ -25,6 +25,11 @@ public partial class PluginPane
     [Parameter]
     public DocExplorerNavigator? Navigator { get; set; }
 
+    /// <summary>Raised with a document the documentation explorer generated — the parent loads it
+    /// into a tab.</summary>
+    [Parameter]
+    public EventCallback<string> OnGenerateQuery { get; set; }
+
     /// <summary>The execution history rendered when <see cref="Kind"/> is History.</summary>
     [Parameter]
     public HistoryStore? History { get; set; }

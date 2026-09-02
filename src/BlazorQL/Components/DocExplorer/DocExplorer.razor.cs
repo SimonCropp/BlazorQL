@@ -27,6 +27,11 @@ public partial class DocExplorer :
     [Parameter]
     public DocExplorerNavigator? Navigator { get; set; }
 
+    /// <summary>Raised with a generated document when a generate-query button is clicked — the
+    /// IDE loads it into a tab.</summary>
+    [Parameter]
+    public EventCallback<string> OnGenerateQuery { get; set; }
+
     // The navigation stack always holds at least the root entry.
     readonly List<DocEntry> stack = [new DocRootEntry()];
     SchemaIndex? lastSchema;
@@ -127,6 +132,17 @@ public partial class DocExplorer :
 
     void NavigateToField(IntrospectionType parent, string fieldName) =>
         Push(new DocFieldEntry(parent, fieldName));
+
+    Task GenerateQuery(IntrospectionType type)
+    {
+        if (Schema is null ||
+            QueryGenerator.Generate(Schema, type) is not { } query)
+        {
+            return Task.CompletedTask;
+        }
+
+        return OnGenerateQuery.InvokeAsync(query);
+    }
 
     void OnNavigated(SchemaReference reference) =>
         _ = InvokeAsync(() =>

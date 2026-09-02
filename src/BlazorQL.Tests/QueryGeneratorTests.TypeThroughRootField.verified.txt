@@ -1,0 +1,8 @@
+﻿query Person {
+  person {
+    name
+    friends {
+      name
+    }
+  }
+}
