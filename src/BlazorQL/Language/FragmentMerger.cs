@@ -44,7 +44,7 @@ public static class FragmentMerger
     static string Print(GraphQLDocument document)
     {
         var writer = new StringWriter();
-        new GraphQLParser.Visitors.SDLPrinter().PrintAsync(document, writer).AsTask().GetAwaiter().GetResult();
+        new SDLPrinter().PrintAsync(document, writer).AsTask().GetAwaiter().GetResult();
         return writer.ToString();
     }
 

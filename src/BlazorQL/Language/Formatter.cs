@@ -1,5 +1,3 @@
-using GraphQLParser.Visitors;
-
 namespace BlazorQL;
 
 /// <summary>
@@ -9,18 +7,18 @@ namespace BlazorQL;
 /// </summary>
 public static class Formatter
 {
-    static readonly SDLPrinter printer = new(new()
+    static SDLPrinter printer = new(new()
     {
         PrintComments = true
     });
 
-    static readonly JsonSerializerOptions jsonOptions = new()
+    static JsonSerializerOptions jsonOptions = new()
     {
         WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    static readonly JsonDocumentOptions jsoncOptions = new()
+    static JsonDocumentOptions jsoncOptions = new()
     {
         CommentHandling = JsonCommentHandling.Skip,
         AllowTrailingCommas = true

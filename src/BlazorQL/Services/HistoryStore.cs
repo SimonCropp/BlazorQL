@@ -10,11 +10,11 @@ public sealed partial class HistoryStore
     // worth a history slot — GraphiQL's MAX_QUERY_SIZE.
     const int maxQueryLength = 100_000;
 
-    readonly StorageService storage;
-    readonly Func<string, bool> queryParses;
-    readonly int maxLength;
-    readonly List<HistoryItem> items = [];
-    readonly List<HistoryItem> favorites = [];
+    StorageService storage;
+    Func<string, bool> queryParses;
+    int maxLength;
+    List<HistoryItem> items = [];
+    List<HistoryItem> favorites = [];
 
     sealed record PersistedQueries(List<HistoryItem?>? Queries);
 

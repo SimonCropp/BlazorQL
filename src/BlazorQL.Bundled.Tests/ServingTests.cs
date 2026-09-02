@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Net;
 
 /// <summary>
 /// The http contract of the mounted endpoints, without a browser: content negotiation, validators,

@@ -112,11 +112,11 @@ public partial class BlazorQLIde :
     static bool providersRegistered;
 
     // Shell state. Pane ratios are the first pane's share of the container (see PaneState).
-    readonly TabStore tabs = new();
-    readonly ThemeService themes = new();
-    readonly PaneState pluginPane = new(1.0 / 3);
+    TabStore tabs = new();
+    ThemeService themes = new();
+    PaneState pluginPane = new(1.0 / 3);
 
-    readonly PaneState sessionPane = new(0.5);
+    PaneState sessionPane = new(0.5);
 
     // The operation editor's share of the editors column; 3:1 over the editor tools.
     readonly PaneState toolsPane = new(0.75);
@@ -139,16 +139,16 @@ public partial class BlazorQLIde :
     // shortcut leaves for the render that opens the docs pane.
     string? statusLine;
     bool docSearchFocusPending;
-    readonly Debouncer stateDebounce = new();
-    readonly Debouncer paneDebounce = new();
+    Debouncer stateDebounce = new();
+    Debouncer paneDebounce = new();
 
     // Content-change fan-out: each editor coalesces its change bursts, and diagnostics get their
     // own window so validation lags typing rather than racing it.
-    readonly Debouncer operationChangeDebounce = new(300);
-    readonly Debouncer variablesChangeDebounce = new();
-    readonly Debouncer headersChangeDebounce = new();
-    readonly Debouncer responseChangeDebounce = new();
-    readonly Debouncer diagnosticsDebounce = new(400);
+    Debouncer operationChangeDebounce = new(300);
+    Debouncer variablesChangeDebounce = new();
+    Debouncer headersChangeDebounce = new();
+    Debouncer responseChangeDebounce = new();
+    Debouncer diagnosticsDebounce = new(400);
 
     /// <summary>The schema printed as SDL, once loaded.</summary>
     public string? SchemaSdl { get; private set; }

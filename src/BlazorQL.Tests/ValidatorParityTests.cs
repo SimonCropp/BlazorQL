@@ -32,7 +32,7 @@ public class ValidatorParityTests
     /// <remarks>
     /// Keyed by error type rather than by the spec number the error carries, because the numbers
     /// are not unique: ArgumentsOfCorrectType and DefaultValuesOfCorrectType are both 5.6.1, and
-    /// BlazorQL implements one of them. The value is where the rule lives in <see cref="Upstream"/>,
+    /// BlazorQL implements one of them. The value is where the rule lives in <see cref="upstream"/>,
     /// so closing a gap starts by opening one file.
     /// </remarks>
     static readonly Dictionary<string, string> knownGaps = new()
@@ -58,7 +58,7 @@ public class ValidatorParityTests
     /// The reference implementation. Paths in <see cref="knownGaps"/> are relative to the repository
     /// root, so appending one to <c>{Upstream}/blob/master/</c> opens the rule.
     /// </summary>
-    const string Upstream = "https://github.com/graphql-dotnet/graphql-dotnet";
+    const string upstream = "https://github.com/graphql-dotnet/graphql-dotnet";
 
     /// <summary>
     /// Corpus entries whose divergence is understood and accepted, with the reason. Kept separate
@@ -89,7 +89,8 @@ public class ValidatorParityTests
     {
         // Valid, and exercising the shapes the rules key off: a union spread, arguments of every
         // kind, variables, a fragment, a directive.
-        yield return Case("valid-full", """
+        yield return Case("valid-full",
+            """
             query Full($name: String, $skip: Boolean = false) {
               test {
                 isTest
@@ -127,7 +128,7 @@ public class ValidatorParityTests
         yield return Case("bad-enum-value", "{ test { hasArgs(enum: NOT_A_COLOR) } }");
         yield return Case("variable-of-output-type", "query Q($v: Test) { test { isTest } }");
         yield return Case("fragment-on-scalar", "{ test { ...F } } fragment F on String { image }");
-        yield return Case("input-object-subset", """{ test { hasArgs(object: {int: 1}) } }""");
+        yield return Case("input-object-subset", "{ test { hasArgs(object: {int: 1}) } }");
         yield return Case("variable-type-mismatch", "query Q($v: String) { test { hasArgs(int: $v) } }");
 
         // Rules only GraphQL.NET has. These must land entirely in knownGaps, and BlazorQL must
@@ -167,7 +168,7 @@ public class ValidatorParityTests
                 Assert.That(
                     mine,
                     Is.Empty,
-                    $"Every GraphQL.NET error here is a known gap ({string.Join(", ", gaps.Select(_ => $"{_.Rule} — {Upstream}/blob/master/{knownGaps[_.Rule]}"))}), " +
+                    $"Every GraphQL.NET error here is a known gap ({string.Join(", ", gaps.Select(_ => $"{_.Rule} — {upstream}/blob/master/{knownGaps[_.Rule]}"))}), " +
                     "so BlazorQL was expected to stay silent. If a gap has been closed, remove it from knownGaps.");
             }
             else
@@ -210,12 +211,12 @@ public class ValidatorParityTests
                 Extensions = Inputs.Empty
             });
 
-        IEnumerable<ExecutionError> errors = result.Errors ?? [];
+        IEnumerable<ExecutionError> errors = result.Errors;
         return
         [
             .. errors
                 .OfType<ValidationError>()
-                .Select(_ => (Rule: _.GetType().Name, Number: _.Number ?? "?", Message: _.Message ?? ""))
+                .Select(_ => (Rule: _.GetType().Name, Number: _.Number ?? "?", Message: _.Message))
                 .OrderBy(_ => _.Rule, StringComparer.Ordinal)
                 .ThenBy(_ => _.Message, StringComparer.Ordinal)
         ];

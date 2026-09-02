@@ -48,11 +48,11 @@ public sealed class SchemaValidator(SchemaIndex index)
     /// </summary>
     sealed class Walker(SchemaIndex index, string text, List<OperationDiagnostic> diagnostics)
     {
-        readonly Dictionary<string, GraphQLFragmentDefinition> fragments = new(StringComparer.Ordinal);
-        readonly HashSet<string> spreadFragments = new(StringComparer.Ordinal);
-        readonly HashSet<string> declaredVariables = new(StringComparer.Ordinal);
-        readonly HashSet<string> usedVariables = new(StringComparer.Ordinal);
-        readonly Dictionary<string, GraphQLVariableDefinition> variableDefinitions = new(StringComparer.Ordinal);
+        Dictionary<string, GraphQLFragmentDefinition> fragments = new(StringComparer.Ordinal);
+        HashSet<string> spreadFragments = new(StringComparer.Ordinal);
+        HashSet<string> declaredVariables = new(StringComparer.Ordinal);
+        HashSet<string> usedVariables = new(StringComparer.Ordinal);
+        Dictionary<string, GraphQLVariableDefinition> variableDefinitions = new(StringComparer.Ordinal);
 
         public void WalkDocument(GraphQLDocument document)
         {

@@ -11,7 +11,7 @@ public sealed class IncrementalMerger
     JsonObject? result;
 
     // Incremental-delivery ids registered by "pending" entries → the path they deliver to.
-    readonly Dictionary<string, List<object>> pendingPaths = [];
+    Dictionary<string, List<object>> pendingPaths = [];
 
     public bool HasResult => result is not null;
 

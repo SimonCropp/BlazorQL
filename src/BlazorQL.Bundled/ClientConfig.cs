@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 /// <summary>
 /// The subset of <see cref="BlazorQLIdeOptions"/> the browser needs, in the shape the WebAssembly
 /// host reads. Serialized into index.html as <c>window.blazorqlConfig</c>.

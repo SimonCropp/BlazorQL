@@ -14,4 +14,7 @@ global using BlazorQL;
 global using GraphQLParser;
 global using GraphQLParser.AST;
 global using GraphQLParser.Exceptions;
+global using GraphQLParser.Visitors;
+global using Microsoft.AspNetCore.Components.Web;
 global using Microsoft.AspNetCore.Components.WebAssembly.Http;
+global using Microsoft.Extensions.DependencyInjection;

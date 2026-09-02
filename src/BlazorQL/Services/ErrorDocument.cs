@@ -7,6 +7,3 @@ sealed record ErrorDocument(IReadOnlyList<ErrorEntry> Errors)
     public static ErrorDocument From(string message) =>
         new([new(message)]);
 }
-
-/// <summary>One entry of an <see cref="ErrorDocument"/>.</summary>
-sealed record ErrorEntry(string Message);

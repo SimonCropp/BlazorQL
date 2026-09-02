@@ -102,15 +102,23 @@ public partial class BlazorQLSidecar :
             return "error";
         }
 
-        return entry.Cancelled
-            ? "stopped"
-            : "ok";
+        if (entry.Cancelled)
+        {
+            return "stopped";
+        }
+
+        return "ok";
     }
 
-    static string? Marker(SidecarEntry entry) =>
-        entry is {Completed: true, Error: not null}
-            ? "blazorql-sidecar-status-error"
-            : null;
+    static string? Marker(SidecarEntry entry)
+    {
+        if (entry is {Completed: true, Error: not null})
+        {
+            return "blazorql-sidecar-status-error";
+        }
+
+        return null;
+    }
 
     public async ValueTask DisposeAsync()
     {

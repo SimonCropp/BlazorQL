@@ -1,5 +1,3 @@
-using System.Net;
-
 /// <summary>
 /// The policy documented in docs/bundled.md, in a browser. Every directive there was added because
 /// something broke without it, and a console assertion is the only thing that notices when one of

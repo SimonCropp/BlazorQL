@@ -9,7 +9,7 @@ namespace BlazorQL;
 public sealed class SidecarFetcher(IGraphQLFetcher inner, SidecarStore store) :
     IGraphQLFetcher
 {
-    static readonly JsonSerializerOptions prettyOptions = new()
+    static JsonSerializerOptions prettyOptions = new()
     {
         WriteIndented = true
     };

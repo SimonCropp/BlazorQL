@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace BlazorQL;
 
 /// <summary>Mounts the BlazorQL IDE in an ASP.NET Core app.</summary>
@@ -39,7 +37,7 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
         var root = endpoints.MapMethods(
             prefix.Length == 0 ? "/" : prefix,
             [HttpMethods.Get, HttpMethods.Head],
-            (HttpContext context) => Root(context, endpoint, prefix));
+            context => Root(context, endpoint, prefix));
 
         // A double-star catch-all, because {*path} does not round-trip slashes unescaped.
         var assets = endpoints.MapMethods(

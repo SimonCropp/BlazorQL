@@ -1,8 +1,5 @@
 namespace BlazorQL;
 
-/// <summary>What hover shows for the token at an offset, with the token span for highlighting.</summary>
-public sealed record HoverInfo(string Markdown, int Start, int End);
-
 /// <summary>
 /// Hover docs from the introspection model: the field or type under the caret, its signature, and
 /// its description as markdown. Reuses the completion scanner's context resolution — the word

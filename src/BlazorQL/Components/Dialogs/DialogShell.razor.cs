@@ -24,10 +24,15 @@ public partial class DialogShell
 
     ElementReference panel;
 
-    Task OnKeyDown(KeyboardEventArgs args) =>
-        args.Key == "Escape"
-            ? OnClose.InvokeAsync()
-            : Task.CompletedTask;
+    Task OnKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Escape")
+        {
+            return OnClose.InvokeAsync();
+        }
+
+        return Task.CompletedTask;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

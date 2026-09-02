@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-
 /// <summary>
 /// The HTTP transport over a scripted handler: a plain JSON body yields one document, a
 /// multipart/mixed incremental-delivery body yields each part in order, the request carries the

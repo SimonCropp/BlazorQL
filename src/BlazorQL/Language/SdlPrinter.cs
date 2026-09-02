@@ -7,8 +7,8 @@ namespace BlazorQL;
 /// </summary>
 public static class SdlPrinter
 {
-    static readonly string[] builtInScalars = ["Int", "Float", "String", "Boolean", "ID"];
-    static readonly string[] builtInDirectives = ["skip", "include", "deprecated", "specifiedBy", "oneOf"];
+    static string[] builtInScalars = ["Int", "Float", "String", "Boolean", "ID"];
+    static string[] builtInDirectives = ["skip", "include", "deprecated", "specifiedBy", "oneOf"];
 
     public static string Print(SchemaIndex schema)
     {
@@ -94,7 +94,7 @@ public static class SdlPrinter
                 if (type.Interfaces is {Count: > 0} interfaces)
                 {
                     builder.Append(" implements ");
-                    builder.Append(string.Join(" & ", interfaces.Select(_ => _.Unwrap().Name)));
+                    builder.AppendJoin(" & ", interfaces.Select(_ => _.Unwrap().Name));
                 }
 
                 builder.AppendLine(" {");
@@ -171,7 +171,7 @@ public static class SdlPrinter
         }
 
         builder.Append('(');
-        builder.Append(string.Join(", ", args.Select(Argument)));
+        builder.AppendJoin(", ", args.Select(Argument));
         builder.Append(')');
     }
 
@@ -199,10 +199,15 @@ public static class SdlPrinter
         }
     }
 
-    static string DeprecationText(string? reason) =>
-        reason is null
-            ? " @deprecated"
-            : $" @deprecated(reason: {Quote(reason)})";
+    static string DeprecationText(string? reason)
+    {
+        if (reason is not null)
+        {
+            return $" @deprecated(reason: {Quote(reason)})";
+        }
+
+        return " @deprecated";
+    }
 
     static void Description(StringBuilder builder, string? description, string indent)
     {

@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace BlazorQL;
 
 /// <summary>Registration for the debug sidecar.</summary>

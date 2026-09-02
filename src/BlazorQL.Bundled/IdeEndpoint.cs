@@ -8,7 +8,7 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
     /// Rendered pages, keyed by resolved base href. PathBase can legitimately vary per request
     /// behind a proxy, so this is a small map rather than a single value.
     /// </summary>
-    readonly ConcurrentDictionary<string, RenderedIndex> pages = new(StringComparer.Ordinal);
+    ConcurrentDictionary<string, RenderedIndex> pages = new(StringComparer.Ordinal);
 
     /// <summary>
     /// The slot a nonce-carrying render leaves after every <c>&lt;script</c>, which
@@ -97,17 +97,18 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
             .GetOrAdd(BaseHref(context), Render)
             .Resolve(options.Nonce?.Invoke(context));
 
-        context.Response.ContentType = "text/html; charset=utf-8";
+        var response = context.Response;
+        response.ContentType = "text/html; charset=utf-8";
         // The page carries the configuration, and the configuration is not part of the url.
-        context.Response.Headers.CacheControl = "no-store";
-        context.Response.ContentLength = page.Length;
+        response.Headers.CacheControl = "no-store";
+        response.ContentLength = page.Length;
 
         if (HttpMethods.IsHead(context.Request.Method))
         {
             return;
         }
 
-        await context.Response.Body.WriteAsync(page, context.RequestAborted);
+        await response.Body.WriteAsync(page, context.RequestAborted);
     }
 
     string BaseHref(HttpContext context)
@@ -169,16 +170,9 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
     /// into that cache: a nonce-carrying render holds the placeholder instead, and pays a copy on
     /// the way out. Without one the bytes are final and every request writes the same array.
     /// </summary>
-    sealed class RenderedIndex
+    sealed class RenderedIndex(string html, bool carriesNonce)
     {
-        readonly string html;
-        readonly byte[]? rendered;
-
-        public RenderedIndex(string html, bool carriesNonce)
-        {
-            this.html = html;
-            rendered = carriesNonce ? null : Encoding.UTF8.GetBytes(html);
-        }
+        byte[]? rendered = carriesNonce ? null : Encoding.UTF8.GetBytes(html);
 
         public byte[] Resolve(string? nonce)
         {
