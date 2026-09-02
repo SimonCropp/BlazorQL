@@ -33,10 +33,15 @@ public sealed class SchemaIndex
         name == MutationTypeName ||
         name == SubscriptionTypeName;
 
-    public IntrospectionType? Find(string? name) =>
-        name is not null && byName.TryGetValue(name, out var type)
-            ? type
-            : null;
+    public IntrospectionType? Find(string? name)
+    {
+        if (name is not null && byName.TryGetValue(name, out var type))
+        {
+            return type;
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Parses a standard introspection result. Accepts the <c>__schema</c> object wrapped in
