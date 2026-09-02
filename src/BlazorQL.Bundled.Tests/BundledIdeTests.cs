@@ -1,5 +1,3 @@
-using BlazorQL;
-
 /// <summary>
 /// The whole product claim, end to end: one PackageReference and one MapBlazorQL call put a working
 /// IDE in front of a real GraphQL endpoint, with nothing deployed alongside the assembly.

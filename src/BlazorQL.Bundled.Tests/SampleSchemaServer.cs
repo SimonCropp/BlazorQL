@@ -5,9 +5,9 @@
 /// </summary>
 public static class SampleSchemaServer
 {
-    static readonly BlazorQL.Sample.SampleSchema schema = CreateSchema();
-    static readonly DocumentExecuter executer = new();
-    static readonly GraphQLSerializer serializer = new();
+    static BlazorQL.Sample.SampleSchema schema = CreateSchema();
+    static DocumentExecuter executer = new();
+    static GraphQLSerializer serializer = new();
 
     static BlazorQL.Sample.SampleSchema CreateSchema()
     {

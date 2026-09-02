@@ -1,5 +1,4 @@
 using System.Net;
-using BlazorQL;
 
 /// <summary>
 /// The policy documented in docs/bundled.md, in a browser. Every directive there was added because

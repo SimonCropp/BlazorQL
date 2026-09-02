@@ -1,6 +1,5 @@
 using System.IO.Compression;
 using System.Net;
-using BlazorQL;
 
 /// <summary>
 /// The http contract of the mounted endpoints, without a browser: content negotiation, validators,
@@ -22,7 +21,11 @@ public class ServingTests :
 
     /// <summary>Decompression off, so a test sees exactly the bytes the endpoint wrote.</summary>
     static HttpClient Client() =>
-        new(new HttpClientHandler {AutomaticDecompression = DecompressionMethods.None});
+        new(
+            new HttpClientHandler
+            {
+                AutomaticDecompression = DecompressionMethods.None
+            });
 
     async Task<HttpResponseMessage> Get(HttpClient client, string path, bool brotli)
     {
