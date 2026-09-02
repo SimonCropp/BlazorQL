@@ -17,11 +17,6 @@ public sealed class SampleSchema :
     public SampleSchema()
     {
         Description = "This is a test schema for GraphiQL";
-        // The introspection query asks for isDeprecated/deprecationReason on arguments and input
-        // fields and for isRepeatable on directives (spec working-draft features) — without these
-        // GraphQL.NET rejects it.
-        Features.DeprecationOfInputValues = true;
-        Features.RepeatableDirectives = true;
 
         var json = new ComplexScalarGraphType
         {

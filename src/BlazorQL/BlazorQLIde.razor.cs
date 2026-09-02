@@ -956,23 +956,26 @@ public partial class BlazorQLIde :
         try
         {
             using var cancelSource = new CancelSource(TimeSpan.FromSeconds(60));
-            JsonElement? introspection = null;
-            await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery), emptyHeaders, cancelSource.Token))
-            {
-                introspection = payload;
-                break;
-            }
 
-            if (introspection is null)
-            {
-                await SetResponse("""{"errors":[{"message":"Introspection returned no result."}]}""");
-                return;
-            }
+            var payload = await Introspect(draftAdditions: true, cancelSource.Token);
+            var schema = payload is null ? null : SchemaIndex.Parse(payload.Value);
 
-            var schema = SchemaIndex.Parse(introspection.Value);
             if (schema is null)
             {
-                await SetResponse("""{"errors":[{"message":"Introspection failed: the result carries no schema."}]}""");
+                // Everything the draft additions ask for is optional, and a server that has not
+                // implemented them rejects the whole document rather than omitting the fields. So
+                // one retry without them, which is the query every server can answer.
+                var portable = await Introspect(draftAdditions: false, cancelSource.Token);
+                if (portable is not null)
+                {
+                    payload = portable;
+                    schema = SchemaIndex.Parse(portable.Value);
+                }
+            }
+
+            if (schema is null)
+            {
+                await SetResponse(IntrospectionFailure(payload));
                 return;
             }
 
@@ -987,6 +990,39 @@ public partial class BlazorQLIde :
         {
             await SetResponse(ErrorJson($"Introspection failed: {exception.Message}"));
         }
+    }
+
+    /// <summary>The first document the fetcher yields for an introspection request, or null.</summary>
+    async Task<JsonElement?> Introspect(bool draftAdditions, Cancel cancel)
+    {
+        await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery(draftAdditions)), emptyHeaders, cancel))
+        {
+            return payload;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// What reaches the response pane when neither attempt produced a schema. The server's own
+    /// errors say far more than anything invented here, so they are what gets shown - the
+    /// alternative is a generic sentence and a trip to the server logs.
+    /// </summary>
+    static string IntrospectionFailure(JsonElement? payload)
+    {
+        if (payload is not {ValueKind: JsonValueKind.Object} document)
+        {
+            return ErrorJson("Introspection returned no result.");
+        }
+
+        if (document.TryGetProperty("errors", out var errors) &&
+            errors.ValueKind == JsonValueKind.Array &&
+            errors.GetArrayLength() > 0)
+        {
+            return Formatter.FormatJson(document.GetRawText());
+        }
+
+        return ErrorJson("Introspection failed: the result carries no schema.");
     }
 
     async Task RefetchSchema()
@@ -1808,67 +1844,84 @@ public partial class BlazorQLIde :
         }
     }
 
-    // The standard introspection query, as graphql-js emits it (descriptions and deprecated
-    // members included; nine levels of type nesting).
-    internal const string IntrospectionQuery =
-        """
-        query IntrospectionQuery {
-          __schema {
-            description
-            queryType { name kind }
-            mutationType { name kind }
-            subscriptionType { name kind }
-            types { ...FullType }
-            directives {
+    /// <summary>
+    /// The standard introspection query, as graphql-js emits it: descriptions, deprecated members,
+    /// and nine levels of type nesting.
+    /// </summary>
+    /// <param name="draftAdditions">
+    /// Whether to ask for the four members later spec drafts added - <c>__Schema.description</c>,
+    /// <c>__Type.specifiedByURL</c>, <c>__Directive.isRepeatable</c>, and deprecation on input
+    /// values, which is the isDeprecated/deprecationReason pair plus the <c>includeDeprecated</c>
+    /// arguments that reach them.
+    /// </param>
+    /// <remarks>
+    /// graphql-js leaves every one of these off by default, because a server is free not to
+    /// implement them and one that has not rejects the entire document rather than omitting a
+    /// field - GraphQL.NET, for one, gates them behind schema features that default to off. They
+    /// are worth asking for, because they are what the doc explorer shows; they are not worth
+    /// failing over, hence the retry in <see cref="LoadSchema"/>.
+    /// </remarks>
+    internal static string IntrospectionQuery(bool draftAdditions)
+    {
+        var schemaDescription = draftAdditions ? "description" : "";
+        var specifiedBy = draftAdditions ? "specifiedByURL" : "";
+        var isRepeatable = draftAdditions ? "isRepeatable" : "";
+        // fields() and enumValues() have carried this argument since long before the drafts; only
+        // args() and inputFields() are part of the input-value deprecation addition.
+        var deprecatedInputs = draftAdditions ? "(includeDeprecated: true)" : "";
+        var inputDeprecation = draftAdditions ? "isDeprecated deprecationReason" : "";
+
+        return $$"""
+            query IntrospectionQuery {
+              __schema {
+                {{schemaDescription}}
+                queryType { name kind }
+                mutationType { name kind }
+                subscriptionType { name kind }
+                types { ...FullType }
+                directives {
+                  name
+                  description
+                  {{isRepeatable}}
+                  locations
+                  args{{deprecatedInputs}} { ...InputValue }
+                }
+              }
+            }
+
+            fragment FullType on __Type {
+              kind
               name
               description
-              isRepeatable
-              locations
-              args(includeDeprecated: true) { ...InputValue }
+              {{specifiedBy}}
+              fields(includeDeprecated: true) {
+                name
+                description
+                args{{deprecatedInputs}} { ...InputValue }
+                type { ...TypeRef }
+                isDeprecated
+                deprecationReason
+              }
+              inputFields{{deprecatedInputs}} { ...InputValue }
+              interfaces { ...TypeRef }
+              enumValues(includeDeprecated: true) {
+                name
+                description
+                isDeprecated
+                deprecationReason
+              }
+              possibleTypes { ...TypeRef }
             }
-          }
-        }
 
-        fragment FullType on __Type {
-          kind
-          name
-          description
-          specifiedByURL
-          fields(includeDeprecated: true) {
-            name
-            description
-            args(includeDeprecated: true) { ...InputValue }
-            type { ...TypeRef }
-            isDeprecated
-            deprecationReason
-          }
-          inputFields(includeDeprecated: true) { ...InputValue }
-          interfaces { ...TypeRef }
-          enumValues(includeDeprecated: true) {
-            name
-            description
-            isDeprecated
-            deprecationReason
-          }
-          possibleTypes { ...TypeRef }
-        }
+            fragment InputValue on __InputValue {
+              name
+              description
+              type { ...TypeRef }
+              defaultValue
+              {{inputDeprecation}}
+            }
 
-        fragment InputValue on __InputValue {
-          name
-          description
-          type { ...TypeRef }
-          defaultValue
-          isDeprecated
-          deprecationReason
-        }
-
-        fragment TypeRef on __Type {
-          kind
-          name
-          ofType {
-            kind
-            name
-            ofType {
+            fragment TypeRef on __Type {
               kind
               name
               ofType {
@@ -1889,6 +1942,10 @@ public partial class BlazorQLIde :
                         ofType {
                           kind
                           name
+                          ofType {
+                            kind
+                            name
+                          }
                         }
                       }
                     }
@@ -1896,9 +1953,8 @@ public partial class BlazorQLIde :
                 }
               }
             }
-          }
-        }
-        """;
+            """;
+    }
 
     // Adapted from GraphiQL's welcome comment, with BlazorQL's shortcut spellings.
     internal const string WelcomeQuery =

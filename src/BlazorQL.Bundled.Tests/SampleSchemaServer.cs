@@ -3,7 +3,7 @@
 /// of the loop the WebAssembly sample cannot provide: its schema runs in the browser, so nothing
 /// there exercises browser to http to server and back.
 /// </summary>
-public static partial class SampleSchemaServer
+public static class SampleSchemaServer
 {
     static readonly BlazorQL.Sample.SampleSchema schema = CreateSchema();
     static readonly DocumentExecuter executer = new();
@@ -16,9 +16,6 @@ public static partial class SampleSchemaServer
         return created;
     }
 
-    [GeneratedRegex(@"locations\s+args\(includeDeprecated: true\)")]
-    private static partial Regex DirectiveArgsPattern();
-
     public static void MapSampleSchema(this WebApplication app, string pattern = "/graphql") =>
         app.MapPost(pattern, Handle);
 
@@ -26,17 +23,6 @@ public static partial class SampleSchemaServer
     {
         var request = await JsonSerializer.DeserializeAsync<JsonElement>(context.Request.Body);
         var query = request.GetProperty("query").GetString() ?? "";
-
-        // The same two GraphQL.NET introspection gaps the sample's in-browser fetcher patches
-        // around, for the same reason: the IDE sends the full spec introspection query, and
-        // GraphQL.NET 8 rejects specifiedByURL and includeDeprecated on directive arguments.
-        // Neither costs this schema anything. A server that implements the whole spec needs none of
-        // this - the workaround belongs to the test server, not to the IDE.
-        if (query.Contains("query IntrospectionQuery"))
-        {
-            query = query.Replace("specifiedByURL", "");
-            query = DirectiveArgsPattern().Replace(query, "locations args");
-        }
 
         var result = await executer.ExecuteAsync(
             _ =>
