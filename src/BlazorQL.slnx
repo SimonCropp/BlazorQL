@@ -1,13 +1,13 @@
 <Solution>
   <Folder Name="/Solution Items/">
-    <File Path=".gitattributes" />
-    <File Path="global.json" />
-    <File Path="readme.md" />
-    <File Path=".editorconfig" />
+    <File Path="../.gitattributes" />
+    <File Path="../global.json" />
+    <File Path="../readme.md" />
+    <File Path="../.editorconfig" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="MonacoAssets.targets" />
-    <File Path="mdsnippets.json" />
+    <File Path="../mdsnippets.json" />
   </Folder>
   <Project Path="BlazorQL/BlazorQL.csproj" />
   <Project Path="BlazorQL.Bundled/BlazorQL.Bundled.csproj" />
