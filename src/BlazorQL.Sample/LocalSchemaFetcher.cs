@@ -7,12 +7,9 @@ namespace BlazorQL.Sample;
 /// delivery is the one loss: GraphQL.NET has no <c>@defer</c>/<c>@stream</c>, so those directives
 /// fail validation like any unknown directive.
 /// </summary>
-public sealed partial class LocalSchemaFetcher :
+public sealed class LocalSchemaFetcher :
     IGraphQLFetcher
 {
-    [GeneratedRegex(@"locations\s+args\(includeDeprecated: true\)")]
-    private static partial Regex DirectiveArgsPattern();
-
     static readonly SampleSchema schema = new();
     static readonly DocumentExecuter executer = new();
     static readonly GraphQLSerializer serializer = new();
@@ -22,22 +19,10 @@ public sealed partial class LocalSchemaFetcher :
         IReadOnlyDictionary<string, string> headers,
         [EnumeratorCancellation] Cancel cancel)
     {
-        var query = request.Query;
-        // Two GraphQL.NET introspection gaps, patched over in the IDE's introspection query only.
-        // Dropping specifiedByURL costs nothing here (no type in this schema has a specifiedBy
-        // url); dropping includeDeprecated on directive arguments costs nothing either (no
-        // directive here has a deprecated argument). Field arguments keep it, so deprecatedArg
-        // still shows up deprecated.
-        if (query.Contains("query IntrospectionQuery"))
-        {
-            query = query.Replace("specifiedByURL", "");
-            query = DirectiveArgsPattern().Replace(query, "locations args");
-        }
-
         var result = await executer.ExecuteAsync(new()
         {
             Schema = schema,
-            Query = query,
+            Query = request.Query,
             Variables = request.Variables is { } variables
                 ? serializer.ReadNode<Inputs>(variables)
                 : null,
