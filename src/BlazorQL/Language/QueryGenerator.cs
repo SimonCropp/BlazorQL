@@ -167,7 +167,7 @@ public static class QueryGenerator
         string Arguments(IntrospectionField field)
         {
             var required = field.Args
-                .Where(_ => !_.IsDeprecated && _.Type.Kind == "NON_NULL" && _.DefaultValue is null)
+                .Where(_ => _ is { IsDeprecated: false, Type.Kind: "NON_NULL", DefaultValue: null })
                 .ToList();
             if (required.Count == 0)
             {
