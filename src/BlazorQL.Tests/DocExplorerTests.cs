@@ -165,16 +165,18 @@ public class DocExplorerTests
     }
 
     [Test]
-    public void SearchSelectionNavigatesToTheField()
+    public async Task SearchSelectionNavigatesToTheField()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         var cut = Render(context);
 
         cut.Find("[data-testid='doc-search'] input").Input("hasArgs");
         cut.WaitForState(
             () => cut.FindAll(".blazorql-doc-search-result").Any(_ => _.TextContent == "Query.hasArgs"),
             TimeSpan.FromSeconds(5));
-        cut.FindAll(".blazorql-doc-search-result").Single(_ => _.TextContent == "Query.hasArgs").Click();
+        // Awaited: the synchronous Click is fire-and-forget, and with the debounce's render still
+        // draining on the dispatcher the handler could run after the assertions below.
+        await cut.FindAll(".blazorql-doc-search-result").Single(_ => _.TextContent == "Query.hasArgs").ClickAsync(new());
 
         // The parent type page went onto the stack first, so back walks up naturally.
         Assert.That(cut.FindAll("[data-testid='doc-field']"), Is.Not.Empty);
@@ -199,9 +201,9 @@ public class DocExplorerTests
     }
 
     [Test]
-    public void GenerateButtonOnTheRootPageRaisesTheDocument()
+    public async Task GenerateButtonOnTheRootPageRaisesTheDocument()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         string? generated = null;
         var cut = context.Render<DocExplorer>(_ => _
             .Add(component => component.Schema, schema)
@@ -213,22 +215,22 @@ public class DocExplorerTests
         Assert.That(buttons, Does.Not.Contain("Generate a query for Color"));
         Assert.That(buttons, Does.Not.Contain("Generate a query for PetInput"));
 
-        cut.Find("[data-testid='doc-generate'][aria-label='Generate a query for Person']").Click();
+        await cut.Find("[data-testid='doc-generate'][aria-label='Generate a query for Person']").ClickAsync(new());
         Assert.That(generated, Does.StartWith("query Person {"));
         Assert.That(generated, Does.Contain("  person {"));
     }
 
     [Test]
-    public void GenerateButtonOnATypePageRaisesTheDocument()
+    public async Task GenerateButtonOnATypePageRaisesTheDocument()
     {
-        using var context = new BunitContext();
+        await using var context = new BunitContext();
         string? generated = null;
         var cut = context.Render<DocExplorer>(_ => _
             .Add(component => component.Schema, schema)
             .Add(component => component.OnGenerateQuery, query => generated = query));
         NavigateToType(cut, "Query");
 
-        cut.Find(".blazorql-docs-header [data-testid='doc-generate']").Click();
+        await cut.Find(".blazorql-docs-header [data-testid='doc-generate']").ClickAsync(new());
         Assert.That(generated, Does.StartWith("query Query {"));
 
         // An enum page has no button in the header.
