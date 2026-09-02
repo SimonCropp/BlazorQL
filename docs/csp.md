@@ -36,10 +36,10 @@ rather than an inline `<style>`, so `style-src 'self'` already covers it.
 
 ## Dropping 'unsafe-inline'
 
-The inline script is the one part of the policy worth removing, and where it lives depends on which
-package you are using.
+The inline script is the one part of the policy worth removing, and which package is in use decides
+where that happens.
 
-With the `BlazorQL` package you own `index.html`, so put a nonce on your own tags:
+The `BlazorQL` package leaves `index.html` to the consuming app, so the nonce goes on its own tag:
 
 ```html
 <script nonce="@nonce">
@@ -47,8 +47,8 @@ With the `BlazorQL` package you own `index.html`, so put a nonce on your own tag
 </script>
 ```
 
-With `BlazorQL.Bundled` the package renders the page, so it stamps the nonce for you — set the
-`Nonce` option and the middleware puts it on every script element:
+`BlazorQL.Bundled` renders the page itself, so it can do the stamping — set the `Nonce` option and
+the middleware puts the value on every script element:
 
 ```csharp
 app.Use((context, next) =>
