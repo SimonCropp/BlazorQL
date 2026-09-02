@@ -1,0 +1,6 @@
+﻿{
+  graphQLDotNet: [
+    [5.7.2 DirectivesInAllowedLocationsError] Directive 'skip' may not be used on Query.
+  ],
+  query: query Q @skip(if: true) { test { isTest } }
+}

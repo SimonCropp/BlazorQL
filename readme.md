@@ -80,6 +80,10 @@ app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql");
 
 The editors are [monaco-editor](https://github.com/microsoft/monaco-editor) (Microsoft, MIT) via the [BlazorMonaco](https://github.com/serdarciplak/BlazorMonaco) package (MIT). Parsing is [GraphQL-Parser](https://github.com/graphql-dotnet/parser) (MIT), with the validation rules implemented over it here; markdown rendering is [Markdig](https://github.com/xoofx/markdig) (BSD-2-Clause). The sample's schema is a C# port of GraphiQL's own test schema (GraphQL Contributors, MIT).
 
+[GraphQL.NET](https://github.com/graphql-dotnet/graphql-dotnet) (MIT) is used in three places, none of them the shipped packages. It executes the schema the sample runs in the browser, so it is distributed with the sample on GitHub Pages; it serves the schema the bundled package's browser tests talk to; and it is the reference the validation rules here are measured against, one rule at a time, by `ValidatorParityTests` — that test runs every document through both validators over one schema and fails when they disagree, and its `knownGaps` list names the rules BlazorQL does not implement, each with the path to its upstream file.
+
+Neither `BlazorQL` nor `BlazorQL.Bundled` depends on it. The rules here run over introspection, which is the only schema an IDE ever has, and GraphQL.NET could carry neither the WebAssembly payload nor the trimming — see the remarks on `SchemaValidator` for what that cost when it was tried.
+
 
 ## Icon
 

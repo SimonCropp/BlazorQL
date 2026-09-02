@@ -32,21 +32,33 @@ public class ValidatorParityTests
     /// <remarks>
     /// Keyed by error type rather than by the spec number the error carries, because the numbers
     /// are not unique: ArgumentsOfCorrectType and DefaultValuesOfCorrectType are both 5.6.1, and
-    /// BlazorQL implements one of them.
+    /// BlazorQL implements one of them. The value is where the rule lives in <see cref="Upstream"/>,
+    /// so closing a gap starts by opening one file.
     /// </remarks>
-    static readonly HashSet<string> knownGaps =
-    [
-        nameof(DefaultValuesOfCorrectTypeError),
-        nameof(NoFragmentCyclesError),
-        nameof(OverlappingFieldsCanBeMergedError),
-        nameof(PossibleFragmentSpreadsError),
-        nameof(SingleRootFieldSubscriptionsError),
-        nameof(UniqueArgumentNamesError),
-        nameof(UniqueDirectivesPerLocationError),
-        nameof(UniqueFragmentNamesError),
-        nameof(UniqueInputFieldNamesError),
-        nameof(UniqueVariableNamesError)
-    ];
+    static readonly Dictionary<string, string> knownGaps = new()
+    {
+        [nameof(DefaultValuesOfCorrectTypeError)] = "src/GraphQL/Validation/Rules/DefaultValuesOfCorrectType.cs",
+        [nameof(NoFragmentCyclesError)] = "src/GraphQL/Validation/Rules/NoFragmentCycles.cs",
+        [nameof(OverlappingFieldsCanBeMergedError)] = "src/GraphQL/Validation/Rules/OverlappingFieldsCanBeMerged.cs",
+        [nameof(PossibleFragmentSpreadsError)] = "src/GraphQL/Validation/Rules/PossibleFragmentSpreads.cs",
+        [nameof(SingleRootFieldSubscriptionsError)] = "src/GraphQL/Validation/Rules/SingleRootFieldSubscriptions.cs",
+        [nameof(UniqueArgumentNamesError)] = "src/GraphQL/Validation/Rules/UniqueArgumentNames.cs",
+        [nameof(UniqueFragmentNamesError)] = "src/GraphQL/Validation/Rules/UniqueFragmentNames.cs",
+        [nameof(UniqueInputFieldNamesError)] = "src/GraphQL/Validation/Rules/UniqueInputFieldNames.cs",
+        [nameof(UniqueDirectivesPerLocationError)] = "src/GraphQL/Validation/Rules/5.7 - Directives/3. UniqueDirectivesPerLocation.cs",
+        [nameof(UniqueVariableNamesError)] = "src/GraphQL/Validation/Rules/5.8 - Variables/1. UniqueVariableNames.cs",
+
+        // Half implemented, and the half that is missing is what the entry records: SchemaValidator's
+        // CheckDirectives knows which directives exist and type-checks their arguments, but never
+        // asks whether a directive is allowed where it was written.
+        [nameof(DirectivesInAllowedLocationsError)] = "src/GraphQL/Validation/Rules/5.7 - Directives/1+2. KnownDirectivesInAllowedLocations.cs"
+    };
+
+    /// <summary>
+    /// The reference implementation. Paths in <see cref="knownGaps"/> are relative to the repository
+    /// root, so appending one to <c>{Upstream}/blob/master/</c> opens the rule.
+    /// </summary>
+    const string Upstream = "https://github.com/graphql-dotnet/graphql-dotnet";
 
     /// <summary>
     /// Corpus entries whose divergence is understood and accepted, with the reason. Kept separate
@@ -124,6 +136,8 @@ public class ValidatorParityTests
         yield return Case("duplicate-argument-name", """{ test { hasArgs(string: "a", string: "b") } }""");
         yield return Case("duplicate-variable-name", "query Q($v: Int, $v: Int) { test { hasArgs(int: $v) } }");
         yield return Case("impossible-fragment-spread", "{ test { union { ...F } } } fragment F on Greeting { text }");
+        // @skip is FIELD | FRAGMENT_SPREAD | INLINE_FRAGMENT, never an operation.
+        yield return Case("directive-in-wrong-location", "query Q @skip(if: true) { test { isTest } }");
         yield return Case("duplicate-fragment-name", "{ test { ...F } } fragment F on Test { image } fragment F on Test { isTest }");
 
         static TestCaseData Case(string name, string query) =>
@@ -136,8 +150,8 @@ public class ValidatorParityTests
         var reference = await Reference(query);
         var mine = Mine(query);
 
-        var gaps = reference.Where(_ => knownGaps.Contains(_.Rule)).ToList();
-        var owned = reference.Where(_ => !knownGaps.Contains(_.Rule)).ToList();
+        var gaps = reference.Where(_ => knownGaps.ContainsKey(_.Rule)).ToList();
+        var owned = reference.Where(_ => !knownGaps.ContainsKey(_.Rule)).ToList();
 
         if (!knownDivergences.ContainsKey(name))
         {
@@ -153,7 +167,7 @@ public class ValidatorParityTests
                 Assert.That(
                     mine,
                     Is.Empty,
-                    $"Every GraphQL.NET error here is a known gap ({string.Join(", ", gaps.Select(_ => _.Rule))}), " +
+                    $"Every GraphQL.NET error here is a known gap ({string.Join(", ", gaps.Select(_ => $"{_.Rule} — {Upstream}/blob/master/{knownGaps[_.Rule]}"))}), " +
                     "so BlazorQL was expected to stay silent. If a gap has been closed, remove it from knownGaps.");
             }
             else

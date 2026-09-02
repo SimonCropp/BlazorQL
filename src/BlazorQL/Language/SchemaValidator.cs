@@ -15,6 +15,15 @@ namespace BlazorQL;
 /// Messages follow graphql-js wording, because that is what GraphiQL shows and what the parity goal
 /// measures against.
 /// </para>
+/// <para>
+/// GraphQL.NET (MIT, https://github.com/graphql-dotnet/graphql-dotnet) is the reference these rules
+/// are measured against, one rule at a time, by BlazorQL.Tests/ValidatorParityTests.cs. Its rules
+/// live under <c>src/GraphQL/Validation/Rules/</c> — paths in this file and in that test are
+/// relative to the repository root, so a rule can be opened upstream by appending the path to
+/// <c>.../graphql-dotnet/blob/master/</c>. The rules deliberately not implemented here are listed,
+/// with their upstream paths, as that test's <c>knownGaps</c>; it fails if one is quietly closed or
+/// a new divergence appears, which is what makes a re-sync a matter of reading one list.
+/// </para>
 /// </remarks>
 public sealed class SchemaValidator(SchemaIndex index)
 {
