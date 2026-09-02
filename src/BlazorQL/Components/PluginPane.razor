@@ -11,39 +11,3 @@
         <HistoryPane Store="History" OnSelect="OnHistorySelect" />
     }
 </div>
-
-@code {
-
-    [Parameter]
-    public PluginKind Kind { get; set; }
-
-    /// <summary>Inline flex sizing supplied by the parent's pane state.</summary>
-    [Parameter]
-    public string? Style { get; set; }
-
-    /// <summary>The parsed schema for the documentation explorer. Null until introspection lands.</summary>
-    [Parameter]
-    public SchemaIndex? Schema { get; set; }
-
-    /// <summary>The schema printed as SDL, for the documentation explorer's SDL view.</summary>
-    [Parameter]
-    public string? SchemaSdl { get; set; }
-
-    /// <summary>Carries jump-to-doc navigation into the documentation explorer.</summary>
-    [Parameter]
-    public DocExplorerNavigator? Navigator { get; set; }
-
-    /// <summary>The execution history rendered when <see cref="Kind"/> is History.</summary>
-    [Parameter]
-    public HistoryStore? History { get; set; }
-
-    /// <summary>Raised when a history item is picked — the parent loads it into the editors.</summary>
-    [Parameter]
-    public EventCallback<HistoryItem> OnHistorySelect { get; set; }
-
-    string Title =>
-        Kind == PluginKind.Docs
-            ? "Documentation Explorer"
-            : "History";
-
-}

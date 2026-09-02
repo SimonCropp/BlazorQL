@@ -33,20 +33,6 @@
 
 @code {
 
-    [Parameter]
-    [EditorRequired]
-    public HistoryStore Store { get; set; } = null!;
-
-    /// <summary>Raised when an item's label is clicked — the parent loads it into the editors.</summary>
-    [Parameter]
-    public EventCallback<HistoryItem> OnSelect { get; set; }
-
-    string filter = "";
-    HistoryItem? editing;
-    string editText = "";
-    bool focusEdit;
-    ElementReference editInput;
-
     RenderFragment RenderItem(HistoryItem item) =>
         @<li class="blazorql-history-row @(item.Favorite ? "blazorql-favorite" : null)" @key="item">
             @if (editing == item)
@@ -97,51 +83,5 @@
                 </span>
             }
         </li>;
-
-    void Clear() =>
-        Store.ClearNonFavorites();
-
-    void StartEdit(HistoryItem item)
-    {
-        editing = item;
-        editText = item.Label ?? "";
-        focusEdit = true;
-    }
-
-    // Escape cancels without committing — the fix over GraphiQL, where Esc commits the edit.
-    void CancelEdit() =>
-        editing = null;
-
-    void OnEditKey(KeyboardEventArgs args)
-    {
-        if (args.Key == "Enter")
-        {
-            if (editing is not null)
-            {
-                Store.EditLabel(editing, editText);
-            }
-
-            editing = null;
-        }
-        else if (args.Key == "Escape")
-        {
-            editing = null;
-        }
-    }
-
-    void ToggleFavorite(HistoryItem item) =>
-        Store.ToggleFavorite(item);
-
-    void Delete(HistoryItem item) =>
-        Store.Delete(item);
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (focusEdit)
-        {
-            focusEdit = false;
-            await editInput.FocusAsync();
-        }
-    }
 
 }

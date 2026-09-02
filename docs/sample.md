@@ -22,7 +22,7 @@ The default page is an ordinary Blazor app consuming that schema — a query run
 
 <!-- snippet: homeQuery -->
 <a id='snippet-homeQuery'></a>
-```razor
+```cs
 // An ordinary app query through the shared fetcher — the sidecar records it like
 // any other, alongside everything the query explorer sends.
 var document = await QueryAsync(
@@ -38,7 +38,7 @@ var document = await QueryAsync(
     }
     """);
 ```
-<sup><a href='/src/BlazorQL.Sample/Pages/Home.razor#L100-L115' title='Snippet source file'>snippet source</a> | <a href='#snippet-homeQuery' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/BlazorQL.Sample/Pages/Home.razor.cs#L30-L45' title='Snippet source file'>snippet source</a> | <a href='#snippet-homeQuery' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
 Because every request goes through the shared fetcher, the [debug sidecar](sidecar.md) shows each one as it happens — which is the page's point: a realistic app to watch through the sidecar. A link in the header opens the query explorer.

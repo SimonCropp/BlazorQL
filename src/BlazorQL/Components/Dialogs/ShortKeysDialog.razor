@@ -23,23 +23,3 @@
         own command palette and context menu.
     </p>
 </DialogShell>
-
-@code {
-
-    static readonly (string Keys, string Function)[] shortKeys =
-    [
-        ("Ctrl-Enter", "Execute query"),
-        ("Shift-Ctrl-P", "Prettify editors"),
-        ("Shift-Ctrl-C", "Copy query"),
-        ("Shift-Ctrl-M", "Merge fragments"),
-        ("Shift-Ctrl-R", "Re-fetch schema"),
-        ("Ctrl-,", "Open settings dialog"),
-        ("Ctrl-F", "Search in editor"),
-        ("F1", "Open command palette"),
-        ("Ctrl-Alt-K", "Search in documentation")
-    ];
-
-    [Parameter]
-    public EventCallback OnClose { get; set; }
-
-}
