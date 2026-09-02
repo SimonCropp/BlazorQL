@@ -21,18 +21,15 @@ public sealed class SchemaValidator(SchemaIndex index)
     /// <summary>Diagnostics for one document. Errors mark mistakes, warnings mark deprecated usage.</summary>
     public IReadOnlyList<OperationDiagnostic> Validate(DocumentInfo info)
     {
-        if (info.SyntaxError is not null)
+        // A missing document and a syntax error are the same state: DocumentInfo sets one exactly
+        // when it sets the other. Testing the document is what lets the walk take a non-null one.
+        if (info.Document is not {} document)
         {
             return [new($"Syntax Error: {info.SyntaxError}", IsError: true, info.SyntaxErrorLine, info.SyntaxErrorColumn)];
         }
 
-        if (info.Document is null)
-        {
-            return [];
-        }
-
         var diagnostics = new List<OperationDiagnostic>();
-        new Walker(index, info.Text, diagnostics).WalkDocument(info.Document);
+        new Walker(index, info.Text, diagnostics).WalkDocument(document);
         return diagnostics;
     }
 
