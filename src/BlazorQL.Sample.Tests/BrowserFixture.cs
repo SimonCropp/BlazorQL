@@ -27,6 +27,12 @@ public abstract class BrowserFixture
     protected virtual string PathBase => "";
 
     /// <summary>
+    /// The Content-Security-Policy the host sends with every response. Null sends none, which is
+    /// what most of the suite wants.
+    /// </summary>
+    protected virtual string? ContentSecurityPolicy => null;
+
+    /// <summary>
     /// Opens a page, recording everything it logs for the duration of the test. The only way a
     /// test gets a page, so none can quietly opt out of the recording.
     /// </summary>
@@ -95,6 +101,15 @@ public abstract class BrowserFixture
                     return Task.CompletedTask;
                 }
 
+                return next();
+            });
+        }
+
+        if (ContentSecurityPolicy is {Length: > 0} policy)
+        {
+            host.Use((context, next) =>
+            {
+                context.Response.Headers.ContentSecurityPolicy = policy;
                 return next();
             });
         }

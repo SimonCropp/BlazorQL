@@ -34,6 +34,8 @@ The editors are Monaco, delivered by the BlazorMonaco package the component depe
 
 The `autostart="false"` + `require` boot removes the race between the AMD loader publishing Monaco and Blazor rendering the first editor. See the sample's `wwwroot/index.html` for the full page.
 
+If the app sends a `Content-Security-Policy` header, it needs widening before any of this runs — a `'self'` policy blocks the .NET runtime, Monaco's icon font and its language workers. See [Content Security Policy](csp.md).
+
 
 ## Render the IDE
 

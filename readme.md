@@ -65,6 +65,7 @@ app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql");
 - [BlazorQL.Bundled, for non-Blazor sites](docs/bundled.md)
 - [Features](docs/features.md)
 - [Fetchers](docs/fetchers.md)
+- [Content Security Policy](docs/csp.md)
 - [Theming](docs/theming.md)
 - [Debug sidecar](docs/sidecar.md)
 - [Storage](docs/storage.md)

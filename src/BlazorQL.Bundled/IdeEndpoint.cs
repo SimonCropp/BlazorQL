@@ -8,7 +8,16 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
     /// Rendered pages, keyed by resolved base href. PathBase can legitimately vary per request
     /// behind a proxy, so this is a small map rather than a single value.
     /// </summary>
-    readonly ConcurrentDictionary<string, byte[]> pages = new(StringComparer.Ordinal);
+    readonly ConcurrentDictionary<string, RenderedIndex> pages = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// The slot a nonce-carrying render leaves after every <c>&lt;script</c>, which
+    /// <see cref="RenderedIndex.Resolve"/> fills with the request's nonce attribute. Chosen so that
+    /// nothing a consumer can put in the page reaches the output as this text: every value
+    /// substituted into index.html goes through either the html encoder or the json encoder, and
+    /// both escape the angle brackets.
+    /// </summary>
+    const string noncePlaceholder = "<blazorql-nonce>";
 
     public async Task Handle(HttpContext context)
     {
@@ -84,7 +93,9 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
 
     public async Task WriteIndex(HttpContext context)
     {
-        var page = pages.GetOrAdd(BaseHref(context), Render);
+        var page = pages
+            .GetOrAdd(BaseHref(context), Render)
+            .Resolve(options.Nonce?.Invoke(context));
 
         context.Response.ContentType = "text/html; charset=utf-8";
         // The page carries the configuration, and the configuration is not part of the url.
@@ -112,7 +123,7 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
         return mount.HasValue ? mount.ToUriComponent() + "/" : "/";
     }
 
-    byte[] Render(string baseHref)
+    RenderedIndex Render(string baseHref)
     {
         var config = new ClientConfig(
             options.Endpoint,
@@ -140,7 +151,45 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
                 $"<title>{HtmlEncoder.Default.Encode(options.DocumentTitle)}</title>",
                 StringComparison.Ordinal);
 
-        return Encoding.UTF8.GetBytes(html);
+        if (options.Nonce is null)
+        {
+            return new(html, carriesNonce: false);
+        }
+
+        // Every script element, not only the two inline ones. A policy that names a nonce and no
+        // host source has to carry it on the src-based scripts too, and an ignored nonce on those
+        // costs nothing. The closing tags start "</", so they are not matched.
+        html = html.Replace("<script", $"<script{noncePlaceholder}", StringComparison.Ordinal);
+
+        return new(html, carriesNonce: true);
+    }
+
+    /// <summary>
+    /// One rendered index.html, cached per base path. A nonce is per request and so cannot be baked
+    /// into that cache: a nonce-carrying render holds the placeholder instead, and pays a copy on
+    /// the way out. Without one the bytes are final and every request writes the same array.
+    /// </summary>
+    sealed class RenderedIndex
+    {
+        readonly string html;
+        readonly byte[]? rendered;
+
+        public RenderedIndex(string html, bool carriesNonce)
+        {
+            this.html = html;
+            rendered = carriesNonce ? null : Encoding.UTF8.GetBytes(html);
+        }
+
+        public byte[] Resolve(string? nonce)
+        {
+            if (rendered is not null)
+            {
+                return rendered;
+            }
+
+            var attribute = nonce is {Length: > 0} ? $" nonce=\"{HtmlEncoder.Default.Encode(nonce)}\"" : "";
+            return Encoding.UTF8.GetBytes(html.Replace(noncePlaceholder, attribute, StringComparison.Ordinal));
+        }
     }
 
     /// <summary>
