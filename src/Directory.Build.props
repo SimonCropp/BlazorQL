@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <NoWarn>CS1591;NU1608;NU1109;PolyfillTargetsForNuget</NoWarn>
+    <NoWarn>CS1591;NU1608;NU1109;PolyfillTargetsForNuget;SC023</NoWarn>
     <Version>0.2.0</Version>
     <LangVersion>14.0</LangVersion>
     <AssemblyVersion>1.0.0</AssemblyVersion>
@@ -15,6 +15,7 @@
     <!-- Not strong-named: nothing here names internals-friends across a trust boundary, and an
          unsigned assembly keeps InternalsVisibleTo by simple name. -->
     <SignAssembly>false</SignAssembly>
+    <Verify_SponsorshipLicenseIgnored>true</Verify_SponsorshipLicenseIgnored>
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.Threading.CancellationToken"
