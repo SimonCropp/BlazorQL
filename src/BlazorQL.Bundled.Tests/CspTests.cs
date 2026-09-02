@@ -11,7 +11,7 @@ using BlazorQL;
 public class CspBundledIdeTests :
     BundledFixture
 {
-    protected override string? ContentSecurityPolicy =>
+    protected override string ContentSecurityPolicy =>
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +
@@ -47,7 +47,7 @@ public class CspBundledIdeTests :
 public class NoncedCspBundledIdeTests :
     BundledFixture
 {
-    protected override string? ContentSecurityPolicy =>
+    protected override string ContentSecurityPolicy =>
         "default-src 'self'; " +
         "script-src 'self' 'nonce-{nonce}' 'wasm-unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +
@@ -80,7 +80,7 @@ public class NoncedCspBundledIdeTests :
 public class NonceTests :
     BundledFixture
 {
-    protected override string? ContentSecurityPolicy => "script-src 'nonce-{nonce}'";
+    protected override string ContentSecurityPolicy => "script-src 'nonce-{nonce}'";
 
     protected override void Configure(BlazorQLIdeOptions options)
     {

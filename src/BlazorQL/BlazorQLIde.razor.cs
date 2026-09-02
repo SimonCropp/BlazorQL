@@ -369,7 +369,7 @@ public partial class BlazorQLIde :
 
         var provider = new CompletionItemProvider(
             [" ", "(", "$", "@", ":", "{", "."],
-            (modelUri, position, context) =>
+            (modelUri, position, _) =>
                 active?.ProvideCompletions(modelUri, position) ?? Task.FromResult(EmptyCompletions()));
         await BlazorMonaco.Languages.Global.RegisterCompletionItemProvider(JS, "graphql", provider);
 
@@ -377,6 +377,7 @@ public partial class BlazorQLIde :
             JS,
             "graphql",
             (modelUri, position, _) =>
+                // ReSharper disable once ConstantConditionalAccessQualifier
                 active?.ProvideOperationHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
 
         // Hovering a value ending in an image extension in the response editor previews the image.
@@ -384,6 +385,7 @@ public partial class BlazorQLIde :
             JS,
             "json",
             (modelUri, position, _) =>
+                // ReSharper disable once ConstantConditionalAccessQualifier
                 active?.ProvideResponseImageHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
     }
 

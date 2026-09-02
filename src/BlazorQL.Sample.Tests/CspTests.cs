@@ -13,7 +13,7 @@
 public class CspTests :
     BrowserFixture
 {
-    protected override string? ContentSecurityPolicy =>
+    protected override string ContentSecurityPolicy =>
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +

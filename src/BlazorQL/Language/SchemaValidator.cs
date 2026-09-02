@@ -403,6 +403,7 @@ public sealed class SchemaValidator(SchemaIndex index)
         /// ValuesOfCorrectType for literals, and VariablesInAllowedPosition wherever the literal is a
         /// variable reference.
         /// </summary>
+        // ReSharper disable TailRecursiveCall
         void CheckValue(GraphQLValue value, TypeRef expected)
         {
             if (value is GraphQLVariable variable)
@@ -465,6 +466,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                     return;
             }
         }
+        // ReSharper restore TailRecursiveCall
 
         void CheckVariableUse(GraphQLVariable variable, TypeRef expected)
         {
@@ -574,6 +576,7 @@ public sealed class SchemaValidator(SchemaIndex index)
         /// <paramref name="expected"/> is wanted. A non-null variable satisfies a nullable position,
         /// but not the other way round.
         /// </summary>
+        // ReSharper disable TailRecursiveCall
         static bool Accepts(TypeRef expected, GraphQLType actual)
         {
             if (actual is GraphQLNonNullType nonNullActual)
@@ -599,6 +602,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             return actual is GraphQLNamedType named &&
                    named.Name.StringValue == expected.Name;
         }
+        // ReSharper restore TailRecursiveCall
 
         static bool IsComposite(IntrospectionType type) =>
             type.Kind is "OBJECT" or "INTERFACE" or "UNION";
