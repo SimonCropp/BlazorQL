@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Variable "$nope" is not defined.
+  ],
+  graphQLDotNet: [
+    [5.8.3 NoUndefinedVariablesError] Variable '$nope' is not defined.
+  ],
+  query: { test { hasArgs(int: $nope) } }
+}

@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Int cannot represent a value of this kind.
+  ],
+  graphQLDotNet: [
+    [5.6.1 ArgumentsOfCorrectTypeError] Argument 'int' has invalid value. Expected type 'Int', found "not an int".
+  ],
+  query: { test { hasArgs(int: "not an int") } }
+}

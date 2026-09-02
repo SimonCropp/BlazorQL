@@ -1,0 +1,6 @@
+﻿{
+  graphQLDotNet: [
+    [5.4.2 UniqueArgumentNamesError] There can be only one argument named 'string'.
+  ],
+  query: { test { hasArgs(string: "a", string: "b") } }
+}

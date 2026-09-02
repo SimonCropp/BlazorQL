@@ -1,0 +1,8 @@
+﻿{
+  divergence: Without UniqueFragmentNames, BlazorQL keeps the first definition of a duplicated fragment and treats the name as spread, so it does not go on to report the second as unused the way GraphQL.NET does. Closing the UniqueFragmentNames gap subsumes this.,
+  graphQLDotNet: [
+    [5.5.1.4 NoUnusedFragmentsError] Fragment 'F' is never used.,
+    [5.5.1.1 UniqueFragmentNamesError] There can only be one fragment named 'F'
+  ],
+  query: { test { ...F } } fragment F on Test { image } fragment F on Test { isTest }
+}

@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Field "test" of type "Test" must have a selection of subfields. Did you mean "test { ... }"?
+  ],
+  graphQLDotNet: [
+    [5.3.3 ScalarLeafsError] Field test of type Test must have a sub selection
+  ],
+  query: { test }
+}

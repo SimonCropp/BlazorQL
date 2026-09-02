@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Variable "$skip" of type "Boolean" used in position expecting type "Boolean!".
+  ],
+  graphQLDotNet: [
+    [5.8.5 VariablesInAllowedPositionError] Variable '$skip' of type 'Boolean' used in position expecting type 'Boolean!'.
+  ],
+  query: query Q($skip: Boolean) { test { isTest @skip(if: $skip) } }
+}

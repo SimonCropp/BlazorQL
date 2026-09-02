@@ -356,12 +356,45 @@ public class SchemaValidatorTests
             Errors("query Q($t: String!) { person { name } }"),
             Has.Some.Contains("Variable \"$t\" is never used."));
 
-    /// <summary>A nullable variable cannot fill a non-null position; the reverse is fine.</summary>
+    /// <summary>
+    /// A nullable variable cannot fill a non-null position; the reverse is fine. Spec 5.8.5 makes
+    /// this the strict case: no default on the variable, and none on the argument either, so
+    /// nothing guarantees a value. The shared fixture cannot express it — every non-null argument
+    /// there carries a default, which is itself an escape from the rule.
+    /// </summary>
     [Test]
     public void FlagsAVariableOfTheWrongNullability() =>
         Assert.That(
-            Errors("query Q($t: String) { search(term: $t) { __typename } }"),
+            RequiredSchemaErrors("query Q($t: String) { need(arg: $t) }"),
             Has.Some.Contains("used in position expecting type \"String!\""));
+
+    /// <summary>
+    /// Spec 5.8.5: a nullable variable does fill a non-null position when the variable declares a
+    /// default that is not null. <c>@skip(if: $flag)</c> with <c>$flag: Boolean = false</c> is the
+    /// everyday shape of this, and rejecting it marked correct documents.
+    /// </summary>
+    [Test]
+    public void AcceptsANullableVariableWithADefaultInANonNullPosition() =>
+        Assert.That(
+            RequiredSchemaErrors("""query Q($t: String = "x") { need(arg: $t) }"""),
+            Is.Empty);
+
+    /// <summary>A default of the null literal guarantees nothing, so it is no escape.</summary>
+    [Test]
+    public void FlagsANullableVariableDefaultingToNullInANonNullPosition() =>
+        Assert.That(
+            RequiredSchemaErrors("query Q($t: String = null) { need(arg: $t) }"),
+            Has.Some.Contains("used in position expecting type \"String!\""));
+
+    /// <summary>
+    /// Spec 5.8.5's other escape: the argument itself declares a default, so omitting the variable
+    /// falls back to it. <c>search(term:)</c> defaults to "all".
+    /// </summary>
+    [Test]
+    public void AcceptsANullableVariableWhereTheArgumentHasADefault() =>
+        Assert.That(
+            Errors("query Q($t: String) { search(term: $t) { __typename } }"),
+            Is.Empty);
 
     [Test]
     public void AcceptsANonNullVariableInANullablePosition() =>

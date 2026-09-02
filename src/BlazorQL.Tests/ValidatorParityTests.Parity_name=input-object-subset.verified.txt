@@ -1,0 +1,4 @@
+﻿{
+  graphQLDotNet: [],
+  query: { test { hasArgs(object: {int: 1}) } }
+}

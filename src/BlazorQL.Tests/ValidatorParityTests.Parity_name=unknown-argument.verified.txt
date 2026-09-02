@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Unknown argument "noSuchArg" on field "Test.hasArgs".
+  ],
+  graphQLDotNet: [
+    [5.4.1 KnownArgumentNamesError] Unknown argument 'noSuchArg' on field 'hasArgs' of type 'Test'.
+  ],
+  query: { test { hasArgs(noSuchArg: 1) } }
+}

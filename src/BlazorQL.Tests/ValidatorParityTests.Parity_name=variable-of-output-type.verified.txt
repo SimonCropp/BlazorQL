@@ -1,0 +1,11 @@
+﻿{
+  blazorQL: [
+    Variable "$v" cannot be non-input type "Test".,
+    Variable "$v" is never used.
+  ],
+  graphQLDotNet: [
+    [5.8.4 NoUnusedVariablesError] Variable '$v' is never used in operation '$Q'.,
+    [5.8.2 VariablesAreInputTypesError] Variable 'v' cannot be non-input type 'Test'.
+  ],
+  query: query Q($v: Test) { test { isTest } }
+}

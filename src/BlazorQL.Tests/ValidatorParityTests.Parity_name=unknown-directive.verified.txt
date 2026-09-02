@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Unknown directive "@noSuchDirective".
+  ],
+  graphQLDotNet: [
+    [5.7.1 KnownDirectivesError] Unknown directive 'noSuchDirective'.
+  ],
+  query: { test { isTest @noSuchDirective } }
+}

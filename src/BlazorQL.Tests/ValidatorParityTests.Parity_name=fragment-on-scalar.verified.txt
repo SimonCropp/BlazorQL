@@ -1,0 +1,11 @@
+﻿{
+  blazorQL: [
+    Fragment "F" cannot condition on non composite type "String".
+  ],
+  graphQLDotNet: [
+    [5.3.1 FieldsOnCorrectTypeError] Cannot query field 'image' on type 'String'.,
+    [5.5.1.3 FragmentsOnCompositeTypesError] Fragment 'F' cannot condition on non composite type 'String'.,
+    [5.5.2.3 PossibleFragmentSpreadsError] Fragment 'F' cannot be spread here as objects of type 'Test' can never be of type 'String'.
+  ],
+  query: { test { ...F } } fragment F on String { image }
+}

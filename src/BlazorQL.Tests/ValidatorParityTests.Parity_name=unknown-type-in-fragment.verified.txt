@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Unknown type "NoSuchType".
+  ],
+  graphQLDotNet: [
+    [5.5.1.2 KnownTypeNamesError] Unknown type NoSuchType.
+  ],
+  query: { ...F } fragment F on NoSuchType { image }
+}

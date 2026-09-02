@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Value "NOT_A_COLOR" does not exist in "TestEnum" enum.
+  ],
+  graphQLDotNet: [
+    [5.6.1 ArgumentsOfCorrectTypeError] Argument 'enum' has invalid value. Expected type 'TestEnum', found NOT_A_COLOR.
+  ],
+  query: { test { hasArgs(enum: NOT_A_COLOR) } }
+}

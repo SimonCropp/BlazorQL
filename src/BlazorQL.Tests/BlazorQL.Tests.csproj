@@ -14,7 +14,19 @@
     <PackageReference Include="Verify.DiffPlex" />
     <PackageReference Include="DiffEngine" />
     <PackageReference Include="MarkdownSnippets.MsBuild" PrivateAssets="all" />
+    <!--
+      Test-only. GraphQL.NET is the reference implementation SchemaValidator is measured against
+      (see ValidatorParityTests); it is deliberately not a dependency of the shipped RCL, which
+      could not carry its size or survive trimming.
+    -->
+    <PackageReference Include="GraphQL" />
+    <PackageReference Include="GraphQL.SystemTextJson" />
     <ProjectReference Include="..\BlazorQL\BlazorQL.csproj" />
+    <!--
+      The GraphiQL test schema, already ported for the sample. Linked rather than copied so the
+      parity fixture cannot drift from the schema the browser suites exercise.
+    -->
+    <Compile Include="..\BlazorQL.Sample\SampleSchema.cs" Link="SampleSchema.cs" />
     <None Include="DocExplorerTests.schema.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

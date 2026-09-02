@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    There can be only one operation named "Q".
+  ],
+  graphQLDotNet: [
+    [5.2.1.1 UniqueOperationNamesError] There can only be one operation named Q.
+  ],
+  query: query Q { test { isTest } } query Q { test { isTest } }
+}

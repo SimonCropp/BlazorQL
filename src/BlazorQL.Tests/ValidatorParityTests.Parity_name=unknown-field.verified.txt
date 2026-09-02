@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Cannot query field "noSuchField" on type "Test".
+  ],
+  graphQLDotNet: [
+    [5.3.1 FieldsOnCorrectTypeError] Cannot query field 'noSuchField' on type 'Test'.
+  ],
+  query: { test { noSuchField } }
+}

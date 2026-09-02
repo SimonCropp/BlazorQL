@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Variable "$unused" is never used.
+  ],
+  graphQLDotNet: [
+    [5.8.4 NoUnusedVariablesError] Variable '$unused' is never used in operation '$Q'.
+  ],
+  query: query Q($unused: Int) { test { isTest } }
+}

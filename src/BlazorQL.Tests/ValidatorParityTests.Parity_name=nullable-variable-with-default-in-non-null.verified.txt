@@ -1,0 +1,4 @@
+﻿{
+  graphQLDotNet: [],
+  query: query Q($skip: Boolean = false) { test { isTest @skip(if: $skip) } }
+}

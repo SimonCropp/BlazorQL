@@ -1,0 +1,10 @@
+﻿{
+  blazorQL: [
+    Field "isTest" must not have a selection since type "Boolean" has no subfields.
+  ],
+  graphQLDotNet: [
+    [5.3.1 FieldsOnCorrectTypeError] Cannot query field 'deeper' on type 'Boolean'.,
+    [5.3.3 ScalarLeafsError] Field isTest of type Boolean must not have a sub selection
+  ],
+  query: { test { isTest { deeper } } }
+}

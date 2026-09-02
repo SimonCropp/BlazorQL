@@ -1,0 +1,15 @@
+﻿{
+  graphQLDotNet: [],
+  query:
+query Full($name: String, $skip: Boolean = false) {
+  test {
+    isTest
+    hasArgs(string: $name, int: 1, enum: RED, listString: ["a"], object: {string: "s"})
+    union { ... on First { name } }
+  }
+  ...OnTest @skip(if: $skip)
+}
+fragment OnTest on Test {
+  image
+}
+}

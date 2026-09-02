@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Unknown fragment "NoSuchFragment".
+  ],
+  graphQLDotNet: [
+    [5.5.2.1 KnownFragmentNamesError] Unknown fragment 'NoSuchFragment'.
+  ],
+  query: { test { ...NoSuchFragment } }
+}

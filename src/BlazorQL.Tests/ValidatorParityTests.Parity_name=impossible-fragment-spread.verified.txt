@@ -1,0 +1,6 @@
+﻿{
+  graphQLDotNet: [
+    [5.5.2.3 PossibleFragmentSpreadsError] Fragment 'F' cannot be spread here as objects of type 'TestUnion' can never be of type 'Greeting'.
+  ],
+  query: { test { union { ...F } } } fragment F on Greeting { text }
+}

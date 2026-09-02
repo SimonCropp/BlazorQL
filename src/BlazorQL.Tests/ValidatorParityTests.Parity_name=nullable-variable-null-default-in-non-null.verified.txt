@@ -1,0 +1,8 @@
+﻿{
+  blazorQL: [
+    Variable "$skip" of type "Boolean" used in position expecting type "Boolean!".
+  ],
+  divergence: BlazorQL is right and the reference is wrong here. Spec 5.8.5 makes hasNonNullVariableDefaultValue true only for a default that exists AND is not the value null, and graphql-js checks both halves. GraphQL.NET quotes that sentence in a comment and then tests only DefaultValue != null, so it accepts $v: Boolean = null in a Boolean! position. Reported upstream is the fix; matching it is not.,
+  graphQLDotNet: [],
+  query: query Q($skip: Boolean = null) { test { isTest @skip(if: $skip) } }
+}

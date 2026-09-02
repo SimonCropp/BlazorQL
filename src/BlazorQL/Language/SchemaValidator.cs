@@ -43,7 +43,7 @@ public sealed class SchemaValidator(SchemaIndex index)
         readonly HashSet<string> spreadFragments = new(StringComparer.Ordinal);
         readonly HashSet<string> declaredVariables = new(StringComparer.Ordinal);
         readonly HashSet<string> usedVariables = new(StringComparer.Ordinal);
-        readonly Dictionary<string, GraphQLType> variableTypes = new(StringComparer.Ordinal);
+        readonly Dictionary<string, GraphQLVariableDefinition> variableDefinitions = new(StringComparer.Ordinal);
 
         public void WalkDocument(GraphQLDocument document)
         {
@@ -102,13 +102,13 @@ public sealed class SchemaValidator(SchemaIndex index)
         {
             declaredVariables.Clear();
             usedVariables.Clear();
-            variableTypes.Clear();
+            variableDefinitions.Clear();
 
             foreach (var variable in operation.Variables?.Items ?? [])
             {
                 var name = variable.Variable.Name.StringValue;
                 declaredVariables.Add(name);
-                variableTypes[name] = variable.Type;
+                variableDefinitions[name] = variable;
                 CheckVariableIsInputType(variable);
             }
 
@@ -283,7 +283,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                         $"The argument {definition.Name} is deprecated. {definition.DeprecationReason}".TrimEnd());
                 }
 
-                CheckValue(argument.Value, definition.Type);
+                CheckValue(argument.Value, definition.Type, definition.DefaultValue);
             }
 
             foreach (var definition in declared)
@@ -391,21 +391,24 @@ public sealed class SchemaValidator(SchemaIndex index)
                         continue;
                     }
 
-                    CheckValue(argument.Value, definition.Type);
+                    CheckValue(argument.Value, definition.Type, definition.DefaultValue);
                 }
             }
         }
 
         /// <summary>
         /// ValuesOfCorrectType for literals, and VariablesInAllowedPosition wherever the literal is a
-        /// variable reference.
+        /// variable reference. <paramref name="locationDefault"/> is the default declared by the
+        /// argument or input field this value sits in, which spec 5.8.5 lets stand in for a
+        /// variable's own default. It survives unwrapping a non-null — the same location — but not
+        /// descending into a list, because an element is not a location that can declare one.
         /// </summary>
         // ReSharper disable TailRecursiveCall
-        void CheckValue(GraphQLValue value, TypeRef expected)
+        void CheckValue(GraphQLValue value, TypeRef expected, string? locationDefault = null)
         {
             if (value is GraphQLVariable variable)
             {
-                CheckVariableUse(variable, expected);
+                CheckVariableUse(variable, expected, locationDefault);
                 return;
             }
 
@@ -417,7 +420,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                     return;
                 }
 
-                CheckValue(value, expected.OfType!);
+                CheckValue(value, expected.OfType!, locationDefault);
                 return;
             }
 
@@ -438,8 +441,9 @@ public sealed class SchemaValidator(SchemaIndex index)
                     return;
                 }
 
-                // A single value coerces to a one-element list, per spec.
-                CheckValue(value, expected.OfType!);
+                // A single value coerces to a one-element list, per spec. The location is still the
+                // argument or input field, so its default carries.
+                CheckValue(value, expected.OfType!, locationDefault);
                 return;
             }
 
@@ -465,21 +469,21 @@ public sealed class SchemaValidator(SchemaIndex index)
         }
         // ReSharper restore TailRecursiveCall
 
-        void CheckVariableUse(GraphQLVariable variable, TypeRef expected)
+        void CheckVariableUse(GraphQLVariable variable, TypeRef expected, string? locationDefault)
         {
             var name = variable.Name.StringValue;
             usedVariables.Add(name);
-            if (!variableTypes.TryGetValue(name, out var declared))
+            if (!variableDefinitions.TryGetValue(name, out var declared))
             {
                 Error(variable, $"Variable \"${name}\" is not defined.");
                 return;
             }
 
-            if (!Accepts(expected, declared))
+            if (!Allowed(expected, declared, locationDefault))
             {
                 Error(
                     variable,
-                    $"Variable \"${name}\" of type \"{Render(declared)}\" used in position expecting type \"{expected.Display()}\".");
+                    $"Variable \"${name}\" of type \"{Render(declared.Type)}\" used in position expecting type \"{expected.Display()}\".");
             }
         }
 
@@ -526,7 +530,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                     continue;
                 }
 
-                CheckValue(field.Value, definition.Type);
+                CheckValue(field.Value, definition.Type, definition.DefaultValue);
             }
 
             foreach (var definition in type.InputFields ?? [])
@@ -569,9 +573,38 @@ public sealed class SchemaValidator(SchemaIndex index)
         }
 
         /// <summary>
-        /// Whether a variable declared as <paramref name="actual"/> may be used where
-        /// <paramref name="expected"/> is wanted. A non-null variable satisfies a nullable position,
-        /// but not the other way round.
+        /// IsVariableUsageAllowed, spec 5.8.5. Outermost nullability is the one place the rule is
+        /// not a plain type comparison: a nullable variable does satisfy a non-null position when
+        /// something guarantees a value either way — the variable declares a default that is not
+        /// null, or the argument or input field it is used in declares one. Which is what makes
+        /// <c>query ($skip: Boolean = false) { ... @skip(if: $skip) }</c> legal, and it is the
+        /// shape GraphiQL users write most.
+        /// </summary>
+        static bool Allowed(TypeRef expected, GraphQLVariableDefinition declared, string? locationDefault)
+        {
+            if (expected.Kind != "NON_NULL" ||
+                declared.Type is GraphQLNonNullType)
+            {
+                return Accepts(expected, declared.Type);
+            }
+
+            // A default of the null literal is no guarantee, so it does not count. A location
+            // default does count whatever its value: the argument is then optional, and leaving
+            // the variable out falls back to it.
+            var hasVariableDefault = declared.DefaultValue is not null and not GraphQLNullValue;
+            if (!hasVariableDefault && locationDefault is null)
+            {
+                return false;
+            }
+
+            return Accepts(expected.OfType!, declared.Type);
+        }
+
+        /// <summary>
+        /// AreTypesCompatible: whether a variable declared as <paramref name="actual"/> may be used
+        /// where <paramref name="expected"/> is wanted. A non-null variable satisfies a nullable
+        /// position, but not the other way round — the exception for defaults belongs to the
+        /// outermost position only, and lives in <see cref="Allowed"/>.
         /// </summary>
         // ReSharper disable TailRecursiveCall
         static bool Accepts(TypeRef expected, GraphQLType actual)

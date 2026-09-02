@@ -1,0 +1,6 @@
+﻿{
+  graphQLDotNet: [
+    [5.5.2.2 NoFragmentCyclesError] Cannot spread fragment 'A' within itself via B.
+  ],
+  query: { test { ...A } } fragment A on Test { ...B } fragment B on Test { ...A }
+}

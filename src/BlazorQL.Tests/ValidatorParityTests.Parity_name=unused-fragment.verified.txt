@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Fragment "Unused" is never used.
+  ],
+  graphQLDotNet: [
+    [5.5.1.4 NoUnusedFragmentsError] Fragment 'Unused' is never used.
+  ],
+  query: { test { isTest } } fragment Unused on Test { image }
+}

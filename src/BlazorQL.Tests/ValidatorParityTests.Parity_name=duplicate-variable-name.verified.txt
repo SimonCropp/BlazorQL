@@ -1,0 +1,6 @@
+﻿{
+  graphQLDotNet: [
+    [5.8.1 UniqueVariableNamesError] There can be only one variable named 'v'
+  ],
+  query: query Q($v: Int, $v: Int) { test { hasArgs(int: $v) } }
+}

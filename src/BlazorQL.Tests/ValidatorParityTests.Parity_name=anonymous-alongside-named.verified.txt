@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    This anonymous operation must be the only defined operation.
+  ],
+  graphQLDotNet: [
+    [5.2.2.1 LoneAnonymousOperationError] This anonymous operation must be the only defined operation.
+  ],
+  query: { test { isTest } } query Named { test { isTest } }
+}
