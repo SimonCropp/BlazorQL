@@ -50,6 +50,8 @@ Everything is configured through `MapBlazorQL`:
 | `DocumentTitle` | `GraphQL IDE` | The browser tab title. |
 | `BasePathOverride` | null | Overrides the base path baked into the page. See *Behind a proxy*. |
 | `MapUnknownPathsToIde` | false | Serves the IDE for unknown extensionless paths under the mount instead of answering 404. |
+| `WriteContentSecurityPolicy` | false | Sends the policy the IDE needs on the page, with a per-request nonce. See *Content Security Policy*. |
+| `ConfigureContentSecurityPolicy` | null | Adds to or replaces those directives. |
 | `Nonce` | null | `Func<HttpContext, string?>` supplying the CSP nonce to stamp on every script element. See *Content Security Policy*. |
 
 The endpoint is resolved in the browser against the page it was served from, so a root-relative
@@ -71,21 +73,19 @@ so they would be rejected with 401.
 
 ## Content Security Policy
 
-An app that sets a `Content-Security-Policy` header has to widen it for the mount: the IDE is a
-WebAssembly application and needs `'wasm-unsafe-eval'`, `data:` fonts and `blob:` workers on top of
-a `'self'` policy. [The whole policy, and what each directive is for](csp.md).
-
-Because this package renders the page rather than the consumer, it can put a CSP nonce on the
-page's scripts itself — set `Nonce` and drop `'unsafe-inline'`:
+The IDE is a WebAssembly application, so a `'self'` policy stops it dead: no runtime, no icons, no
+language workers. Rather than restate the directives in every app, the mount can send them:
 
 ```csharp
-app.MapBlazorQL("/graphql-ide", _ => _.Nonce = context => (string?) context.Items["CspNonce"]);
+app.MapBlazorQL("/graphql-ide", _ => _.WriteContentSecurityPolicy = true);
 ```
 
-The nonce lands on every script element, not only the two inline ones, so a policy that names a
-nonce and no host source works too. Rendering is cached per base path and the nonce is not, so a
-mount that uses one pays a small copy per request; a mount that does not is byte-identical to
-before.
+That also mints a per-request nonce and stamps it on every script element in the page, so the
+policy names a nonce rather than allowing `'unsafe-inline'`. A response that already carries a
+policy keeps it.
+
+[The whole policy, what each directive is for, and how to fold it into a header the app writes
+itself](csp.md).
 
 
 ## Behind a proxy

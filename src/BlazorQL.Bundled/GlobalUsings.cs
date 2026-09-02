@@ -1,6 +1,7 @@
 global using System.Collections.Frozen;
 global using System.Diagnostics.CodeAnalysis;
 global using System.IO.Compression;
+global using System.Security.Cryptography;
 global using System.Text;
 global using System.Text.Encodings.Web;
 global using System.Text.Json;
@@ -8,5 +9,6 @@ global using System.Text.Json.Serialization;
 global using Microsoft.AspNetCore.Builder;
 global using Microsoft.AspNetCore.Http;
 global using Microsoft.AspNetCore.Routing;
+global using Microsoft.Extensions.Primitives;
 global using Microsoft.Net.Http.Headers;
 global using BlazorQL;

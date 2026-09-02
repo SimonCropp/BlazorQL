@@ -161,3 +161,139 @@ public class WithoutNonceTests :
         Assert.That(html, Does.Not.Contain("nonce"));
     }
 }
+
+/// <summary>
+/// The one-line path: the mount sends the policy itself. Knowing which directives the IDE needs is
+/// the package's job, and this is the fixture that proves the set it ships with is complete.
+/// </summary>
+[TestFixture]
+[Category("Browser")]
+public class WrittenCspBundledIdeTests :
+    BundledFixture
+{
+    protected override void Configure(BlazorQLIdeOptions options)
+    {
+        options.Endpoint = "/graphql";
+        options.WriteContentSecurityPolicy = true;
+    }
+
+    [Test]
+    public async Task BootsOnTheOptionAlone()
+    {
+        var page = await OpenIdeAsync();
+
+        var languages = await page.EvaluateAsync<string[]>(
+            "() => monaco.languages.getLanguages().map(_ => _.id)");
+
+        Assert.That(languages, Does.Contain("graphql"));
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+}
+
+/// <summary>The header the option writes, without a browser.</summary>
+[TestFixture]
+public class WrittenCspTests :
+    BundledFixture
+{
+    protected override void Configure(BlazorQLIdeOptions options)
+    {
+        options.Endpoint = "/graphql";
+        options.WriteContentSecurityPolicy = true;
+        options.ConfigureContentSecurityPolicy = _ =>
+        {
+            // Replacing one the IDE leaves narrow, and adding one of the app's own.
+            _["connect-src"] = "'self' https://api.example.com";
+            _["frame-ancestors"] = "'none'";
+        };
+    }
+
+    async Task<HttpResponseMessage> GetIndex()
+    {
+        using var client = new HttpClient();
+        return await client.GetAsync(IdeUrl + "/");
+    }
+
+    [Test]
+    public async Task ThePolicyCarriesWhatTheIdeNeeds()
+    {
+        using var response = await GetIndex();
+        var csp = response.Headers.GetValues("Content-Security-Policy")
+            .Single();
+
+        Assert.That(csp, Does.Contain("'wasm-unsafe-eval'"));
+        Assert.That(csp, Does.Contain("font-src 'self' data:"));
+        Assert.That(csp, Does.Contain("worker-src 'self' blob:"));
+        Assert.That(csp, Does.Contain("style-src 'self' 'unsafe-inline'"));
+    }
+
+    /// <summary>A nonce nobody has to mint, matching the page it was written for.</summary>
+    [Test]
+    public async Task ThePageCarriesTheNonceFromTheHeader()
+    {
+        using var response = await GetIndex();
+        var csp = response.Headers.GetValues("Content-Security-Policy")
+            .Single();
+        var html = await response.Content.ReadAsStringAsync();
+        var nonce = Regex.Match(csp, "'nonce-([A-F0-9]+)'")
+            .Groups[1]
+            .Value;
+
+        Assert.That(nonce, Is.Not.Empty);
+        Assert.That(csp, Does.Not.Contain("'unsafe-inline' 'wasm-unsafe-eval'"));
+        var scripts = Regex.Matches(html, "<script[^>]*>");
+        Assert.That(scripts, Is.Not.Empty);
+        Assert.That(
+            scripts.Select(_ => _.Value).Where(_ => !_.Contains($"nonce=\"{nonce}\"")),
+            Is.Empty);
+    }
+
+    [Test]
+    public async Task ConfigureReplacesAndAdds()
+    {
+        using var response = await GetIndex();
+        var csp = response.Headers.GetValues("Content-Security-Policy")
+            .Single();
+
+        Assert.That(csp, Does.Contain("connect-src 'self' https://api.example.com"));
+        Assert.That(csp, Does.Contain("frame-ancestors 'none'"));
+        // Replaced, not appended - a duplicate directive would be ignored by the browser.
+        Assert.That(Regex.Matches(csp, "connect-src"), Has.Count.EqualTo(1));
+    }
+
+    /// <summary>Assets are not documents; a policy on them restricts nothing.</summary>
+    [Test]
+    public async Task TheAssetsCarryNoPolicy()
+    {
+        using var client = new HttpClient();
+
+        using var response = await client.GetAsync(IdeUrl + "/_framework/blazor.webassembly.js");
+
+        Assert.That(response.Headers.Contains("Content-Security-Policy"), Is.False);
+    }
+}
+
+/// <summary>An app that writes its own policy for the mount keeps it.</summary>
+[TestFixture]
+public class WrittenCspDefersToTheAppTests :
+    BundledFixture
+{
+    protected override string ContentSecurityPolicy => "default-src 'self'; script-src 'self'";
+
+    protected override void Configure(BlazorQLIdeOptions options)
+    {
+        options.Endpoint = "/graphql";
+        options.WriteContentSecurityPolicy = true;
+    }
+
+    [Test]
+    public async Task TheAppsOwnPolicySurvives()
+    {
+        using var client = new HttpClient();
+
+        using var response = await client.GetAsync(IdeUrl + "/");
+        var csp = response.Headers.GetValues("Content-Security-Policy")
+            .Single();
+
+        Assert.That(csp, Is.EqualTo("default-src 'self'; script-src 'self'"));
+    }
+}

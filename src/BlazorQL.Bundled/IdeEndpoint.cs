@@ -93,11 +93,26 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
 
     public async Task WriteIndex(HttpContext context)
     {
+        var nonce = options.Nonce?.Invoke(context);
+        var response = context.Response;
+
+        if (options.WriteContentSecurityPolicy)
+        {
+            // Only when the app has not already spoken for this response: a consumer that writes
+            // its own policy for the mount means it, and two policies intersect rather than the
+            // second replacing the first.
+            if (StringValues.IsNullOrEmpty(response.Headers.ContentSecurityPolicy))
+            {
+                nonce ??= ContentSecurityPolicy.NewNonce();
+                response.Headers.ContentSecurityPolicy =
+                    ContentSecurityPolicy.Build(nonce, options.ConfigureContentSecurityPolicy);
+            }
+        }
+
         var page = pages
             .GetOrAdd(BaseHref(context), Render)
-            .Resolve(options.Nonce?.Invoke(context));
+            .Resolve(nonce);
 
-        var response = context.Response;
         response.ContentType = "text/html; charset=utf-8";
         // The page carries the configuration, and the configuration is not part of the url.
         response.Headers.CacheControl = "no-store";
@@ -152,7 +167,10 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
                 $"<title>{HtmlEncoder.Default.Encode(options.DocumentTitle)}</title>",
                 StringComparison.Ordinal);
 
-        if (options.Nonce is null)
+        // Either source of a nonce means the page has to leave the slot for one, and neither is
+        // known at render time - the render is cached per base path, a nonce is per request.
+        if (options.Nonce is null &&
+            !options.WriteContentSecurityPolicy)
         {
             return new(html, carriesNonce: false);
         }

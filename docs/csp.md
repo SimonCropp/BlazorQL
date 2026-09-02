@@ -1,12 +1,47 @@
 # Content Security Policy
 
 The IDE is a WebAssembly application driving Monaco, so a policy written for ordinary
-server-rendered pages will not run it. BlazorQL never writes a `Content-Security-Policy` header —
-the policy belongs to the app — but an app that sets one has to widen it. This works:
+server-rendered pages will not run it. Which directives it needs is the package's business rather
+than the app's, so `BlazorQL.Bundled` will send them:
+
+```csharp
+app.MapBlazorQL("/graphql-ide", _ => _.WriteContentSecurityPolicy = true);
+```
+
+That writes the policy on the page the mount serves, mints a per-request nonce, and stamps that
+nonce on every script element — no middleware, and nothing to keep in step by hand. It is off by
+default, because a policy is the app's to decide.
+
+Add the app's own directives, or widen one the IDE leaves narrow, through
+`ConfigureContentSecurityPolicy`. The directives are ordered and mutable, so an entry can be
+replaced — appending a duplicate to the header would change nothing, because the first occurrence
+of a directive is the one that counts:
+
+```csharp
+app.MapBlazorQL(
+    "/graphql-ide",
+    _ =>
+    {
+        _.WriteContentSecurityPolicy = true;
+        _.ConfigureContentSecurityPolicy = _ =>
+        {
+            _["connect-src"] = "'self' https://api.example.com";
+            _["frame-ancestors"] = "'none'";
+        };
+    });
+```
+
+A response that already carries a policy keeps it: an app that writes its own for the mount means
+it, and two policies intersect rather than the second replacing the first.
+
+
+## The policy
+
+What the option sends, and what an app composing its own has to include:
 
 ```
 default-src 'self';
-script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval';
+script-src 'self' 'nonce-…' 'wasm-unsafe-eval';
 style-src 'self' 'unsafe-inline';
 img-src 'self' data:;
 font-src 'self' data:;
@@ -22,7 +57,7 @@ Four of those are not obvious, and each fails in its own way:
 | | |
 | --- | --- |
 | `'wasm-unsafe-eval'` | Compiling the .NET runtime. Without it the app never starts. |
-| `'unsafe-inline'`, or a nonce | The host page's inline bootstrap — the `require(...)` call that starts Blazor once Monaco has loaded. Without either the page renders its loading text and stops. |
+| a nonce, or `'unsafe-inline'` | The host page's inline bootstrap — the `require(...)` call that starts Blazor once Monaco has loaded. Without either the page renders its loading text and stops. |
 | `font-src data:` | Monaco's icon font is a data uri inside its stylesheet. Without it the toolbar renders as empty boxes. |
 | `worker-src blob:` | Monaco starts its language workers from a blob url. Without it the editors still work, but every keystroke logs a violation. |
 
@@ -34,33 +69,34 @@ Nothing else is needed. The debug sidecar adds its stylesheet as a `<link>` to a
 rather than an inline `<style>`, so `style-src 'self'` already covers it.
 
 
-## Dropping 'unsafe-inline'
+## Writing the header elsewhere
 
-The inline script is the one part of the policy worth removing, and which package is in use decides
-where that happens.
+An app that builds one policy for every route can still take the directives from the package rather
+than transcribing them. `ContentSecurityPolicy.Build` returns the header value and
+`ContentSecurityPolicy.Directives` returns the ordered set behind it, both taking the same
+`configure` shape:
 
-The `BlazorQL` package leaves `index.html` to the consuming app, so the nonce goes on its own tag:
+```csharp
+var policy = ContentSecurityPolicy.Build(nonce, _ => _["frame-ancestors"] = "'none'");
+```
+
+Pair it with the `Nonce` option, which hands the mount a nonce the app has already minted instead
+of generating one:
+
+```csharp
+app.MapBlazorQL("/graphql-ide", _ => _.Nonce = context => (string?) context.Items["CspNonce"]);
+```
+
+
+## The BlazorQL package
+
+The RCL leaves `index.html` to the consuming app, so there is no page for it to stamp — the nonce
+goes on the app's own tag:
 
 ```html
 <script nonce="@nonce">
     require(['vs/editor/editor.main'], () => Blazor.start(), () => Blazor.start());
 </script>
-```
-
-`BlazorQL.Bundled` renders the page itself, so it can do the stamping — set the `Nonce` option and
-the middleware puts the value on every script element:
-
-```csharp
-app.Use((context, next) =>
-{
-    var nonce = RandomNumberGenerator.GetHexString(32);
-    context.Items["CspNonce"] = nonce;
-    context.Response.Headers.ContentSecurityPolicy =
-        $"default-src 'self'; script-src 'self' 'nonce-{nonce}' 'wasm-unsafe-eval'; ...";
-    return next();
-});
-
-app.MapBlazorQL("/graphql-ide", _ => _.Nonce = context => (string?) context.Items["CspNonce"]);
 ```
 
 Either way, keep `'self'` in `script-src`. Monaco's AMD loader injects further script elements at

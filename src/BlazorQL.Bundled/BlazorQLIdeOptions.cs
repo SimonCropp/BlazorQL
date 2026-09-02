@@ -71,4 +71,39 @@ public sealed class BlazorQLIdeOptions
     /// <code>_.Nonce = context =&gt; (string?) context.Items["CspNonce"];</code>
     /// </example>
     public Func<HttpContext, string?>? Nonce { get; set; }
+
+    /// <summary>
+    /// Sends the Content-Security-Policy the IDE needs on the page this mount serves, with a
+    /// per-request nonce that the page's scripts carry. Off by default, because a policy is the
+    /// app's to decide - but knowing which directives the IDE needs is not, so this is the one line
+    /// that gets them right.
+    /// </summary>
+    /// <remarks>
+    /// The header is written on the page only, not on the assets, and only when the response does
+    /// not already carry one - an app that sets its own policy for the mount keeps it. Setting
+    /// <see cref="Nonce"/> as well hands the value over rather than generating one, for an app that
+    /// mints the nonce itself.
+    /// <para>
+    /// See <see cref="BlazorQL.ContentSecurityPolicy"/> to fold the same directives into a policy
+    /// the app writes on its own.
+    /// </para>
+    /// </remarks>
+    public bool WriteContentSecurityPolicy { get; set; }
+
+    /// <summary>
+    /// Applied to the directives before <see cref="WriteContentSecurityPolicy"/> sends them, for
+    /// the app's own hardening or to widen one the IDE leaves narrow. Ordered and mutable, so an
+    /// entry can be added or replaced - appending a duplicate directive to the header would not
+    /// override anything, because the first occurrence is the one that counts.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// _.ConfigureContentSecurityPolicy = _ =>
+    /// {
+    ///     _["connect-src"] = "'self' https://api.example.com";
+    ///     _["frame-ancestors"] = "'none'";
+    /// };
+    /// </code>
+    /// </example>
+    public Action<IDictionary<string, string>>? ConfigureContentSecurityPolicy { get; set; }
 }
