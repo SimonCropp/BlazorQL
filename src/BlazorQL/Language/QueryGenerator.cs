@@ -41,9 +41,12 @@ public static class QueryGenerator
         var rootFields = schema.Find(schema.QueryTypeName)?.Fields?
             .Where(_ => !_.IsDeprecated && _.Type.Unwrap().Name == type.Name)
             .ToList() ?? [];
-        return rootFields.Count > 0
-            ? builder.RootFieldsOperation(type, rootFields)
-            : builder.Fragment(type);
+        if (rootFields.Count > 0)
+        {
+            return builder.RootFieldsOperation(type, rootFields);
+        }
+
+        return builder.Fragment(type);
     }
 
     sealed class Builder(SchemaIndex schema)
@@ -53,9 +56,12 @@ public static class QueryGenerator
         public string? Operation(string keyword, IntrospectionType type)
         {
             var lines = Selections(type, all: true, depth: 1);
-            return lines is null
-                ? null
-                : Wrap($"{keyword} {type.Name}", lines);
+            if (lines is null)
+            {
+                return null;
+            }
+
+            return Wrap($"{keyword} {type.Name}", lines);
         }
 
         public string? RootFieldsOperation(IntrospectionType type, List<IntrospectionField> rootFields)
@@ -70,9 +76,12 @@ public static class QueryGenerator
                 }
             }
 
-            return lines.Count == 0
-                ? null
-                : Wrap($"query {type.Name}", lines);
+            if (lines.Count == 0)
+            {
+                return null;
+            }
+
+            return Wrap($"query {type.Name}", lines);
         }
 
         public string? Fragment(IntrospectionType type)
@@ -123,9 +132,12 @@ public static class QueryGenerator
                 }
             }
 
-            return lines.Count == 0
-                ? null
-                : lines;
+            if (lines.Count == 0)
+            {
+                return null;
+            }
+
+            return lines;
         }
 
         static IEnumerable<IntrospectionField> Members(IntrospectionType type, bool all)

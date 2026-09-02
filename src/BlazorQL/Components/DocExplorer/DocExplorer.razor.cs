@@ -55,10 +55,18 @@ public partial class DocExplorer :
     bool ShowSearch =>
         Current is DocRootEntry or DocTypeEntry { Type.Kind: "OBJECT" or "INTERFACE" or "INPUT_OBJECT" };
 
-    string SearchPlaceholder =>
-        Current is DocTypeEntry entry
-            ? $"Search {entry.Type.Name}..."
-            : "Search schema...";
+    string SearchPlaceholder
+    {
+        get
+        {
+            if (Current is DocTypeEntry entry)
+            {
+                return $"Search {entry.Type.Name}...";
+            }
+
+            return "Search schema...";
+        }
+    }
 
     protected override void OnInitialized()
     {

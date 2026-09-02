@@ -197,8 +197,11 @@ public sealed partial class HistoryStore
             .Select(_ => _.Trim())
             .Where(_ => _.Length > 0 && !_.StartsWith('#'))
             .SelectMany(_ => _.Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries)));
-        return condensed.Length == 0
-            ? "<empty>"
-            : condensed;
+        if (condensed.Length == 0)
+        {
+            return "<empty>";
+        }
+
+        return condensed;
     }
 }
