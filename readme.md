@@ -7,7 +7,7 @@ An in-browser GraphQL IDE built in Blazor WASM. The editors are Monaco via the B
 
 **[Try it live](https://simoncropp.github.io/BlazorQL/)** — the sample on GitHub Pages, executing its whole schema in the browser: a small Blazor app consuming the schema, with the query explorer and the debug sidecar one click away.
 
-<img src="tests/BlazorQL.Sample.Tests/UiScreenshotTests.HeroLight.verified.png" border="1" alt="BlazorQL running a query: the operation editor, toolbar, and formatted response">
+<img src="src/BlazorQL.Sample.Tests/UiScreenshotTests.HeroLight.verified.png" border="1" alt="BlazorQL running a query: the operation editor, toolbar, and formatted response">
 
 
 ## Features
