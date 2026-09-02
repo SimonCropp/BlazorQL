@@ -38,8 +38,10 @@ jobs:
           if-no-files-found: ignore
       # After the build, never instead of it: packing the RCL from a clean obj fails on its
       # static web assets manifest.
-      - name: Pack
+      - name: Pack BlazorQL
         run: dotnet pack src/BlazorQL -c Release --no-build -o packages -p:Version=${{ env.version }}
+      - name: Pack BlazorQL.Bundled
+        run: dotnet pack src/BlazorQL.Bundled -c Release --no-build -o packages -p:Version=${{ env.version }}
       - uses: actions/upload-artifact@v4
         with:
           name: packages
