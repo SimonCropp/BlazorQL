@@ -24,7 +24,7 @@
                 <button type="button"
                         class="blazorql-tab-button"
                         @onclick="() => OnActivate.InvokeAsync(index)"
-                        @ondblclick="() => StartRename(index)">@TabStore.Title(tab)</button>
+                        @ondblclick="() => StartRename(index)">@Title(tab)</button>
                 @if (Store.Tabs.Count > 1)
                 {
                     <button type="button"

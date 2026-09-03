@@ -51,7 +51,7 @@
                         class="blazorql-history-item"
                         data-testid="history-item"
                         title="@item.Query"
-                        @onclick="() => OnSelect.InvokeAsync(item)">@HistoryStore.DisplayText(item)</button>
+                        @onclick="() => OnSelect.InvokeAsync(item)">@DisplayText(item)</button>
                 <span class="blazorql-history-actions">
                     <button type="button"
                             class="blazorql-history-action"

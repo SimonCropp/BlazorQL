@@ -272,7 +272,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   points into it), and this runs on every diagnostics pass and every run. Return
   `RootElement.Clone()` and dispose, or deserialize to a `JsonElement` directly.
 
-- [ ] **Derived text recomputed per row per render**
+- [x] **Derived text recomputed per row per render**
   `src/BlazorQL/Components/TabBar.razor:27` (`TabStore.Title` runs a regex per tab),
   `src/BlazorQL/Components/History/HistoryPane.razor:54` (`DisplayText` splits the whole query per
   item), `src/BlazorQL/Services/NamedModels.cs:15-20` (an extra `GetModel` + `DisposeModel` round

@@ -73,40 +73,61 @@ public sealed class HttpFetcher(HttpClient http, string url) :
                 using var reader = new MultipartReader(boundary, stream);
                 while (await reader.ReadNextSectionAsync(cancel) is { } section)
                 {
-                    using var sectionReader = new StreamReader(section.Body, Encoding.UTF8);
-                    var text = await sectionReader.ReadToEndAsync(cancel);
-                    if (string.IsNullOrWhiteSpace(text))
+                    using var buffered = new MemoryStream();
+                    await section.Body.CopyToAsync(buffered, cancel);
+                    if (IsBlank(buffered))
                     {
                         continue;
                     }
 
-                    yield return ParseDocument(text, response);
+                    yield return ParseDocument(buffered, response);
                 }
             }
 
             yield break;
         }
 
-        var payload = await response.Content.ReadAsStringAsync(cancel);
-        yield return ParseDocument(payload, response);
+        var payload = await response.Content.ReadAsStreamAsync(cancel);
+        await using (payload)
+        {
+            using var buffered = new MemoryStream();
+            await payload.CopyToAsync(buffered, cancel);
+            yield return ParseDocument(buffered, response);
+        }
+    }
+
+    /// <summary>Whether a buffered part holds nothing but whitespace — a boundary's trailing newline.</summary>
+    static bool IsBlank(MemoryStream buffered)
+    {
+        foreach (var value in buffered.GetBuffer().AsSpan(0, (int) buffered.Length))
+        {
+            if (value is not ((byte) ' ' or (byte) '\t' or (byte) '\r' or (byte) '\n'))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
-    /// Parses one response document, cloned so it outlives its backing buffer. GraphQL errors ride
-    /// non-success statuses as ordinary JSON bodies; only a non-JSON body is a transport failure.
+    /// Parses one response document, cloned so it outlives its backing buffer. Read from the bytes
+    /// rather than from a string: a large response was otherwise copied into utf-16 and then parsed
+    /// out of that again. GraphQL errors ride non-success statuses as ordinary JSON bodies; only a
+    /// non-JSON body is a transport failure, and only that path pays for the text.
     /// </summary>
-    static JsonElement ParseDocument(string text, HttpResponseMessage response)
+    static JsonElement ParseDocument(MemoryStream buffered, HttpResponseMessage response)
     {
+        var bytes = buffered.GetBuffer().AsSpan(0, (int) buffered.Length);
         try
         {
-            using var document = JsonDocument.Parse(text);
+            var reader = new Utf8JsonReader(bytes);
+            using var document = JsonDocument.ParseValue(ref reader);
             return document.RootElement.Clone();
         }
         catch (JsonException)
         {
-            var preview = text.Length > 500
-                ? text[..500]
-                : text;
+            var preview = Encoding.UTF8.GetString(bytes[..Math.Min(bytes.Length, 500)]);
             throw new InvalidOperationException($"The endpoint answered {(int) response.StatusCode} with a non-JSON body: {preview}");
         }
     }

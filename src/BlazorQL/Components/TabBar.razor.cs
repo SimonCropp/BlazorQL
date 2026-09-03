@@ -23,6 +23,38 @@ public partial class TabBar
     [Parameter]
     public EventCallback<(int Index, string? Title)> OnRename { get; set; }
 
+    /// <summary>
+    /// Titles already derived, against the strings they were derived from. A title is asked for
+    /// once per tab on every render of the IDE, and deriving one runs a regex over the whole
+    /// document. Weakly keyed, so a closed tab's entry goes with the tab; compared by reference,
+    /// because these strings are replaced rather than edited in place.
+    /// </summary>
+    readonly ConditionalWeakTable<TabState, DerivedTitle> titles = [];
+
+    sealed class DerivedTitle
+    {
+        public string? Query { get; set; }
+        public string? OperationName { get; set; }
+        public string? RenameOverride { get; set; }
+        public string Text { get; set; } = "";
+    }
+
+    string Title(TabState tab)
+    {
+        var derived = titles.GetOrCreateValue(tab);
+        if (!ReferenceEquals(derived.Query, tab.Query) ||
+            !ReferenceEquals(derived.OperationName, tab.OperationName) ||
+            !ReferenceEquals(derived.RenameOverride, tab.RenameOverride))
+        {
+            derived.Query = tab.Query;
+            derived.OperationName = tab.OperationName;
+            derived.RenameOverride = tab.RenameOverride;
+            derived.Text = TabStore.Title(tab);
+        }
+
+        return derived.Text;
+    }
+
     int renamingIndex = -1;
     string renameText = "";
     bool focusRename;
@@ -31,7 +63,7 @@ public partial class TabBar
     void StartRename(int index)
     {
         renamingIndex = index;
-        renameText = TabStore.Title(Store.Tabs[index]);
+        renameText = Title(Store.Tabs[index]);
         focusRename = true;
     }
 

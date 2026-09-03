@@ -14,6 +14,37 @@ public partial class HistoryPane
     [Parameter]
     public EventCallback<HistoryItem> OnSelect { get; set; }
 
+    /// <summary>
+    /// Display text already derived, against the strings it was derived from. Every visible row
+    /// asks for one on every render of the IDE, and deriving one splits and rejoins the whole
+    /// query. Weakly keyed, so a forgotten item's entry goes with it.
+    /// </summary>
+    readonly ConditionalWeakTable<HistoryItem, DerivedText> texts = [];
+
+    sealed class DerivedText
+    {
+        public string? Query { get; set; }
+        public string? OperationName { get; set; }
+        public string? Label { get; set; }
+        public string Text { get; set; } = "";
+    }
+
+    string DisplayText(HistoryItem item)
+    {
+        var derived = texts.GetOrCreateValue(item);
+        if (!ReferenceEquals(derived.Query, item.Query) ||
+            !ReferenceEquals(derived.OperationName, item.OperationName) ||
+            !ReferenceEquals(derived.Label, item.Label))
+        {
+            derived.Query = item.Query;
+            derived.OperationName = item.OperationName;
+            derived.Label = item.Label;
+            derived.Text = HistoryStore.DisplayText(item);
+        }
+
+        return derived.Text;
+    }
+
     string filter = "";
     HistoryItem? editing;
     string editText = "";
