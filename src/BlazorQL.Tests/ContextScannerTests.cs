@@ -602,4 +602,70 @@ public class ContextScannerTests
 
         Assert.That(scan.Mode, Is.EqualTo(ScanMode.VariableType));
     }
+
+    // ---- Fragment name collection ----
+
+    // "fragment" is only the keyword when it stands as a word of its own. A comment that mentions
+    // fragments used to yield a fragment named "s", and { fragmentCount } one named "Count".
+    [Test]
+    public void ProseMentioningFragmentsDefinesNoFragment()
+    {
+        var scan = Scan("{ ...| # see fragments here\n }");
+
+        Assert.That(scan.FragmentNames, Is.Empty);
+    }
+
+    [Test]
+    public void AFieldWhoseNameStartsWithFragmentDefinesNoFragment()
+    {
+        var scan = Scan("{ fragmentCount ...| }");
+
+        Assert.That(scan.FragmentNames, Is.Empty);
+    }
+
+    [Test]
+    public void AStringMentioningFragmentDefinesNoFragment()
+    {
+        var scan = Scan("""{ search(term: "fragment Nope on Person") ...| }""");
+
+        Assert.That(scan.FragmentNames, Is.Empty);
+    }
+
+    [Test]
+    public void ABlockStringMentioningFragmentDefinesNoFragment()
+    {
+        var scan = Scan(
+            """"
+            { search(term: """
+            fragment Nope on Person
+            """) ...| }
+            """");
+
+        Assert.That(scan.FragmentNames, Is.Empty);
+    }
+
+    [Test]
+    public void AFragmentWithNoNameDefinesNothing()
+    {
+        var scan = Scan("{ ...| }\n\nfragment ");
+
+        Assert.That(scan.FragmentNames, Is.Empty);
+    }
+
+    // The real thing still lands, next to the near misses.
+    [Test]
+    public void RealDefinitionsSurviveAlongsideTheNearMisses()
+    {
+        var scan = Scan(
+            """
+            # a comment about fragments
+            { fragmentCount ...| }
+
+            fragment Fields on Person { name }
+            """);
+
+        string[] expected = ["Fields"];
+
+        Assert.That(scan.FragmentNames, Is.EqualTo(expected));
+    }
 }

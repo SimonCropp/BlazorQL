@@ -93,7 +93,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `@include(if:` on a field with arguments is the everyday case. Remember the directive on `@name`
   (from `schema.Directives`) and push a frame that resolves against the directive's `Args`.
 
-- [ ] **Phantom fragment names from any text containing "fragment"** (repro confirmed)
+- [x] **Phantom fragment names from any text containing "fragment"** (repro confirmed)
   `src/BlazorQL/Language/ContextScanner.cs:524-548`
   `CollectFragments` uses `IndexOf("fragment")` with no word boundary and no awareness of comments
   or strings. `# see fragments here` yields a fragment named `s`; `{ fragmentCount }` yields

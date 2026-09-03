@@ -559,30 +559,78 @@ static class ContextScanner
             };
     }
 
+    /// <summary>
+    /// The name of every fragment the document defines, taken from the whole text because a spread
+    /// can name a fragment defined below the caret. Tokenized rather than searched: "fragment" is
+    /// the keyword only when it stands as a word of its own outside a comment or a string, so
+    /// neither a description mentioning fragments nor a field called fragmentCount defines one.
+    /// </summary>
     static void CollectFragments(string text, List<string> fragments)
     {
-        var index = 0;
-        while ((index = text.IndexOf("fragment", index, StringComparison.Ordinal)) >= 0)
+        var i = 0;
+        while (i < text.Length)
         {
-            index += "fragment".Length;
-            while (index < text.Length &&
-                   char.IsWhiteSpace(text[index]))
+            var ch = text[i];
+            if (ch == '#')
             {
-                index++;
+                while (i < text.Length && text[i] != '\n')
+                {
+                    i++;
+                }
+
+                continue;
             }
 
-            var start = index;
-            while (index < text.Length &&
-                   (char.IsLetterOrDigit(text[index]) || text[index] == '_'))
+            if (ch == '"')
             {
-                index++;
+                i = SkipString(text, i, text.Length);
+                continue;
             }
 
-            if (index > start)
+            if (!IsNameStart(ch))
             {
-                fragments.Add(text[start..index]);
+                i++;
+                continue;
             }
+
+            var wordStart = i;
+            i = NameEnd(text, i);
+            if (!text.AsSpan(wordStart, i - wordStart).SequenceEqual("fragment"))
+            {
+                continue;
+            }
+
+            while (i < text.Length &&
+                   char.IsWhiteSpace(text[i]))
+            {
+                i++;
+            }
+
+            if (i >= text.Length ||
+                !IsNameStart(text[i]))
+            {
+                continue;
+            }
+
+            var nameStart = i;
+            i = NameEnd(text, i);
+            fragments.Add(text[nameStart..i]);
         }
+    }
+
+    static bool IsNameStart(char ch) =>
+        char.IsLetter(ch) || ch == '_';
+
+    /// <summary>The index just past the name starting at <paramref name="index"/>.</summary>
+    static int NameEnd(string text, int index)
+    {
+        while (index < text.Length &&
+               (char.IsLetterOrDigit(text[index]) || text[index] == '_'))
+        {
+            index++;
+        }
+
+        return index;
     }
 
     static int SkipString(string text, int index, int limit)
