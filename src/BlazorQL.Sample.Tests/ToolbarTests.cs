@@ -186,4 +186,52 @@ public class ToolbarTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    /// <summary>
+    /// The toolbar renders before the editors do — the component's own initialization has to await
+    /// its JS module first, and Blazor renders while that is outstanding. A click in that window
+    /// used to be a NullReferenceException, which in WebAssembly is the yellow error bar and a
+    /// session that no longer updates.
+    /// </summary>
+    [Test]
+    public async Task ToolbarClicksBeforeTheEditorsExistAreHarmless()
+    {
+        var page = await NewPageAsync();
+
+        // Holds the component in its pre-hydration render: it cannot finish initializing until its
+        // module arrives, and the toolbar is already on screen.
+        await page.RouteAsync(
+            "**/blazorql.js",
+            async route =>
+            {
+                await Task.Delay(5000);
+                await route.ContinueAsync();
+            });
+
+        await page.GotoAsync($"{BaseUrl}/explorer");
+        await page.WaitForSelectorAsync("[data-testid='copy']", 60);
+
+        Assert.That(await page.QuerySelectorAsync("[data-testid='blazorql'][data-ready]"), Is.Null);
+
+        await page.ClickAsync("[data-testid='copy']");
+        await page.ClickAsync("[data-testid='share']");
+        await page.ClickAsync("[data-testid='prettify']");
+        await page.ClickAsync("[data-testid='merge']");
+
+        // And the session still comes up and works once the module lands.
+        await page.WaitForIdeReadyAsync();
+        await page.SetEditorValueAsync("{ id }");
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('abc123'))
+            """,
+            null,
+            new() {Timeout = 30_000});
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
 }

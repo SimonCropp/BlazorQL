@@ -145,7 +145,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
 
 ### Low
 
-- [ ] **Toolbar and history actions dereference editors before they exist**
+- [x] **Toolbar and history actions dereference editors before they exist**
   `src/BlazorQL/BlazorQLIde.razor.cs:1407-1411`, `:1414-1422`, `:1765-1788`
   `CopyQuery`, `ShareQuery` and `LoadHistoryItem` use `operationEditor!`. The toolbar renders
   before Monaco initializes, and a persisted-open history pane does too, so a click before `ready`

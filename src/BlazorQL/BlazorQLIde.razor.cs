@@ -1443,17 +1443,29 @@ public partial class BlazorQLIde :
 
     async Task CopyQuery()
     {
-        var query = await operationEditor!.GetValue();
+        // The toolbar renders before the editors do, so a click can land while there is nothing to
+        // copy from.
+        if (operationEditor is null)
+        {
+            return;
+        }
+
+        var query = await operationEditor.GetValue();
         await module!.Invoke("copyText", query);
     }
 
     /// <summary>Writes the query + variables into the location hash and copies the resulting link.</summary>
     async Task ShareQuery()
     {
+        if (operationEditor is null)
+        {
+            return;
+        }
+
         var variables = editorTools?.VariablesEditor is { } variablesEditor
             ? await variablesEditor.GetValue()
             : "";
-        var shared = new SharedQuery(await operationEditor!.GetValue(), variables);
+        var shared = new SharedQuery(await operationEditor.GetValue(), variables);
         var href = await module!.Invoke<string>("setHash", ShareLinkCodec.Encode(shared));
         await module.Invoke("copyText", href);
     }
@@ -1870,6 +1882,13 @@ public partial class BlazorQLIde :
     /// <summary>Clicking a history item loads it into the active tab's editors.</summary>
     async Task LoadHistoryItem(HistoryItem item)
     {
+        // A persisted-open history pane is on screen for the render that creates the editors, so a
+        // click can arrive before there is anywhere to put the item.
+        if (operationEditor is null)
+        {
+            return;
+        }
+
         var tab = tabs.Active;
         tab.Query = item.Query;
         tab.Variables = item.Variables ?? "";
@@ -1878,7 +1897,7 @@ public partial class BlazorQLIde :
             tab.Headers = item.Headers;
         }
 
-        await operationEditor!.SetValue(tab.Query);
+        await operationEditor.SetValue(tab.Query);
         if (editorTools?.VariablesEditor is { } variablesEditor)
         {
             await variablesEditor.SetValue(tab.Variables);
