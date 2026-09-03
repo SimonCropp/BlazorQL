@@ -1,0 +1,4 @@
+﻿{
+  graphQLDotNet: [],
+  query: query A($a: String) { test { ...F } } query B($b: String) { test { hasArgs(string: $b) } } fragment F on Test { hasArgs(string: $a) }
+}

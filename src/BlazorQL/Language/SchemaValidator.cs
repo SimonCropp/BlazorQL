@@ -50,9 +50,18 @@ public sealed class SchemaValidator(SchemaIndex index)
     {
         Dictionary<string, GraphQLFragmentDefinition> fragments = new(StringComparer.Ordinal);
         HashSet<string> spreadFragments = new(StringComparer.Ordinal);
-        HashSet<string> declaredVariables = new(StringComparer.Ordinal);
-        HashSet<string> usedVariables = new(StringComparer.Ordinal);
-        Dictionary<string, GraphQLVariableDefinition> variableDefinitions = new(StringComparer.Ordinal);
+        Dictionary<string, References> byFragment = new(StringComparer.Ordinal);
+        References current = new();
+
+        /// <summary>A variable reference, with what the position it sits in expects of it.</summary>
+        readonly record struct VariableUsage(GraphQLVariable Variable, TypeRef Expected, string? LocationDefault);
+
+        /// <summary>What one operation or fragment definition refers to in its own body.</summary>
+        sealed class References
+        {
+            public List<VariableUsage> Usages { get; } = [];
+            public HashSet<string> Spreads { get; } = new(StringComparer.Ordinal);
+        }
 
         public void WalkDocument(GraphQLDocument document)
         {
@@ -64,14 +73,29 @@ public sealed class SchemaValidator(SchemaIndex index)
             var operations = document.Definitions.OfType<GraphQLOperationDefinition>().ToList();
             CheckOperationNames(operations);
 
+            List<(GraphQLOperationDefinition Operation, References References)> walked = [];
             foreach (var operation in operations)
             {
-                WalkOperation(operation);
+                current = new();
+                if (WalkOperation(operation))
+                {
+                    walked.Add((operation, current));
+                }
             }
 
             foreach (var fragment in fragments.Values)
             {
+                current = new();
                 WalkFragmentDefinition(fragment);
+                byFragment[fragment.FragmentName.Name.StringValue] = current;
+            }
+
+            // Only now is it known which fragments each operation reaches, and a variable used
+            // inside one belongs to every operation that reaches it. So the variable rules run
+            // last, over the whole closure, rather than in place as the bodies are walked.
+            foreach (var (operation, references) in walked)
+            {
+                CheckVariables(operation, references);
             }
 
             foreach (var fragment in fragments.Values)
@@ -80,6 +104,73 @@ public sealed class SchemaValidator(SchemaIndex index)
                 if (!spreadFragments.Contains(name))
                 {
                     Error(fragment.FragmentName, $"Fragment \"{name}\" is never used.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// NoUndefinedVariables, NoUnusedVariables and VariablesInAllowedPosition, over what
+        /// graphql-js calls the recursive usages: the operation's own, plus those of every fragment
+        /// it spreads, however deeply. The visited set is what keeps a fragment cycle finite.
+        /// </summary>
+        void CheckVariables(GraphQLOperationDefinition operation, References references)
+        {
+            var declared = new Dictionary<string, GraphQLVariableDefinition>(StringComparer.Ordinal);
+            foreach (var variable in operation.Variables?.Items ?? [])
+            {
+                // First wins. UniqueVariableNames is a known gap, and building this lookup is not
+                // where a duplicate gets reported -- nor where it may throw.
+                declared.TryAdd(variable.Variable.Name.StringValue, variable);
+            }
+
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var usage in RecursiveUsages(references))
+            {
+                var name = usage.Variable.Name.StringValue;
+                used.Add(name);
+                if (!declared.TryGetValue(name, out var definition))
+                {
+                    Error(usage.Variable, $"Variable \"${name}\" is not defined.");
+                    continue;
+                }
+
+                if (!Allowed(usage.Expected, definition, usage.LocationDefault))
+                {
+                    Error(
+                        usage.Variable,
+                        $"Variable \"${name}\" of type \"{Render(definition.Type)}\" used in position expecting type \"{usage.Expected.Display()}\".");
+                }
+            }
+
+            foreach (var name in declared.Keys)
+            {
+                if (!used.Contains(name))
+                {
+                    Error(operation, $"Variable \"${name}\" is never used.");
+                }
+            }
+        }
+
+        IEnumerable<VariableUsage> RecursiveUsages(References root)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            var pending = new Queue<References>();
+            pending.Enqueue(root);
+            while (pending.Count > 0)
+            {
+                var references = pending.Dequeue();
+                foreach (var usage in references.Usages)
+                {
+                    yield return usage;
+                }
+
+                foreach (var name in references.Spreads)
+                {
+                    if (seen.Add(name) &&
+                        byFragment.TryGetValue(name, out var fragment))
+                    {
+                        pending.Enqueue(fragment);
+                    }
                 }
             }
         }
@@ -107,17 +198,15 @@ public sealed class SchemaValidator(SchemaIndex index)
             }
         }
 
-        void WalkOperation(GraphQLOperationDefinition operation)
+        /// <summary>
+        /// False when the operation has no root type to walk against, which is the one case where
+        /// its variables are not worth checking: nothing was walked, so every one of them would
+        /// look unused.
+        /// </summary>
+        bool WalkOperation(GraphQLOperationDefinition operation)
         {
-            declaredVariables.Clear();
-            usedVariables.Clear();
-            variableDefinitions.Clear();
-
             foreach (var variable in operation.Variables?.Items ?? [])
             {
-                var name = variable.Variable.Name.StringValue;
-                declaredVariables.Add(name);
-                variableDefinitions[name] = variable;
                 CheckVariableIsInputType(variable);
             }
 
@@ -133,19 +222,12 @@ public sealed class SchemaValidator(SchemaIndex index)
             {
                 var what = operation.Operation.ToString().ToLowerInvariant();
                 Error(operation, $"Schema is not configured for {what}s.");
-                return;
+                return false;
             }
 
             CheckDirectives(operation.Directives);
             WalkSelections(operation.SelectionSet, root);
-
-            foreach (var name in declaredVariables)
-            {
-                if (!usedVariables.Contains(name))
-                {
-                    Error(operation, $"Variable \"${name}\" is never used.");
-                }
-            }
+            return true;
         }
 
         void WalkFragmentDefinition(GraphQLFragmentDefinition fragment)
@@ -316,6 +398,7 @@ public sealed class SchemaValidator(SchemaIndex index)
         {
             var name = spread.FragmentName.Name.StringValue;
             spreadFragments.Add(name);
+            current.Spreads.Add(name);
             CheckDirectives(spread.Directives);
 
             if (!fragments.ContainsKey(name))
@@ -478,23 +561,13 @@ public sealed class SchemaValidator(SchemaIndex index)
         }
         // ReSharper restore TailRecursiveCall
 
-        void CheckVariableUse(GraphQLVariable variable, TypeRef expected, string? locationDefault)
-        {
-            var name = variable.Name.StringValue;
-            usedVariables.Add(name);
-            if (!variableDefinitions.TryGetValue(name, out var declared))
-            {
-                Error(variable, $"Variable \"${name}\" is not defined.");
-                return;
-            }
-
-            if (!Allowed(expected, declared, locationDefault))
-            {
-                Error(
-                    variable,
-                    $"Variable \"${name}\" of type \"{Render(declared.Type)}\" used in position expecting type \"{expected.Display()}\".");
-            }
-        }
+        /// <summary>
+        /// Records the use rather than judging it. Which variables are in scope depends on the
+        /// operations that reach this definition, and a fragment does not know them; the judging
+        /// happens in <see cref="CheckVariables"/>.
+        /// </summary>
+        void CheckVariableUse(GraphQLVariable variable, TypeRef expected, string? locationDefault) =>
+            current.Usages.Add(new(variable, expected, locationDefault));
 
         void CheckEnum(GraphQLValue value, IntrospectionType type)
         {

@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Variable "$v" of type "String" used in position expecting type "Int".
+  ],
+  graphQLDotNet: [
+    [5.8.5 VariablesInAllowedPositionError] Variable '$v' of type 'String' used in position expecting type 'Int'.
+  ],
+  query: query Q($v: String) { test { ...F } } fragment F on Test { hasArgs(int: $v) }
+}

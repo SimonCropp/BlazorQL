@@ -131,6 +131,22 @@ public class ValidatorParityTests
         yield return Case("input-object-subset", "{ test { hasArgs(object: {int: 1}) } }");
         yield return Case("variable-type-mismatch", "query Q($v: String) { test { hasArgs(int: $v) } }");
 
+        // A variable is in scope for every fragment the operation reaches, however deeply, and for
+        // no operation that does not reach it. The Relay-shaped document is the first case; the
+        // second is what makes the scope per operation rather than whatever was walked last.
+        yield return Case("variable-used-only-in-fragment",
+            "query Q($name: String) { test { ...F } } fragment F on Test { hasArgs(string: $name) }");
+        yield return Case("variable-used-in-a-nested-fragment",
+            "query Q($name: String) { test { ...F } } fragment F on Test { ...G } fragment G on Test { hasArgs(string: $name) }");
+        yield return Case("variable-in-fragment-with-two-operations",
+            "query A($a: String) { test { ...F } } query B($b: String) { test { hasArgs(string: $b) } } fragment F on Test { hasArgs(string: $a) }");
+        yield return Case("variable-of-the-wrong-type-in-a-fragment",
+            "query Q($v: String) { test { ...F } } fragment F on Test { hasArgs(int: $v) }");
+        yield return Case("undefined-variable-in-a-fragment",
+            "query Q { test { ...F } } fragment F on Test { hasArgs(string: $nope) }");
+        yield return Case("variable-in-an-unused-fragment",
+            "query Q { test { isTest } } fragment F on Test { hasArgs(string: $nope) }");
+
         // Rules only GraphQL.NET has. These must land entirely in knownGaps, and BlazorQL must
         // report nothing — the assertion that keeps the gap list honest in both directions.
         yield return Case("fragment-cycle", "{ test { ...A } } fragment A on Test { ...B } fragment B on Test { ...A }");

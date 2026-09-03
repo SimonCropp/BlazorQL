@@ -33,7 +33,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   case because it needs a response error with a path, but the same crash. Carry a `HashSet<string>`
   of fragments on the current path and stop on re-entry.
 
-- [ ] **Validator reports variables used only inside fragments as "never used" / "not defined"**
+- [x] **Validator reports variables used only inside fragments as "never used" / "not defined"**
   (repro confirmed)
   `src/BlazorQL/Language/SchemaValidator.cs:110-149`, `:315-325`, `:72-75`
   `WalkOperation` only records variable usages it sees in the operation body; `WalkSpread` records

@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Fragment "F" is never used.
+  ],
+  graphQLDotNet: [
+    [5.5.1.4 NoUnusedFragmentsError] Fragment 'F' is never used.
+  ],
+  query: query Q { test { isTest } } fragment F on Test { hasArgs(string: $nope) }
+}
