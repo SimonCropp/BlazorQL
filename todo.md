@@ -134,7 +134,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   swallows it, so the variables pane keeps whatever markers it had before. Uniqueness is a known
   validator gap; the checker should still not throw. Use `TryAdd` or a first-wins lookup.
 
-- [ ] **Stopping a websocket subscription can hang the run's `finally`**
+- [x] **Stopping a websocket subscription can hang the run's `finally`**
   `src/BlazorQL/Fetchers/GraphQLWsFetcher.cs:35-50`, `src/BlazorQL/Fetchers/GraphQLWsProtocol.cs:27-34`
   `CloseBestEffort` calls `CloseAsync` with `Cancel.None`, which waits for the server's close
   frame indefinitely. That runs inside the enumerator's disposal, which `Run` awaits before it

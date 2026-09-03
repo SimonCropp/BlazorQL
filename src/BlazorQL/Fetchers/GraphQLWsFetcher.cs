@@ -32,6 +32,13 @@ public sealed class GraphQLWsFetcher(string url) :
         }
     }
 
+    /// <summary>
+    /// Sends the close frame on the way out, without waiting for the server's answer.
+    /// <see cref="ClientWebSocket.CloseAsync"/> waits for that answer, and with no token that wait
+    /// has no end — all of which happens inside the enumerator's disposal, which the run awaits
+    /// before the stop button comes back. The socket is disposed either way, so the courtesy of the
+    /// frame is worth a bounded moment and no more.
+    /// </summary>
     static async Task CloseBestEffort(ClientWebSocket socket)
     {
         if (socket.State is not (WebSocketState.Open or WebSocketState.CloseReceived))
@@ -41,11 +48,18 @@ public sealed class GraphQLWsFetcher(string url) :
 
         try
         {
-            await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "done", Cancel.None);
+            using var timeout = new CancelSource(closeTimeout);
+            await socket.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "done", timeout.Token);
         }
         catch (WebSocketException)
         {
             // Best-effort: the server may have dropped the connection already.
         }
+        catch (OperationCanceledException)
+        {
+            // The frame did not go out in time. Nothing else is waiting on it.
+        }
     }
+
+    static readonly TimeSpan closeTimeout = TimeSpan.FromSeconds(2);
 }

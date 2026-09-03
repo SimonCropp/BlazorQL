@@ -139,4 +139,53 @@ public class GraphQLWsProtocolTests
             return null;
         }
     }
+
+    /// <summary>
+    /// Stopping a subscription runs inside the enumerator's disposal, which the run awaits before
+    /// the stop button comes back. A socket that will not take the complete frame must not be able
+    /// to hold that open.
+    /// </summary>
+    [Test]
+    public async Task AStalledCompleteDoesNotHoldTheEnumeratorOpen()
+    {
+        using var cancelSource = new CancelSource();
+        var socket = new StalledSendSocket(cancelSource);
+
+        var run = Task.Run(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token));
+        var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20)));
+
+        Assert.That(finished, Is.SameAs(run), "the enumerator's disposal never returned");
+        Assert.CatchAsync<OperationCanceledException>(() => run);
+    }
+
+    /// <summary>
+    /// Acks, then cancels the caller's token and hangs on the receive — and then hangs on the
+    /// complete frame too, the way a socket whose peer has stopped reading does.
+    /// </summary>
+    sealed class StalledSendSocket(CancelSource cancelSource) :
+        IWsSocket
+    {
+        bool acked;
+
+        public async Task SendAsync(string json, Cancel cancel)
+        {
+            if (json.Contains("complete", StringComparison.Ordinal))
+            {
+                await Task.Delay(Timeout.Infinite, cancel);
+            }
+        }
+
+        public async Task<string?> ReceiveAsync(Cancel cancel)
+        {
+            if (!acked)
+            {
+                acked = true;
+                return """{"type":"connection_ack"}""";
+            }
+
+            await cancelSource.CancelAsync();
+            await Task.Delay(Timeout.Infinite, cancel);
+            return null;
+        }
+    }
 }

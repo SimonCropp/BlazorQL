@@ -92,11 +92,18 @@ static class GraphQLWsProtocol
         }
     }
 
+    /// <summary>
+    /// Tells the server the subscription ended. The caller's token is already cancelled, hence a
+    /// token of this method's own — but a bounded one: this runs inside the enumerator's disposal,
+    /// which the run awaits before the stop button comes back, so a stalled socket must not be able
+    /// to hold it open.
+    /// </summary>
     static async Task SendCompleteBestEffort(IWsSocket socket)
     {
         try
         {
-            await socket.SendAsync("""{"id":"1","type":"complete"}""", Cancel.None);
+            using var timeout = new CancelSource(TimeSpan.FromSeconds(2));
+            await socket.SendAsync("""{"id":"1","type":"complete"}""", timeout.Token);
         }
         catch
         {
