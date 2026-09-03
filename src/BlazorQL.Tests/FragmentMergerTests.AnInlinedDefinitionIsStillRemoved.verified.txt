@@ -1,0 +1,7 @@
+﻿{
+  person {
+    ... on Person {
+      name
+    }
+  }
+}

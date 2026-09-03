@@ -47,6 +47,24 @@ public static class FragmentMerger
             definitions.Add(definition);
         }
 
+        // A spread carrying a directive is left where it is -- inlining it would change what the
+        // document means -- so the definition it names has to survive the merge, and so does
+        // everything that one reaches. Dropping them turned a valid document into an unknown
+        // fragment with one click.
+        var kept = new HashSet<string>(StringComparer.Ordinal);
+        Reachable(definitions.OfType<GraphQLOperationDefinition>().Select(_ => _.SelectionSet), fragments, kept);
+
+        var emitted = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var fragment in document.Document.Definitions.OfType<GraphQLFragmentDefinition>())
+        {
+            var name = fragment.FragmentName.Name.StringValue;
+            if (kept.Contains(name) &&
+                emitted.Add(name))
+            {
+                definitions.Add(fragment);
+            }
+        }
+
         document.Document.Definitions.Clear();
         foreach (var definition in definitions)
         {
@@ -54,6 +72,30 @@ public static class FragmentMerger
         }
 
         return (true, Formatter.FormatGraphQL(Print(document.Document)), null);
+    }
+
+    /// <summary>
+    /// The names of every fragment still spread from <paramref name="roots"/> once the inlining is
+    /// done, following the definitions of those to whatever they spread in turn.
+    /// </summary>
+    static void Reachable(
+        IEnumerable<GraphQLSelectionSet?> roots,
+        Dictionary<string, GraphQLFragmentDefinition> fragments,
+        HashSet<string> names)
+    {
+        var pending = new Queue<GraphQLSelectionSet?>(roots);
+        while (pending.Count > 0)
+        {
+            foreach (var spread in Spreads(pending.Dequeue()))
+            {
+                var name = spread.FragmentName.Name.StringValue;
+                if (names.Add(name) &&
+                    fragments.TryGetValue(name, out var fragment))
+                {
+                    pending.Enqueue(fragment.SelectionSet);
+                }
+            }
+        }
     }
 
     /// <summary>

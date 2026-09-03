@@ -100,7 +100,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `Count`. Both show up as spread completions after `...`. Require an identifier boundary on both
   sides and skip comments/strings, or take the names from the parsed document whenever it parses.
 
-- [ ] **Merge drops fragment definitions that are still spread** (repro confirmed)
+- [x] **Merge drops fragment definitions that are still spread** (repro confirmed)
   `src/BlazorQL/Language/FragmentMerger.cs:20-33`, `:70`
   Spreads carrying a directive are deliberately left in place, but every fragment definition is
   removed regardless. `{ person { ...F @include(if: $s) } } fragment F on Person { name }` merges to

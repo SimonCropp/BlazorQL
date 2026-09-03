@@ -1,0 +1,13 @@
+﻿query ($s: Boolean!){
+  person {
+    ...A @include(if: $s)
+  }
+}
+
+fragment A on Person {
+  ...B
+}
+
+fragment B on Person {
+  name
+}

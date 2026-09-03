@@ -168,4 +168,83 @@ public class FragmentMergerTests
         Assert.That(ok);
         return Verify(text);
     }
+
+    /// <summary>
+    /// A spread carrying a directive is deliberately not inlined, so removing its definition would
+    /// leave the document spreading a fragment that is no longer there.
+    /// </summary>
+    [Test]
+    public Task ADefinitionStillSpreadBehindADirectiveIsKept()
+    {
+        var (ok, text, error) = FragmentMerger.Merge(
+            """
+            query ($s: Boolean!) {
+              person {
+                ...F @include(if: $s)
+              }
+            }
+
+            fragment F on Person {
+              name
+            }
+            """);
+
+        Assert.That(error, Is.Null);
+        Assert.That(ok);
+        Assert.That(DocumentInfo.Parse(text!).Fragments, Has.Count.EqualTo(1));
+        return Verify(text);
+    }
+
+    /// <summary>What a kept definition spreads has to be kept as well, however deep the chain.</summary>
+    [Test]
+    public Task WhatAKeptDefinitionSpreadsIsKeptToo()
+    {
+        var (ok, text, error) = FragmentMerger.Merge(
+            """
+            query ($s: Boolean!) {
+              person {
+                ...A @include(if: $s)
+              }
+            }
+
+            fragment A on Person {
+              ...B
+            }
+
+            fragment B on Person {
+              name
+            }
+            """);
+
+        Assert.That(error, Is.Null);
+        Assert.That(ok);
+        return Verify(text);
+    }
+
+    /// <summary>A definition nothing spreads any more still goes.</summary>
+    [Test]
+    public Task AnInlinedDefinitionIsStillRemoved()
+    {
+        var (ok, text, error) = FragmentMerger.Merge(
+            """
+            query {
+              person {
+                ...F
+              }
+            }
+
+            fragment F on Person {
+              name
+            }
+
+            fragment Unused on Person {
+              id
+            }
+            """);
+
+        Assert.That(error, Is.Null);
+        Assert.That(ok);
+        Assert.That(DocumentInfo.Parse(text!).Fragments, Is.Empty);
+        return Verify(text);
+    }
 }
