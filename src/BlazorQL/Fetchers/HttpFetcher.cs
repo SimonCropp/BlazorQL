@@ -31,14 +31,30 @@ public sealed class HttpFetcher(HttpClient http, string url) :
         // Lets the browser hand back the body as it streams, instead of buffering it — a no-op
         // outside WASM, essential for multipart parts arriving over time.
         message.SetBrowserResponseStreamingEnabled(true);
-        message.Headers.TryAddWithoutValidation("Accept", accept);
-        foreach (var header in headers)
-        {
-            message.Headers.TryAddWithoutValidation(header.Key, header.Value);
-        }
 
         var body = JsonSerializer.Serialize(request, WebJson.Default.GraphQLRequest);
         message.Content = new StringContent(body, Encoding.UTF8, "application/json");
+
+        // The negotiated Accept is a default, not a floor. Appending the user's after it would
+        // leave the endpoint to choose between the two, which is not what typing one means.
+        if (!headers.Keys.Any(_ => string.Equals(_, "Accept", StringComparison.OrdinalIgnoreCase)))
+        {
+            message.Headers.TryAddWithoutValidation("Accept", accept);
+        }
+
+        foreach (var header in headers)
+        {
+            if (message.Headers.TryAddWithoutValidation(header.Key, header.Value))
+            {
+                continue;
+            }
+
+            // A content header (Content-Type and the rest) is refused by the request's collection,
+            // and refused silently — so it goes where it belongs instead of being dropped. Removing
+            // first, because StringContent has already written a Content-Type of its own.
+            message.Content.Headers.Remove(header.Key);
+            message.Content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
 
         using var response = await http.SendAsync(message, HttpCompletionOption.ResponseHeadersRead, cancel);
         LastStatus = new((int) response.StatusCode, response.ReasonPhrase);

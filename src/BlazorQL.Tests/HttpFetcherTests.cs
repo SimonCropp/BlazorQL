@@ -147,4 +147,58 @@ public class HttpFetcherTests
             return respond(request);
         }
     }
+
+    /// <summary>
+    /// TryAddWithoutValidation refuses a content header on the request's own collection, and says
+    /// nothing about it — so a user-supplied Content-Type used to vanish without a word.
+    /// </summary>
+    [Test]
+    public async Task AUserContentTypeReplacesTheDefault()
+    {
+        var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, """{"data":null}"""));
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        await Collect(
+            fetcher,
+            new("{ id }"),
+            new()
+            {
+                ["Content-Type"] = "application/graphql-request+json"
+            });
+
+        var content = handler.Request!.Content!;
+
+        Assert.That(content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/graphql-request+json"));
+        Assert.That(handler.RequestBody, Is.EqualTo("""{"query":"{ id }"}"""));
+    }
+
+    [Test]
+    public async Task AUserAcceptReplacesTheNegotiatedOne()
+    {
+        var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, """{"data":null}"""));
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        await Collect(
+            fetcher,
+            new("{ id }"),
+            new()
+            {
+                ["accept"] = "application/json"
+            });
+
+        Assert.That(handler.Request!.Headers.GetValues("Accept").Single(), Is.EqualTo("application/json"));
+    }
+
+    [Test]
+    public async Task TheNegotiatedAcceptStandsWhenTheUserSuppliesNone()
+    {
+        var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, """{"data":null}"""));
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        await Collect(fetcher, new("{ id }"), new() {["x-custom"] = "value"});
+
+        Assert.That(
+            handler.Request!.Headers.NonValidated["Accept"].ToString(),
+            Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8"));
+    }
 }

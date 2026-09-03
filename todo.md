@@ -168,7 +168,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   The UI hides the close button for a single tab (`TabBar.razor:28`), so it is unreachable today,
   but the store should refuse or re-seed rather than rely on the markup.
 
-- [ ] **`HttpFetcher` silently drops user content headers and doubles up `Accept`**
+- [x] **`HttpFetcher` silently drops user content headers and doubles up `Accept`**
   `src/BlazorQL/Fetchers/HttpFetcher.cs:34-38`
   `TryAddWithoutValidation` on request headers returns false for content headers such as
   `Content-Type`, so a user-supplied one is ignored without a word; a user `Accept` is appended

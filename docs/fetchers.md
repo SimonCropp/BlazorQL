@@ -27,7 +27,7 @@ new HttpFetcher("https://example.com/graphql");
 new HttpFetcher(httpClient, "/graphql");
 ```
 
-POSTs JSON with `Accept: application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8`. A `multipart/mixed` response (incremental delivery) is streamed part by part; anything else is read as one document. The headers editor's entries ride on every request. The response's HTTP status code feeds the status line.
+POSTs JSON with `Accept: application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8`. A `multipart/mixed` response (incremental delivery) is streamed part by part; anything else is read as one document. The headers editor's entries ride on every request: a content header such as `Content-Type` lands on the body, and an `Accept` typed there replaces the negotiated one rather than being appended to it. The response's HTTP status code feeds the status line.
 
 
 ## GraphQLWsFetcher
