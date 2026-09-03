@@ -234,4 +234,38 @@ public class ToolbarTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    /// <summary>
+    /// Revoking the object url in the same turn as the click is a race the browser gets to decide:
+    /// Chromium copes, Firefox and Safari have cancelled the download. Chromium is what runs here,
+    /// so the assertion is on the timing rather than on the outcome — it is the timing that differs
+    /// between browsers.
+    /// </summary>
+    [Test]
+    public async Task ADownloadsObjectUrlOutlivesTheClick()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        var revokedWithTheClick = await page.EvaluateAsync<bool>(
+            """
+            async () => {
+                const module = await import(new URL('_content/BlazorQL/blazorql.js', document.baseURI).href);
+                const original = URL.revokeObjectURL;
+                let revoked = false;
+                URL.revokeObjectURL = url => {
+                    revoked = true;
+                    original.call(URL, url);
+                };
+                try {
+                    module.downloadText('probe.json', '{}', 'application/json');
+                    return revoked;
+                } finally {
+                    URL.revokeObjectURL = original;
+                }
+            }
+            """);
+
+        Assert.That(revokedWithTheClick, Is.False);
+    }
 }

@@ -157,7 +157,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   the `HttpFetcher` in a `SplitFetcher`, so that configuration never shows an HTTP status code.
   Add a small unwrap that walks `SidecarFetcher.Inner` and `SplitFetcher.Other`.
 
-- [ ] **Object URL is revoked synchronously after `click()`**
+- [x] **Object URL is revoked synchronously after `click()`**
   `src/BlazorQL/wwwroot/blazorql.js:52-59`
   Chrome copes; Firefox and Safari have cancelled downloads when the blob URL is revoked before
   the click has been processed. Revoke on a `setTimeout` (or after `requestAnimationFrame`).

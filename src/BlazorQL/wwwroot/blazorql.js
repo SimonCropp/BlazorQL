@@ -55,7 +55,9 @@ export function downloadText(name, text, mimeType) {
     anchor.href = url;
     anchor.download = name;
     anchor.click();
-    URL.revokeObjectURL(url);
+    // Revoked on a later turn of the loop: Chrome copes with a synchronous revoke, but Firefox and
+    // Safari have cancelled the download when the url goes before the click has been processed.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 /// Best-effort clipboard write — denied permission or an insecure context degrade to a no-op.
