@@ -1,0 +1,2 @@
+﻿0000name | Field | name | - | String! | - | What to call it.
+0001age | Field | age | - | Int | - | -

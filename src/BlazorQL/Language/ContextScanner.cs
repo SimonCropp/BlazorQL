@@ -33,6 +33,14 @@ public sealed record ScanResult(
 /// </summary>
 static class ContextScanner
 {
+    /// <summary>
+    /// Stands in for a root operation type the schema does not define — a mutation against a
+    /// query-only schema, say. Distinct from null, which means nothing is pending and lets the
+    /// anonymous shorthand fall back to the query root; no type can be named this, so the lookup
+    /// finds nothing and the selection offers nothing.
+    /// </summary>
+    const string missingRoot = "\0";
+
     enum FrameKind
     {
         Selection,
@@ -88,6 +96,12 @@ static class ContextScanner
             if (ch == '"')
             {
                 i = SkipString(text, i, offset);
+                // A string that ends at the caret is the literal being typed, not a finished value.
+                if (i < offset)
+                {
+                    ValueDone(frames);
+                }
+
                 continue;
             }
 
@@ -116,6 +130,25 @@ static class ContextScanner
             {
                 afterAt = true;
                 i++;
+                continue;
+            }
+
+            if (char.IsDigit(ch) || ch == '-')
+            {
+                // Int and Float literals, exponent and sign included.
+                while (i < text.Length &&
+                       (char.IsLetterOrDigit(text[i]) || text[i] is '.' or '+' or '-'))
+                {
+                    i++;
+                }
+
+                // A number whose end is the caret is the literal being typed, not a finished value.
+                if (i >= offset)
+                {
+                    break;
+                }
+
+                ValueDone(frames);
                 continue;
             }
 
@@ -153,6 +186,9 @@ static class ContextScanner
                         frames.Pop();
                     }
 
+                    // A closed input object is a finished value; a closed selection lands on
+                    // another selection, where there is no colon to clear.
+                    ValueDone(frames);
                     break;
 
                 case '(':
@@ -208,6 +244,7 @@ static class ContextScanner
                     if (frames.TryPeek(out var openList) && openList.Kind == FrameKind.List)
                     {
                         frames.Pop();
+                        ValueDone(frames);
                     }
 
                     break;
@@ -249,6 +286,11 @@ static class ContextScanner
             {
                 variables.Add(name);
             }
+            else
+            {
+                // A variable used as a value closes the value the colon opened.
+                ValueDone(frames);
+            }
 
             afterDollar = false;
             return;
@@ -285,13 +327,13 @@ static class ContextScanner
             switch (name)
             {
                 case "query":
-                    pendingRoot = schema.QueryTypeName;
+                    pendingRoot = schema.QueryTypeName ?? missingRoot;
                     break;
                 case "mutation":
-                    pendingRoot = schema.MutationTypeName;
+                    pendingRoot = schema.MutationTypeName ?? missingRoot;
                     break;
                 case "subscription":
-                    pendingRoot = schema.SubscriptionTypeName;
+                    pendingRoot = schema.SubscriptionTypeName ?? missingRoot;
                     break;
                 case "on":
                     afterOn = true;
@@ -342,6 +384,20 @@ static class ContextScanner
                 }
 
                 break;
+        }
+    }
+
+    /// <summary>
+    /// A finished value — a string, a number, a list, an input object or a variable reference —
+    /// closes the value the colon opened, so the enclosing frame is back at a name position. A bare
+    /// name (an enum value, a boolean, null) clears the flag where it is consumed instead.
+    /// </summary>
+    static void ValueDone(Stack<Frame> frames)
+    {
+        if (frames.TryPeek(out var frame) &&
+            frame.Kind is FrameKind.Arguments or FrameKind.InputObject)
+        {
+            frame.AfterColon = false;
         }
     }
 

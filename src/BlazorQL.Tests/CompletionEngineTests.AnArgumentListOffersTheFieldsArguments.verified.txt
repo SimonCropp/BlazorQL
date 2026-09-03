@@ -1,0 +1,4 @@
+﻿0000string | Argument | string | - | String | - | A string
+0001count | Argument | count | - | Int | - | -
+0002input | Argument | input | - | PetInput | - | -
+0003deprecatedArg | Argument | deprecatedArg | - | String | deprecated | Old.

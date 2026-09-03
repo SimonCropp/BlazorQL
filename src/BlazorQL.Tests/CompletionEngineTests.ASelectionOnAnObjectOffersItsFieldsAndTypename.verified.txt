@@ -1,0 +1,3 @@
+﻿0000name | Field | name | - | String | - | The person's name.
+0001friends | Field | friends | - | [Person] | - | -
+0002__typename | Field | __typename | - | String! | - | The name of the object type at this point of the query.

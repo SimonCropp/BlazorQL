@@ -1,0 +1,6 @@
+﻿0000Fields | Reference | Fields | - | fragment | - | -
+z0000Query | Class | on Query | on Query | object | - | The root query type.
+z0001Person | Class | on Person | on Person | object | - | Somebody.
+z0002Named | Class | on Named | on Named | interface | - | Anything with a name.
+z0003SearchResult | Class | on SearchResult | on SearchResult | union | - | Either a person or a post.
+z0004Post | Class | on Post | on Post | object | - | -

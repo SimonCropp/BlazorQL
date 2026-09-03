@@ -1,0 +1,7 @@
+﻿0000person | Field | person | - | Person | - | The person of the hour.  A second paragraph the preview must clamp away.
+0001search | Field | search | - | SearchResult | - | Finds things.
+0002hasArgs | Field | hasArgs | - | String | - | -
+0003oldField | Field | oldField | - | String | deprecated | An example of a deprecated field.
+0004__typename | Field | __typename | - | String! | - | The name of the object type at this point of the query.
+0005__schema | Field | __schema | - | __Schema! | - | The schema, exposed for introspection.
+0006__type | Field | __type | - | __Type | - | A named type, exposed for introspection.
