@@ -76,7 +76,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
 
 ### Medium
 
-- [ ] **Variables editor is checked against the first operation, not the one being run**
+- [x] **Variables editor is checked against the first operation, not the one being run**
   `src/BlazorQL/BlazorQLIde.razor.cs:703-704`
   `CheckVariables` calls `document.OperationNode(null)`, which is always the first operation.
   With several operations in the document the picker/caret choice (`tabs.Active.OperationName`)

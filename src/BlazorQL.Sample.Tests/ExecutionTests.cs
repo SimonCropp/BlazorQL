@@ -108,4 +108,43 @@ public class ExecutionTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    /// <summary>
+    /// The variables pane describes the operation that will run, not whichever one happens to be
+    /// written first. With several in the document that is the picker's (or the caret's) choice.
+    /// </summary>
+    [Test]
+    public async Task VariablesAreCheckedAgainstThePickedOperation()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync(
+            """
+            query A($a: Int) { hasArgs(int: $a) }
+            query B($b: String) { hasArgs(string: $b) }
+            """);
+        await page.SetModelValueAsync("variables", """{"b": "text"}""");
+
+        // A declares no $b, and A is what an untouched document runs.
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor
+                    .getModelMarkers({owner: 'blazorql-variables'})
+                    .some(_ => _.message.includes('$b is not declared'))
+            """,
+            null,
+            new() {Timeout = 30_000});
+
+        await page.ClickAsync("[data-testid='execute']");
+        await page.ClickAsync("[data-testid='operation-picker'] >> text=B");
+
+        // B declares it, so the pane has nothing left to say.
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor.getModelMarkers({owner: 'blazorql-variables'}).length === 0
+            """,
+            null,
+            new() {Timeout = 30_000});
+    }
 }

@@ -701,7 +701,7 @@ public partial class BlazorQLIde :
             markers.Add(FirstLineMarker(error!));
         }
         else if (Schema is not null &&
-                 document.OperationNode(null) is { } operation)
+                 document.OperationNode(tabs.Active.OperationName) is { } operation)
         {
             foreach (var message in VariablesChecker.Check(Schema, operation, value))
             {
@@ -1519,11 +1519,14 @@ public partial class BlazorQLIde :
         }
 
         // The operation actually run names the tab (only meaningful when the caret or picker had
-        // to disambiguate).
-        if (multipleOperations)
+        // to disambiguate). It also decides which declarations the variables pane is checked
+        // against, so a change to it has to re-run the diagnostics that pane shows.
+        if (multipleOperations &&
+            tabs.Active.OperationName != operationName)
         {
             tabs.Active.OperationName = operationName;
             SchedulePersist();
+            ScheduleDiagnostics();
         }
 
         // The history records every execution start, whether or not its pane is open.
