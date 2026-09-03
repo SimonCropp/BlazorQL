@@ -13,7 +13,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
 
 ### High
 
-- [ ] **Merge fragments crashes the app on a fragment cycle** (repro confirmed)
+- [x] **Merge fragments crashes the app on a fragment cycle** (repro confirmed)
   `src/BlazorQL/Language/FragmentMerger.cs:51-61`, `:125-128`
   `Flatten` creates a fresh `seenSpreads` for every selection set, so the guard never sees a
   spread that is already being inlined further up. `Deduplicate` then calls `Flatten` on the

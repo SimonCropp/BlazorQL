@@ -15,7 +15,22 @@ public static class FragmentMerger
             return (false, null, $"Syntax Error: {document.SyntaxError}");
         }
 
-        var fragments = document.Fragments.ToDictionary(_ => _.FragmentName.Name.StringValue, _ => _);
+        var fragments = new Dictionary<string, GraphQLFragmentDefinition>(StringComparer.Ordinal);
+        foreach (var fragment in document.Fragments)
+        {
+            // First wins, matching the validator's walk. A duplicate name is its own error there;
+            // building the lookup must not be what reports it, and must not throw.
+            fragments.TryAdd(fragment.FragmentName.Name.StringValue, fragment);
+        }
+
+        // Inlining a fragment that spreads itself, directly or through others, cannot terminate.
+        // NoFragmentCycles is a deliberate validator gap, so nothing upstream keeps such a document
+        // from reaching here, and on WebAssembly the resulting stack overflow takes the page down.
+        if (FindCycle(fragments) is {} cycle)
+        {
+            return (false, null, cycle);
+        }
+
         var definitions = new List<ASTNode>();
         foreach (var definition in document.Document.Definitions)
         {
@@ -39,6 +54,92 @@ public static class FragmentMerger
         }
 
         return (true, Formatter.FormatGraphQL(Print(document.Document)), null);
+    }
+
+    /// <summary>
+    /// The graphql-js NoFragmentCycles message for the first cycle in the fragment graph, or null
+    /// when it is acyclic. Spreads carrying directives count: they are not inlined, but a document
+    /// containing any cycle is invalid, and refusing is more use than a partial merge.
+    /// </summary>
+    static string? FindCycle(Dictionary<string, GraphQLFragmentDefinition> fragments)
+    {
+        var acyclic = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var name in fragments.Keys)
+        {
+            if (FindCycle(name, fragments, acyclic, [], new(StringComparer.Ordinal)) is {} cycle)
+            {
+                return cycle;
+            }
+        }
+
+        return null;
+    }
+
+    static string? FindCycle(
+        string name,
+        Dictionary<string, GraphQLFragmentDefinition> fragments,
+        HashSet<string> acyclic,
+        List<string> path,
+        HashSet<string> onPath)
+    {
+        if (acyclic.Contains(name) ||
+            !fragments.TryGetValue(name, out var fragment))
+        {
+            return null;
+        }
+
+        path.Add(name);
+        onPath.Add(name);
+        foreach (var spread in Spreads(fragment.SelectionSet))
+        {
+            var target = spread.FragmentName.Name.StringValue;
+            if (onPath.Contains(target))
+            {
+                var via = path.Skip(path.IndexOf(target) + 1).Select(_ => $"\"{_}\"");
+                var through = via.Any() ? $" via {string.Join(", ", via)}" : "";
+                return $"Cannot spread fragment \"{target}\" within itself{through}.";
+            }
+
+            if (FindCycle(target, fragments, acyclic, path, onPath) is {} cycle)
+            {
+                return cycle;
+            }
+        }
+
+        onPath.Remove(name);
+        path.RemoveAt(path.Count - 1);
+        acyclic.Add(name);
+        return null;
+    }
+
+    /// <summary>Every fragment spread in a selection set, however deeply nested.</summary>
+    static IEnumerable<GraphQLFragmentSpread> Spreads(GraphQLSelectionSet? selections)
+    {
+        foreach (var selection in selections?.Selections ?? [])
+        {
+            switch (selection)
+            {
+                case GraphQLFragmentSpread spread:
+                    yield return spread;
+                    break;
+
+                case GraphQLField {SelectionSet: {} nested}:
+                    foreach (var inner in Spreads(nested))
+                    {
+                        yield return inner;
+                    }
+
+                    break;
+
+                case GraphQLInlineFragment inline:
+                    foreach (var inner in Spreads(inline.SelectionSet))
+                    {
+                        yield return inner;
+                    }
+
+                    break;
+            }
+        }
     }
 
     static string Print(GraphQLDocument document)
