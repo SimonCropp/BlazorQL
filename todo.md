@@ -49,7 +49,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `getRecursiveVariableUsages` does; do not run the variable checks during the standalone fragment
   walk. Add the two documents above to `ValidatorParityTests.Corpus`.
 
-- [ ] **Introspection is sent without the headers editor's headers**
+- [x] **Introspection is sent without the headers editor's headers**
   `src/BlazorQL/BlazorQLIde.razor.cs:996-1004`
   `Introspect` passes `emptyHeaders`, so an endpoint that needs `Authorization` (most real ones)
   cannot be introspected, and "Re-fetch schema" after typing the header still sends nothing. The

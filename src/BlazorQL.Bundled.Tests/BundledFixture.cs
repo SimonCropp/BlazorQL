@@ -53,6 +53,10 @@ public abstract class BundledFixture
     {
     }
 
+    /// <summary>The GraphQL endpoint the IDE talks to. Overridden to put a gate in front of it.</summary>
+    protected virtual void MapSchema(WebApplication app) =>
+        app.MapSampleSchema();
+
     [OneTimeSetUp]
     public async Task Start()
     {
@@ -87,7 +91,7 @@ public abstract class BundledFixture
             });
         }
 
-        host.MapSampleSchema();
+        MapSchema(host);
         host.MapBlazorQL(Mount, Configure);
 
         await host.StartAsync();

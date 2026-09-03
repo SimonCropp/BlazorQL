@@ -16,7 +16,7 @@ public interface IGraphQLFetcher
 <sup><a href='/src/BlazorQL/Fetchers/IGraphQLFetcher.cs#L8-L16' title='Snippet source file'>snippet source</a> | <a href='#snippet-fetcherInterface' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
 
-The component also runs its introspection through the fetcher, so the schema always comes from the same place the queries go.
+The component also runs its introspection through the fetcher, with the headers editor's entries, so the schema always comes from the same place the queries go and an endpoint behind an `Authorization` header still has one.
 
 
 ## HttpFetcher

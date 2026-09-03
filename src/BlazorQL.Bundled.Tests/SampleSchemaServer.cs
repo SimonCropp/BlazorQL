@@ -16,8 +16,27 @@ public static class SampleSchemaServer
         return created;
     }
 
-    public static void MapSampleSchema(this WebApplication app, string pattern = "/graphql") =>
-        app.MapPost(pattern, Handle);
+    /// <summary>
+    /// <paramref name="authorize"/> gates the endpoint the way a real one would, so a test can ask
+    /// what the IDE sends rather than only what it renders.
+    /// </summary>
+    public static void MapSampleSchema(
+        this WebApplication app,
+        string pattern = "/graphql",
+        Func<HttpContext, bool>? authorize = null) =>
+        app.MapPost(
+            pattern,
+            context =>
+            {
+                if (authorize is not null &&
+                    !authorize(context))
+                {
+                    context.Response.StatusCode = 401;
+                    return Task.CompletedTask;
+                }
+
+                return Handle(context);
+            });
 
     static async Task Handle(HttpContext context)
     {

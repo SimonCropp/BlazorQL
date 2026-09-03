@@ -957,7 +957,10 @@ public partial class BlazorQLIde :
         {
             using var cancelSource = new CancelSource(TimeSpan.FromSeconds(60));
 
-            var payload = await Introspect(draftAdditions: true, cancelSource.Token);
+            // An endpoint behind an Authorization header has no schema without it, so
+            // introspection goes out with whatever the headers editor holds, as GraphiQL does.
+            var (headers, _) = await CurrentHeaders();
+            var payload = await Introspect(draftAdditions: true, headers, cancelSource.Token);
             var schema = payload is null ? null : SchemaIndex.Parse(payload.Value);
 
             if (schema is null)
@@ -965,7 +968,7 @@ public partial class BlazorQLIde :
                 // Everything the draft additions ask for is optional, and a server that has not
                 // implemented them rejects the whole document rather than omitting the fields. So
                 // one retry without them, which is the query every server can answer.
-                var portable = await Introspect(draftAdditions: false, cancelSource.Token);
+                var portable = await Introspect(draftAdditions: false, headers, cancelSource.Token);
                 if (portable is not null)
                 {
                     payload = portable;
@@ -993,9 +996,9 @@ public partial class BlazorQLIde :
     }
 
     /// <summary>The first document the fetcher yields for an introspection request, or null.</summary>
-    async Task<JsonElement?> Introspect(bool draftAdditions, Cancel cancel)
+    async Task<JsonElement?> Introspect(bool draftAdditions, IReadOnlyDictionary<string, string> headers, Cancel cancel)
     {
-        await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery(draftAdditions)), emptyHeaders, cancel))
+        await foreach (var payload in Fetcher.FetchAsync(new(IntrospectionQuery(draftAdditions)), headers, cancel))
         {
             return payload;
         }
@@ -1508,17 +1511,11 @@ public partial class BlazorQLIde :
             return;
         }
 
-        var headers = emptyHeaders;
-        if (IsHeadersEditorEnabled)
+        var (headers, headersError) = await CurrentHeaders();
+        if (headersError is not null)
         {
-            var parsedHeaders = await ParseEditorJson(editorTools?.HeadersEditor, "Request headers");
-            if (parsedHeaders.Error is not null)
-            {
-                await SetResponse(ErrorJson(parsedHeaders.Error));
-                return;
-            }
-
-            headers = ToHeaderDictionary(parsedHeaders.Value);
+            await SetResponse(ErrorJson(headersError));
+            return;
         }
 
         // The operation actually run names the tab (only meaningful when the caret or picker had
@@ -1689,6 +1686,29 @@ public partial class BlazorQLIde :
     /// <summary>One synthesized error, rendered into the response pane like any other result.</summary>
     static string ErrorJson(string message) =>
         JsonSerializer.Serialize(ErrorDocument.From(message), WebJson.Default.ErrorDocument);
+
+    /// <summary>
+    /// The headers for an outgoing request. The headers editor is the live source once it exists;
+    /// before that, and whenever the tool is turned off, the tab carries them -- which is where
+    /// <see cref="DefaultHeaders"/> and a restored session land. The error is for a caller that has
+    /// somewhere to show it; introspection sends what parsed and lets the request fail on its own.
+    /// </summary>
+    async Task<(Dictionary<string, string> Headers, string? Error)> CurrentHeaders()
+    {
+        if (IsHeadersEditorEnabled &&
+            editorTools?.HeadersEditor is {} editor)
+        {
+            var (value, error) = await ParseEditorJson(editor, "Request headers");
+            return error is null
+                ? (ToHeaderDictionary(value), null)
+                : (emptyHeaders, error);
+        }
+
+        var (ok, parsed, tabError) = Formatter.ParseJsonc(tabs.Active.Headers, "Request headers");
+        return ok
+            ? (ToHeaderDictionary(parsed), null)
+            : (emptyHeaders, tabError);
+    }
 
     static Dictionary<string, string> ToHeaderDictionary(JsonElement? parsed)
     {
