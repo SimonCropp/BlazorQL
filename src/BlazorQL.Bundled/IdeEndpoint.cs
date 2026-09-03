@@ -6,9 +6,21 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
 {
     /// <summary>
     /// Rendered pages, keyed by resolved base href. PathBase can legitimately vary per request
-    /// behind a proxy, so this is a small map rather than a single value.
+    /// behind a proxy, so this is a small map rather than a single value — and a capped one,
+    /// because behind UseForwardedHeaders honouring X-Forwarded-Prefix from an untrusted hop the
+    /// set of base hrefs is the client's to choose. Past the cap a page is rendered per request
+    /// instead of cached, which costs time and never correctness.
     /// </summary>
     ConcurrentDictionary<string, RenderedIndex> pages = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// How many distinct base hrefs are worth holding renders for. Far above what any real
+    /// deployment has, and far below what an unbounded map costs.
+    /// </summary>
+    const int maxCachedPages = 32;
+
+    /// <summary>How many renders are held. The cap is the point of the map, so it is worth asserting.</summary>
+    internal int CachedPages => pages.Count;
 
     /// <summary>
     /// The slot a nonce-carrying render leaves after every <c>&lt;script</c>, which
@@ -109,9 +121,19 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
             }
         }
 
-        var page = pages
-            .GetOrAdd(BaseHref(context), Render)
-            .Resolve(nonce);
+        var baseHref = BaseHref(context);
+        if (!pages.TryGetValue(baseHref, out var index))
+        {
+            index = Render(baseHref);
+            // Racing writers can carry the count a little past the cap, by no more than the number
+            // of requests in flight. Locking to make it exact would cost more than the entries do.
+            if (pages.Count < maxCachedPages)
+            {
+                index = pages.GetOrAdd(baseHref, index);
+            }
+        }
+
+        var page = index.Resolve(nonce);
 
         response.ContentType = "text/html; charset=utf-8";
         // The page carries the configuration, and the configuration is not part of the url.

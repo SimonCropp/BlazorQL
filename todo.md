@@ -187,7 +187,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   but under Blazor Server the second circuit would never register providers and completions would
   route to whichever instance initialized last. Worth an explicit guard or a doc line.
 
-- [ ] **Rendered index cache keyed by base href is unbounded**
+- [x] **Rendered index cache keyed by base href is unbounded**
   `src/BlazorQL.Bundled/IdeEndpoint.cs:11`, `:112-114`
   Every distinct `PathBase` gets a cached page. With `UseForwardedHeaders` honouring
   `X-Forwarded-Prefix` from an untrusted hop, a client can grow this without limit. Cap it, or key
