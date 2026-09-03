@@ -60,7 +60,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   Related: with `IsHeadersEditorEnabled = false`, `DefaultHeaders` is stored on the tab but never
   sent by `Run` (`:1511-1522`) either.
 
-- [ ] **Schema descriptions can inject `javascript:` links into the IDE's origin** (repro confirmed)
+- [x] **Schema descriptions can inject `javascript:` links into the IDE's origin** (repro confirmed)
   `src/BlazorQL/Components/DocExplorer/MarkdownView.razor.cs:11-15`,
   `src/BlazorQL/Components/DocExplorer/TypeDoc.razor:8`
   The Markdig pipeline disables raw HTML but does nothing about link targets:

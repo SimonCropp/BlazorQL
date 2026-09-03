@@ -1,4 +1,6 @@
 using Markdig;
+using Markdig.Syntax;
+using Markdig.Syntax.Inlines;
 
 namespace BlazorQL;
 
@@ -34,22 +36,36 @@ public partial class MarkdownView
 
     static string Render(string content, bool preview)
     {
-        if (!preview)
-        {
-            return Markdown.ToHtml(content, pipeline);
-        }
-
         var document = Markdown.Parse(content, pipeline);
-        if (document.Count == 0)
+        if (preview &&
+            document.Count == 0)
         {
             return "";
         }
 
+        Sanitize(document);
+
         var writer = new StringWriter();
         var renderer = new Markdig.Renderers.HtmlRenderer(writer);
         pipeline.Setup(renderer);
-        renderer.Render(document[0]);
+        renderer.Render(preview ? document[0] : document);
         writer.Flush();
         return writer.ToString();
+    }
+
+    /// <summary>
+    /// Empties a link or image target a browser would run rather than fetch. Disabling raw HTML
+    /// keeps a description from writing its own tags; it says nothing about where the tags markdown
+    /// itself produces may point. See <see cref="UrlSafety"/>.
+    /// </summary>
+    static void Sanitize(MarkdownDocument document)
+    {
+        foreach (var link in document.Descendants<LinkInline>())
+        {
+            if (!UrlSafety.IsRenderable(link.Url))
+            {
+                link.Url = "";
+            }
+        }
     }
 }

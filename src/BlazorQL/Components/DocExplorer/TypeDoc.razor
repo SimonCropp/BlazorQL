@@ -3,7 +3,8 @@
 <div class="blazorql-doc-page" data-testid="doc-type">
     <MarkdownView Content="@Type.Description" />
 
-    @if (Type.SpecifiedByURL is not null)
+    @* The url comes from the endpoint, so it is a link only when it is one; see UrlSafety. *@
+    @if (UrlSafety.IsWebLink(Type.SpecifiedByURL))
     {
         <div class="blazorql-doc-specified-by"><a href="@Type.SpecifiedByURL" target="_blank" rel="noreferrer">Specification</a></div>
     }

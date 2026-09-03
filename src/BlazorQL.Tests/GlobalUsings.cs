@@ -16,3 +16,4 @@ global using GraphQL.Resolvers;
 global using GraphQL.SystemTextJson;
 global using GraphQL.Types;
 global using GraphQL.Validation;
+global using System.Text.RegularExpressions;
