@@ -21,9 +21,15 @@ else
                 <div class="blazorql-doc-title">@Current.Title</div>
             </div>
             <div class="blazorql-docs-actions">
-                @if (!sdlVisible && Current is DocTypeEntry {Type: var currentType} && QueryGenerator.CanGenerate(currentType))
+                @if (!sdlVisible && Schema is not null && Current is DocTypeEntry {Type: var currentType} && QueryGenerator.CanGenerate(currentType))
                 {
-                    <GenerateQueryButton Type="currentType" OnClick="GenerateQuery" />
+                    @if (QueryGenerator.CanGenerateOperation(Schema, currentType))
+                    {
+                        <GenerateQueryButton Type="currentType" OnClick="GenerateQuery" />
+                    }
+                    <CopyGeneratedButton Type="currentType"
+                                         IsOperation="QueryGenerator.CanGenerateOperation(Schema, currentType)"
+                                         OnClick="CopyGenerated" />
                 }
                 @if (SchemaSdl is not null)
                 {
@@ -87,7 +93,10 @@ else
                               OnNavigateType="NavigateToTypeName" />
                     break;
                 default:
-                    <SchemaDoc Schema="Schema" OnNavigateType="NavigateToTypeName" OnGenerateQuery="GenerateQuery" />
+                    <SchemaDoc Schema="Schema"
+                               OnNavigateType="NavigateToTypeName"
+                               OnGenerateQuery="GenerateQuery"
+                               OnCopyGenerated="CopyGenerated" />
                     break;
             }
         </div>

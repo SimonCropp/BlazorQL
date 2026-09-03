@@ -11,8 +11,29 @@ public static class QueryGenerator
 {
     const int maxDepth = 3;
 
+    /// <summary>Whether the type has members to select at all — a query or a fragment.</summary>
     public static bool CanGenerate(IntrospectionType type) =>
         type.Kind is "OBJECT" or "INTERFACE" or "UNION";
+
+    /// <summary>
+    /// Whether a runnable operation can be built: the type is a root type, a root field returns it,
+    /// or a chain of fields reaches it. Anything else can only become a fragment, which is worth
+    /// copying but has no business in the operation editor beside a run button — a document of one
+    /// fragment answers "Document does not contain any operations".
+    /// </summary>
+    public static bool CanGenerateOperation(SchemaIndex schema, IntrospectionType type) =>
+        CanGenerate(type) &&
+        (type.Name == schema.QueryTypeName ||
+         type.Name == schema.MutationTypeName ||
+         type.Name == schema.SubscriptionTypeName ||
+         RootFields(schema, type).Count > 0 ||
+         schema.PathFromQuery(type.Name) is {Count: > 0});
+
+    /// <summary>The non-deprecated root query fields returning the type.</summary>
+    static List<IntrospectionField> RootFields(SchemaIndex schema, IntrospectionType type) =>
+        schema.Find(schema.QueryTypeName)?.Fields?
+            .Where(_ => !_.IsDeprecated && _.Type.Unwrap().Name == type.Name)
+            .ToList() ?? [];
 
     /// <summary>The generated document, or null when the type has nothing selectable.</summary>
     public static string? Generate(SchemaIndex schema, IntrospectionType type)
@@ -38,12 +59,18 @@ public static class QueryGenerator
             return builder.Operation("subscription", type);
         }
 
-        var rootFields = schema.Find(schema.QueryTypeName)?.Fields?
-            .Where(_ => !_.IsDeprecated && _.Type.Unwrap().Name == type.Name)
-            .ToList() ?? [];
+        var rootFields = RootFields(schema, type);
         if (rootFields.Count > 0)
         {
             return builder.RootFieldsOperation(type, rootFields);
+        }
+
+        // Nothing at the root returns it, but something further in might. Nesting the selection
+        // under that chain gives a document that runs; a fragment on its own does not, and the
+        // button sits next to a run button.
+        if (schema.PathFromQuery(type.Name) is {Count: > 0} path)
+        {
+            return builder.PathOperation(type, path);
         }
 
         return builder.Fragment(type);
@@ -79,6 +106,27 @@ public static class QueryGenerator
             if (lines.Count == 0)
             {
                 return null;
+            }
+
+            return Wrap($"query {type.Name}", lines);
+        }
+
+        /// <summary>
+        /// The type's selections, wrapped in the chain of fields that reaches it. Built inside out,
+        /// so the arguments each step needs are collected before the operation declares them.
+        /// </summary>
+        public string? PathOperation(IntrospectionType type, IReadOnlyList<IntrospectionField> path)
+        {
+            var lines = Selections(type, all: true, depth: 1);
+            if (lines is null)
+            {
+                return null;
+            }
+
+            for (var index = path.Count - 1; index >= 0; index--)
+            {
+                var field = path[index];
+                lines = [$"{field.Name}{Arguments(field)} {{", .. lines.Select(_ => "  " + _), "}"];
             }
 
             return Wrap($"query {type.Name}", lines);

@@ -17,6 +17,9 @@ public partial class SchemaDoc
     [Parameter]
     public EventCallback<IntrospectionType> OnGenerateQuery { get; set; }
 
+    [Parameter]
+    public EventCallback<IntrospectionType> OnCopyGenerated { get; set; }
+
     IEnumerable<(string Operation, string TypeName)> RootTypes()
     {
         if (Schema.QueryTypeName is not null)

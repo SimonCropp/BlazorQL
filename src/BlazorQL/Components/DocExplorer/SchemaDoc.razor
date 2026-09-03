@@ -28,9 +28,15 @@
         {
             <div>
                 <TypeLink Type="new() {Kind = type.Kind, Name = type.Name}" OnNavigate="OnNavigateType" />
-                @if (QueryGenerator.CanGenerate(type))
+                @if (QueryGenerator.CanGenerateOperation(Schema, type))
                 {
                     <GenerateQueryButton Type="type" OnClick="OnGenerateQuery" />
+                }
+                @if (QueryGenerator.CanGenerate(type))
+                {
+                    <CopyGeneratedButton Type="type"
+                                         IsOperation="QueryGenerator.CanGenerateOperation(Schema, type)"
+                                         OnClick="OnCopyGenerated" />
                 }
             </div>
         }

@@ -1,0 +1,8 @@
+﻿query Portfolio($take: Int!) {
+  groups {
+    portfolios(take: $take) {
+      id
+      title
+    }
+  }
+}

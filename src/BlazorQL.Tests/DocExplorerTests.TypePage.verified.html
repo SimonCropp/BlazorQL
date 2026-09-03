@@ -1,14 +1,20 @@
 ﻿<div class="blazorql-docs">
   <div class="blazorql-docs-header">
     <div class="blazorql-docs-nav">
-      <button type="button" class="blazorql-doc-back" data-testid="doc-back" aria-label="Go back to Docs" blazor:onclick="17">‹ Docs</button>
+      <button type="button" class="blazorql-doc-back" data-testid="doc-back" aria-label="Go back to Docs" blazor:onclick="19">‹ Docs</button>
       <div class="blazorql-doc-title">Query</div>
     </div>
     <div class="blazorql-docs-actions">
-      <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for Query" aria-label="Generate a query for Query" blazor:onclick="18">
+      <button type="button" class="blazorql-doc-generate" data-testid="doc-generate" title="Generate a query for Query" aria-label="Generate a query for Query" blazor:onclick="20">
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M8 6l-5 6 5 6"></path>
           <path d="M16 6l5 6-5 6"></path>
+        </svg>
+      </button>
+      <button type="button" class="blazorql-doc-copy" data-testid="doc-copy-generated" title="Copy a query for Query" aria-label="Copy a query for Query" blazor:onclick="21">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
       </button>
     </div>
@@ -24,11 +30,11 @@
       <div class="blazorql-doc-section-title">Fields</div>
       <div class="blazorql-doc-field">
         <div class="blazorql-doc-field-signature">
-          <button type="button" class="blazorql-field-link" blazor:onclick="19">person</button>
+          <button type="button" class="blazorql-field-link" blazor:onclick="22">person</button>
           <span>:
           </span>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="23">Person</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="26">Person</button>
           </span>
         </div>
         <div class="blazorql-markdown blazorql-markdown-preview">
@@ -37,18 +43,18 @@
       </div>
       <div class="blazorql-doc-field">
         <div class="blazorql-doc-field-signature">
-          <button type="button" class="blazorql-field-link" blazor:onclick="20">search</button>
+          <button type="button" class="blazorql-field-link" blazor:onclick="23">search</button>
           <span class="blazorql-doc-args">(<span class="blazorql-doc-arg">term<span>:
               </span>
               <span class="blazorql-type-ref">
-                <button type="button" class="blazorql-type-link" blazor:onclick="24">String</button>!</span>
+                <button type="button" class="blazorql-type-link" blazor:onclick="27">String</button>!</span>
               <span class="blazorql-doc-default">
                 = "all"</span>
             </span>)</span>
           <span>:
           </span>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="25">SearchResult</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="28">SearchResult</button>
           </span>
         </div>
         <div class="blazorql-markdown blazorql-markdown-preview">
@@ -57,12 +63,12 @@
       </div>
       <div class="blazorql-doc-field">
         <div class="blazorql-doc-field-signature">
-          <button type="button" class="blazorql-field-link" blazor:onclick="21">hasArgs</button>
+          <button type="button" class="blazorql-field-link" blazor:onclick="24">hasArgs</button>
           <span class="blazorql-doc-args">(<span class="blazorql-doc-arg-line">
               <span class="blazorql-doc-arg">string<span>:
                 </span>
                 <span class="blazorql-type-ref">
-                  <button type="button" class="blazorql-type-link" blazor:onclick="26">String</button>
+                  <button type="button" class="blazorql-type-link" blazor:onclick="29">String</button>
                 </span>
               </span>
             </span>
@@ -70,7 +76,7 @@
               <span class="blazorql-doc-arg">count<span>:
                 </span>
                 <span class="blazorql-type-ref">
-                  <button type="button" class="blazorql-type-link" blazor:onclick="27">Int</button>
+                  <button type="button" class="blazorql-type-link" blazor:onclick="30">Int</button>
                 </span>
                 <span class="blazorql-doc-default">
                   = 0</span>
@@ -80,18 +86,18 @@
               <span class="blazorql-doc-arg">input<span>:
                 </span>
                 <span class="blazorql-type-ref">
-                  <button type="button" class="blazorql-type-link" blazor:onclick="28">PetInput</button>
+                  <button type="button" class="blazorql-type-link" blazor:onclick="31">PetInput</button>
                 </span>
               </span>
             </span>)</span>
           <span>:
           </span>
           <span class="blazorql-type-ref">
-            <button type="button" class="blazorql-type-link" blazor:onclick="29">String</button>
+            <button type="button" class="blazorql-type-link" blazor:onclick="32">String</button>
           </span>
         </div>
       </div>
-      <button type="button" class="blazorql-doc-toggle" blazor:onclick="22">Show Deprecated Fields</button>
+      <button type="button" class="blazorql-doc-toggle" blazor:onclick="25">Show Deprecated Fields</button>
     </div>
   </div>
   <div class="blazorql-docs-sdl blazorql-hidden"></div>

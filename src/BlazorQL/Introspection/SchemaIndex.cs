@@ -33,6 +33,73 @@ public sealed class SchemaIndex
         name == MutationTypeName ||
         name == SubscriptionTypeName;
 
+    /// <summary>
+    /// The shortest chain of fields reaching <paramref name="name"/> from the query root, or null
+    /// when nothing within <see cref="maxPathLength"/> hops does.
+    /// </summary>
+    /// <remarks>
+    /// Computed once for the whole schema rather than per ask: the documentation explorer lists
+    /// every type, and a search apiece would be quadratic in the size of the schema.
+    /// </remarks>
+    public IReadOnlyList<IntrospectionField>? PathFromQuery(string name)
+    {
+        paths ??= BuildPaths();
+        return paths.GetValueOrDefault(name);
+    }
+
+    /// <summary>
+    /// How deep a chain is worth offering. A type further out than this is reachable in principle
+    /// and unusable in practice — the query would nest further than anyone wants to read.
+    /// </summary>
+    const int maxPathLength = 3;
+
+    Dictionary<string, IReadOnlyList<IntrospectionField>>? paths;
+
+    Dictionary<string, IReadOnlyList<IntrospectionField>> BuildPaths()
+    {
+        var found = new Dictionary<string, IReadOnlyList<IntrospectionField>>(StringComparer.Ordinal);
+        var root = Find(QueryTypeName);
+        if (root is null)
+        {
+            return found;
+        }
+
+        // Breadth first, so the chain recorded for a type is the shortest that reaches it. The
+        // seen set doubles as the cycle guard, which schemas of any size need.
+        var queue = new Queue<(IntrospectionType Type, IReadOnlyList<IntrospectionField> Path)>();
+        queue.Enqueue((root, []));
+        var seen = new HashSet<string>(StringComparer.Ordinal) {root.Name};
+
+        while (queue.Count > 0)
+        {
+            var (type, path) = queue.Dequeue();
+            foreach (var field in type.Fields ?? [])
+            {
+                if (field.IsDeprecated)
+                {
+                    continue;
+                }
+
+                var target = Find(field.Type.Unwrap().Name);
+                if (target is null ||
+                    !seen.Add(target.Name))
+                {
+                    continue;
+                }
+
+                IReadOnlyList<IntrospectionField> next = [.. path, field];
+                found[target.Name] = next;
+                if (next.Count < maxPathLength &&
+                    target.Kind is "OBJECT" or "INTERFACE")
+                {
+                    queue.Enqueue((target, next));
+                }
+            }
+        }
+
+        return found;
+    }
+
     public IntrospectionType? Find(string? name)
     {
         if (name is not null && byName.TryGetValue(name, out var type))

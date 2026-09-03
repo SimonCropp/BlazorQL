@@ -198,7 +198,8 @@ html[data-theme='dark'] .blazorql {
 }
 
 /* The generate-query icon: after a type link in a list row, or in the header of a type page. */
-.blazorql-doc-generate {
+.blazorql-doc-generate,
+.blazorql-doc-copy {
     display: inline-grid;
     place-items: center;
     width: 1.4rem;
@@ -212,12 +213,14 @@ html[data-theme='dark'] .blazorql {
     cursor: pointer;
 }
 
-.blazorql-doc-generate:hover {
+.blazorql-doc-generate:hover,
+.blazorql-doc-copy:hover {
     color: var(--blazorql-text);
     background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
 }
 
-.blazorql-doc-generate svg {
+.blazorql-doc-generate svg,
+.blazorql-doc-copy svg {
     width: 0.95rem;
     height: 0.95rem;
 }

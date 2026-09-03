@@ -63,6 +63,85 @@ public class QueryGeneratorTests
         Assert.That(QueryGenerator.Generate(schema, schema.Find("Color")!), Is.Null);
     }
 
+    // The reported case: a type no root field returns, but something nested does. Nesting the
+    // selection under the chain that reaches it produces a document that runs - a fragment alone
+    // answers "Document does not contain any operations".
+    [Test]
+    public Task NestedOnlyTypeIsReachedThroughItsChain() =>
+        Verify(Generate(Nested(), "Portfolio"));
+
+    // The chain is the shortest one, and each step keeps the arguments it requires.
+    [Test]
+    public void TheChainIsTheShortestThatReaches()
+    {
+        var index = Nested();
+
+        var path = index.PathFromQuery("Portfolio");
+
+        string[] toPortfolio = ["groups", "portfolios"];
+        string[] toGroup = ["groups"];
+        Assert.That(path, Is.Not.Null);
+        Assert.That(path!.Select(_ => _.Name), Is.EqualTo(toPortfolio).AsCollection);
+        Assert.That(index.PathFromQuery("Group")!.Select(_ => _.Name), Is.EqualTo(toGroup).AsCollection);
+    }
+
+    // Nothing reaches it, so there is no operation to build and the fragment stands.
+    [Test]
+    public void AnUnreachableTypeHasNoChain() =>
+        Assert.That(Nested().PathFromQuery("Orphan"), Is.Null);
+
+    static SchemaIndex Nested() =>
+        Parse(
+            """
+            {
+              "__schema": {
+                "queryType": { "name": "Query" },
+                "types": [
+                  {
+                    "kind": "OBJECT",
+                    "name": "Query",
+                    "fields": [
+                      { "name": "groups", "args": [], "type": { "kind": "LIST", "ofType": { "kind": "OBJECT", "name": "Group" } } }
+                    ]
+                  },
+                  {
+                    "kind": "OBJECT",
+                    "name": "Group",
+                    "fields": [
+                      { "name": "id", "args": [], "type": { "kind": "SCALAR", "name": "ID" } },
+                      {
+                        "name": "portfolios",
+                        "args": [
+                          { "name": "take", "type": { "kind": "NON_NULL", "ofType": { "kind": "SCALAR", "name": "Int" } } }
+                        ],
+                        "type": { "kind": "LIST", "ofType": { "kind": "OBJECT", "name": "Portfolio" } }
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "OBJECT",
+                    "name": "Portfolio",
+                    "fields": [
+                      { "name": "id", "args": [], "type": { "kind": "SCALAR", "name": "ID" } },
+                      { "name": "title", "args": [], "type": { "kind": "SCALAR", "name": "String" } }
+                    ]
+                  },
+                  {
+                    "kind": "OBJECT",
+                    "name": "Orphan",
+                    "fields": [
+                      { "name": "id", "args": [], "type": { "kind": "SCALAR", "name": "ID" } }
+                    ]
+                  },
+                  { "kind": "SCALAR", "name": "ID" },
+                  { "kind": "SCALAR", "name": "Int" },
+                  { "kind": "SCALAR", "name": "String" }
+                ],
+                "directives": []
+              }
+            }
+            """);
+
     // Required arguments (non-null without a default) become variables named after the argument;
     // a second argument with the same name is prefixed with its field. Optional arguments and
     // arguments with defaults are left out.

@@ -30,6 +30,9 @@ public partial class PluginPane
     [Parameter]
     public EventCallback<string> OnGenerateQuery { get; set; }
 
+    [Parameter]
+    public EventCallback<string> OnCopyGenerated { get; set; }
+
     /// <summary>The execution history rendered when <see cref="Kind"/> is History.</summary>
     [Parameter]
     public HistoryStore? History { get; set; }

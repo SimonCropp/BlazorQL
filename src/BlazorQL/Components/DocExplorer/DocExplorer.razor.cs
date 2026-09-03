@@ -32,6 +32,14 @@ public partial class DocExplorer :
     [Parameter]
     public EventCallback<string> OnGenerateQuery { get; set; }
 
+    /// <summary>
+    /// Raised with the generated document to put on the clipboard. Separate from
+    /// <see cref="OnGenerateQuery"/> because a fragment can be copied but not run, so the two
+    /// buttons do not always both appear.
+    /// </summary>
+    [Parameter]
+    public EventCallback<string> OnCopyGenerated { get; set; }
+
     // The navigation stack always holds at least the root entry.
     readonly List<DocEntry> stack = [new DocRootEntry()];
     SchemaIndex? lastSchema;
@@ -150,6 +158,17 @@ public partial class DocExplorer :
         }
 
         return OnGenerateQuery.InvokeAsync(query);
+    }
+
+    Task CopyGenerated(IntrospectionType type)
+    {
+        if (Schema is null ||
+            QueryGenerator.Generate(Schema, type) is not { } generated)
+        {
+            return Task.CompletedTask;
+        }
+
+        return OnCopyGenerated.InvokeAsync(generated);
     }
 
     void OnNavigated(SchemaReference reference) =>

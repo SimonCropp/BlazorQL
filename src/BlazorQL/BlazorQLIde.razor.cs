@@ -1791,6 +1791,17 @@ public partial class BlazorQLIde :
     /// A document generated from the documentation explorer goes into a new tab, unless the active
     /// tab is blank — then it takes the blank tab rather than leaving it behind.
     /// </summary>
+    /// <summary>
+    /// Puts a generated document on the clipboard rather than in the editor. The route a fragment
+    /// takes, since a document of one fragment has no operation to run - and a shortcut for a query
+    /// that is wanted somewhere other than this tab.
+    /// </summary>
+    async Task CopyGenerated(string generated)
+    {
+        await module!.Invoke("copyText", generated);
+        statusLine = "Copied to the clipboard.";
+    }
+
     async Task LoadGeneratedQuery(string query)
     {
         if (operationEditor is null)
