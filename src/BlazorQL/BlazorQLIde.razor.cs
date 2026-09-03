@@ -660,21 +660,14 @@ public partial class BlazorQLIde :
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// The editor is read-only, so every change to it came from <see cref="SetResponse"/> or
+    /// <see cref="LoadActiveTab"/>, both of which have already recorded the text. All this has to
+    /// do is let the response-action buttons notice.
+    /// </summary>
     Task OnResponseContentChanged(ModelContentChangedEvent _)
     {
-        responseChangeDebounce.Run(() =>
-            InvokeAsync(async () =>
-            {
-                if (responseEditor is null)
-                {
-                    return;
-                }
-
-                // Tracked for tab switches, but never persisted. The response-action buttons
-                // key off this value, so the change still renders.
-                tabs.Active.Response = await responseEditor.GetValue();
-                StateHasChanged();
-            }));
+        responseChangeDebounce.Run(() => InvokeAsync(StateHasChanged));
         return Task.CompletedTask;
     }
 
@@ -1868,6 +1861,10 @@ public partial class BlazorQLIde :
 
     async ValueTask SetResponse(string text)
     {
+        // Recorded here rather than read back out of monaco by OnResponseContentChanged: the round
+        // trip marshals the whole document across the interop boundary for a string this side
+        // already holds, and a subscription pays it per event.
+        tabs.Active.Response = text;
         if (responseEditor is not null)
         {
             await responseEditor.SetValue(text);
@@ -1883,8 +1880,31 @@ public partial class BlazorQLIde :
     /// cached alongside it, so a response arriving by any route — executed, merged from an
     /// incremental payload, restored from storage — is covered by the same code.
     /// </summary>
-    IReadOnlyList<ResponseError> ResponseFieldErrors =>
-        ready ? ResponseErrors.Parse(tabs.Active.Response) : [];
+    IReadOnlyList<ResponseError> ResponseFieldErrors
+    {
+        get
+        {
+            if (!ready)
+            {
+                return [];
+            }
+
+            // Cached against the text it was parsed from. This is read from the markup, so without
+            // it the whole response is re-parsed on every render of the IDE — including each
+            // pointer-move render of a pane drag and each event of a subscription.
+            var text = tabs.Active.Response;
+            if (!ReferenceEquals(responseErrorsFor, text))
+            {
+                responseErrorsFor = text;
+                responseErrors = ResponseErrors.Parse(text);
+            }
+
+            return responseErrors;
+        }
+    }
+
+    string? responseErrorsFor;
+    IReadOnlyList<ResponseError> responseErrors = [];
 
     /// <summary>
     /// Takes the field an error points at out of the operation. Useful after a broad exploratory

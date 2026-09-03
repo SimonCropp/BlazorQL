@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace BlazorQL;
 
 /// <summary>
@@ -8,19 +10,54 @@ namespace BlazorQL;
 /// </summary>
 public sealed class IncrementalMerger
 {
+    /// <summary>The accumulated document, as a tree. Built only when something has to merge into it.</summary>
     JsonObject? result;
+
+    /// <summary>
+    /// The last payload, held as it arrived. A single result and a subscription event are the
+    /// common cases, and neither has anything merged into it — so neither is worth turning into a
+    /// node tree only to serialize it straight back out.
+    /// </summary>
+    JsonElement? plain;
 
     // Incremental-delivery ids registered by "pending" entries → the path they deliver to.
     Dictionary<string, List<object>> pendingPaths = [];
 
-    public bool HasResult => result is not null;
+    public bool HasResult => result is not null || plain is not null;
 
     /// <summary>Whether the accumulated document carries a top-level errors member.</summary>
-    public bool HasErrors => result?.ContainsKey("errors") is true;
+    public bool HasErrors =>
+        plain is {} element
+            ? element.ValueKind == JsonValueKind.Object && element.TryGetProperty("errors", out _)
+            : result?.ContainsKey("errors") is true;
 
     /// <summary>The accumulated response, serialized.</summary>
-    public string Render() =>
-        result?.ToJsonString(renderOptions) ?? "";
+    public string Render()
+    {
+        if (plain is {} element)
+        {
+            return Indented(element);
+        }
+
+        return result?.ToJsonString(renderOptions) ?? "";
+    }
+
+    /// <summary>
+    /// Reused across renders. A subscription renders a document per event, and a buffer that has
+    /// already grown to fit one does not have to grow again for the next.
+    /// </summary>
+    readonly ArrayBufferWriter<byte> buffer = new();
+
+    string Indented(JsonElement element)
+    {
+        buffer.ResetWrittenCount();
+        using (var writer = new Utf8JsonWriter(buffer, writerOptions))
+        {
+            element.WriteTo(writer);
+        }
+
+        return Encoding.UTF8.GetString(buffer.WrittenSpan);
+    }
 
     static readonly JsonSerializerOptions renderOptions = new()
     {
@@ -28,29 +65,50 @@ public sealed class IncrementalMerger
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
+    static readonly JsonWriterOptions writerOptions = new()
+    {
+        Indented = true,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
     public void Add(JsonElement payload)
     {
-        var node = JsonNode.Parse(payload.GetRawText())!.AsObject();
-        if (result is null || !IsIncremental(node))
+        if (!IsIncremental(payload))
         {
-            // A fresh document: the single result, a subscription event, or the opening payload of
-            // an incremental stream (whose pending entries still need registering).
-            result = node;
+            // A plain result or a subscription event. It replaces whatever came before, and nothing
+            // will be merged into it, so it stays as it arrived.
+            plain = payload;
+            result = null;
             pendingPaths.Clear();
-            RegisterPending(node);
             return;
         }
 
-        Merge(node);
+        if (result is null &&
+            plain is null)
+        {
+            // The opening payload of an incremental stream: a tree, because patches merge into it,
+            // and its pending entries still need registering.
+            var opening = JsonNode.Parse(payload.GetRawText())!.AsObject();
+            result = opening;
+            pendingPaths.Clear();
+            RegisterPending(opening);
+            return;
+        }
+
+        // A patch. Whatever is held has to be a tree before anything can go into it.
+        result ??= JsonNode.Parse(plain!.Value.GetRawText())!.AsObject();
+        plain = null;
+        Merge(JsonNode.Parse(payload.GetRawText())!.AsObject());
     }
 
-    static bool IsIncremental(JsonObject node) =>
-        node.ContainsKey("hasNext") ||
-        node.ContainsKey("incremental") ||
-        node.ContainsKey("pending") ||
-        node.ContainsKey("completed") ||
-        node.ContainsKey("items") ||
-        node.ContainsKey("path");
+    static bool IsIncremental(JsonElement payload) =>
+        payload.ValueKind == JsonValueKind.Object &&
+        (payload.TryGetProperty("hasNext", out _) ||
+         payload.TryGetProperty("incremental", out _) ||
+         payload.TryGetProperty("pending", out _) ||
+         payload.TryGetProperty("completed", out _) ||
+         payload.TryGetProperty("items", out _) ||
+         payload.TryGetProperty("path", out _));
 
     void Merge(JsonObject incremental)
     {

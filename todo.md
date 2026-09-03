@@ -216,7 +216,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   list and both flags once per `Schema` instance in `OnParametersSet`, or add a lazily built
   root-fields-by-return-type lookup to `SchemaIndex`.
 
-- [ ] **A large response is copied and parsed many times, including on every render**
+- [x] **A large response is copied and parsed many times, including on every render**
   `src/BlazorQL/Services/IncrementalMerger.cs:22-23`, `:31-45`,
   `src/BlazorQL/BlazorQLIde.razor.cs:628-644`, `:1711-1717`, `:1728-1729`,
   `src/BlazorQL/BlazorQLIde.razor:195`
