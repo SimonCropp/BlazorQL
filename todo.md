@@ -83,7 +83,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   is ignored, so the variables pane shows errors for the wrong operation's declarations. Pass
   `tabs.Active.OperationName` (or the operation at the caret).
 
-- [ ] **Completion and hover inside a directive's argument list show the enclosing field's arguments**
+- [x] **Completion and hover inside a directive's argument list show the enclosing field's arguments**
   (repro confirmed)
   `src/BlazorQL/Language/ContextScanner.cs:194-203`, `:276-281`,
   `src/BlazorQL/Language/HoverEngine.cs:42-46`

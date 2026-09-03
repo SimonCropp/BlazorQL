@@ -23,7 +23,12 @@ public sealed record ScanResult(
     IntrospectionInputValue? CurrentArgument,
     IntrospectionType? CurrentInputType,
     IReadOnlyList<string> DeclaredVariables,
-    IReadOnlyList<string> FragmentNames);
+    IReadOnlyList<string> FragmentNames,
+    /// <summary>
+    /// Set when the caret is inside a directive's argument list, where the arguments on offer are
+    /// the directive's own and not the enclosing field's.
+    /// </summary>
+    IntrospectionDirective? CurrentDirective = null);
 
 /// <summary>
 /// A tolerant forward scan of a GraphQL document up to the caret. Completion runs mid-edit, on
@@ -49,14 +54,29 @@ static class ContextScanner
         List
     }
 
+    /// <summary>
+    /// A directive name just consumed, carrying the schema's definition of it when there is one. An
+    /// unknown directive still gets a frame: its arguments are unknown, which is not at all the
+    /// same as the enclosing field's.
+    /// </summary>
+    readonly record struct PendingDirective(IntrospectionDirective? Directive);
+
     sealed class Frame(FrameKind kind)
     {
         public FrameKind Kind { get; } = kind;
         public IntrospectionType? Type { get; set; }
         public IntrospectionField? LastField { get; set; }
+
+        /// <summary>Set instead of <see cref="LastField"/> for a directive's argument list.</summary>
+        public IntrospectionDirective? Directive { get; set; }
+
         public IntrospectionInputValue? CurrentArgument { get; set; }
         public IntrospectionInputValue? CurrentInputField { get; set; }
         public bool AfterColon { get; set; }
+
+        /// <summary>What an argument name in this frame is looked up in.</summary>
+        public IReadOnlyList<IntrospectionInputValue> Declared =>
+            Directive?.Args ?? LastField?.Args ?? [];
     }
 
     public static ScanResult Scan(SchemaIndex schema, string text, int offset)
@@ -74,6 +94,10 @@ static class ContextScanner
         var afterDollar = false;
         var inVariableDefinitions = false;
         var variableAwaitingType = false;
+
+        // Set while the last token consumed was a directive name, so a "(" opens that directive's
+        // arguments and not the enclosing field's.
+        PendingDirective? pendingDirective = null;
 
         // Fragment names come from the whole document, not only the part before the caret.
         CollectFragments(text, fragments);
@@ -169,7 +193,7 @@ static class ContextScanner
                 var name = text[start..i];
                 HandleName(schema, frames, name, variables,
                     ref pendingRoot, ref afterEllipsis, ref afterOn, ref afterAt, ref afterDollar,
-                    ref inVariableDefinitions, ref variableAwaitingType);
+                    ref inVariableDefinitions, ref variableAwaitingType, ref pendingDirective);
                 continue;
             }
 
@@ -192,8 +216,15 @@ static class ContextScanner
                     break;
 
                 case '(':
-                    if (frames.TryPeek(out var enclosing) &&
-                        enclosing is {Kind: FrameKind.Selection, LastField: not null})
+                    if (pendingDirective is {} pending)
+                    {
+                        frames.Push(new(FrameKind.Arguments)
+                        {
+                            Directive = pending.Directive
+                        });
+                    }
+                    else if (frames.TryPeek(out var enclosing) &&
+                             enclosing is {Kind: FrameKind.Selection, LastField: not null})
                     {
                         var arguments = new Frame(FrameKind.Arguments)
                         {
@@ -252,6 +283,7 @@ static class ContextScanner
 
             afterDollar = false;
             afterAt = false;
+            pendingDirective = null;
             i++;
         }
 
@@ -271,14 +303,19 @@ static class ContextScanner
         ref bool afterAt,
         ref bool afterDollar,
         ref bool inVariableDefinitions,
-        ref bool variableAwaitingType)
+        ref bool variableAwaitingType,
+        ref PendingDirective? pendingDirective)
     {
         if (afterAt)
         {
-            // Directive name consumed; nothing structural changes.
+            // The directive being applied. Nothing structural changes, but a "(" straight after it
+            // opens its argument list rather than the enclosing field's.
+            pendingDirective = new(schema.Directives.FirstOrDefault(_ => _.Name == name));
             afterAt = false;
             return;
         }
+
+        pendingDirective = null;
 
         if (afterDollar)
         {
@@ -368,7 +405,7 @@ static class ContextScanner
                 }
                 else
                 {
-                    frame.CurrentArgument = frame.LastField?.Args.FirstOrDefault(_ => _.Name == name);
+                    frame.CurrentArgument = frame.Declared.FirstOrDefault(_ => _.Name == name);
                 }
 
                 break;
@@ -509,7 +546,8 @@ static class ContextScanner
                 current?.CurrentArgument,
                 current?.Kind == FrameKind.InputObject ? current.Type : null,
                 variables,
-                fragments);
+                fragments,
+                current?.Directive);
 
         static Frame InputFieldAsArgument(Frame inputFrame) =>
             // Value completion inside an input object keys off the current input field's type; the

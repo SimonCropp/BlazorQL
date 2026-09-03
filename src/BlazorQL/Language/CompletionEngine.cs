@@ -90,7 +90,9 @@ public static class CompletionEngine
 
     static IReadOnlyList<CompletionEntry> ArgumentNames(ScanResult scan)
     {
-        if (scan.CurrentField is null)
+        // Inside a directive's parentheses the arguments are the directive's, not the field's.
+        var declared = scan.CurrentDirective?.Args ?? scan.CurrentField?.Args;
+        if (declared is null)
         {
             return [];
         }
@@ -98,7 +100,7 @@ public static class CompletionEngine
         var index = 0;
         return
         [
-            .. scan.CurrentField.Args.Select(argument => new CompletionEntry(
+            .. declared.Select(argument => new CompletionEntry(
                 argument.Name,
                 "Argument",
                 argument.Type.Display(),

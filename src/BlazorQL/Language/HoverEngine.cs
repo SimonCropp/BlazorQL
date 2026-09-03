@@ -40,7 +40,8 @@ public static class HoverEngine
         }
 
         if (scan.Mode is ScanMode.ArgumentName or ScanMode.ArgumentValue &&
-            scan.CurrentField?.Args.FirstOrDefault(_ => _.Name == word) is { } argument)
+            (scan.CurrentDirective?.Args ?? scan.CurrentField?.Args)
+            ?.FirstOrDefault(_ => _.Name == word) is { } argument)
         {
             return new(Markdown($"{argument.Name}: {argument.Type.Display()}", argument.Description), start, end);
         }

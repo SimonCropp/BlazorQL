@@ -187,4 +187,32 @@ public class CompletionEngineTests
         Assert.That(sortTexts, Is.EqualTo(sortTexts.Order(StringComparer.Ordinal)));
         Assert.That(sortTexts[0], Is.EqualTo("0000person"));
     }
+
+    // ---- Directive arguments ----
+
+    [Test]
+    public void ADirectiveArgumentListOffersTheDirectivesArguments()
+    {
+        string[] expected = ["width", "shade"];
+
+        Assert.That(Labels("{ pick @size(|", roots), Is.EqualTo(expected));
+    }
+
+    // The everyday case: @include on a field that has arguments of its own. The field's are not
+    // what a directive's parentheses are asking for.
+    [Test]
+    public void ADirectiveOnAFieldWithArgumentsDoesNotOfferTheFieldsArguments() =>
+        Assert.That(Labels("{ hasArgs @repeat(|"), Is.Empty);
+
+    [Test]
+    public void AnUnknownDirectiveOffersNothing() =>
+        Assert.That(Labels("{ hasArgs @nope(|"), Is.Empty);
+
+    [Test]
+    public void ADirectiveArgumentValueOffersTheArgumentsType()
+    {
+        string[] expected = ["RED", "GREEN"];
+
+        Assert.That(Labels("{ pick @size(shade: |", roots), Is.EqualTo(expected));
+    }
 }

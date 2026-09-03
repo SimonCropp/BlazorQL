@@ -49,7 +49,15 @@ public class ContextScannerTests
               {"kind": "SCALAR", "name": "Int"},
               {"kind": "SCALAR", "name": "Boolean"}
             ],
-            "directives": []
+            "directives": [
+              {"name": "include", "locations": ["FIELD"], "args": [
+                {"name": "if", "type": {"kind": "NON_NULL", "ofType": {"kind": "SCALAR", "name": "Boolean"}}, "isDeprecated": false}
+              ]},
+              {"name": "size", "locations": ["FIELD"], "args": [
+                {"name": "width", "type": {"kind": "SCALAR", "name": "Int"}, "isDeprecated": false},
+                {"name": "shade", "type": {"kind": "ENUM", "name": "Color"}, "isDeprecated": false}
+              ]}
+            ]
           }
         }
         """;
@@ -516,5 +524,82 @@ public class ContextScannerTests
         var scan = Scan("} ) ] |");
 
         Assert.That(scan.Mode, Is.EqualTo(ScanMode.Document));
+    }
+
+    // ---- Directive arguments ----
+
+    // The "(" after a directive name opens the directive's argument list. Before this was tracked
+    // the frame carried the enclosing field, so the field's arguments were what got offered.
+    [Test]
+    public void AnOpenParenAfterADirectiveIsTheDirectivesArgumentList()
+    {
+        var scan = Scan("{ pick @size(|) }", roots);
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
+        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("size"));
+        Assert.That(scan.CurrentField, Is.Null);
+    }
+
+    [Test]
+    public void ADirectiveArgumentValueResolvesAgainstTheDirectivesArgument()
+    {
+        var scan = Scan("{ pick @size(shade: |) }", roots);
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentValue));
+        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("size"));
+        Assert.That(scan.CurrentArgument!.Name, Is.EqualTo("shade"));
+    }
+
+    // The everyday case: a directive on a field that has arguments of its own.
+    [Test]
+    public void ADirectiveOnAFieldWithArgumentsDoesNotOfferTheFieldsArguments()
+    {
+        var scan = Scan("{ hasArgs @repeat(|) }");
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
+        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("repeat"));
+        Assert.That(scan.CurrentField, Is.Null);
+    }
+
+    [Test]
+    public void AnUnknownDirectiveOffersNoArguments()
+    {
+        var scan = Scan("{ hasArgs @nope(|) }");
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
+        Assert.That(scan.CurrentDirective, Is.Null);
+        Assert.That(scan.CurrentField, Is.Null);
+    }
+
+    // A closed directive argument list leaves the field's own list reachable again.
+    [Test]
+    public void TheFieldsArgumentsAreStillReachableAfterADirective()
+    {
+        var scan = Scan("{ pick @size(width: 1) | }", roots);
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
+
+        var arguments = Scan("{ pick(|) @size(width: 1) }", roots);
+
+        Assert.That(arguments.Mode, Is.EqualTo(ScanMode.ArgumentName));
+        Assert.That(arguments.CurrentField!.Name, Is.EqualTo("pick"));
+        Assert.That(arguments.CurrentDirective, Is.Null);
+    }
+
+    [Test]
+    public void ADirectiveOnAnOperationOpensItsArgumentsRatherThanVariableDefinitions()
+    {
+        var scan = Scan("query Q @size(|)", roots);
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
+        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("size"));
+    }
+
+    [Test]
+    public void VariableDefinitionsStillOpenAfterAnOperationName()
+    {
+        var scan = Scan("query Q($v: |)", roots);
+
+        Assert.That(scan.Mode, Is.EqualTo(ScanMode.VariableType));
     }
 }
