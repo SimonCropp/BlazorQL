@@ -162,6 +162,9 @@ public partial class BlazorQLIde :
     /// <summary>Cancels the introspection in flight when a newer one starts.</summary>
     CancelSource? schemaLoad;
 
+    /// <summary>Which run is current. One carrying an older number no longer owns the UI.</summary>
+    int runGeneration;
+
     /// <summary>Which load is current. A result carrying an older number is not installed.</summary>
     int schemaGeneration;
 
@@ -1229,7 +1232,7 @@ public partial class BlazorQLIde :
         }
 
         // A run in flight belongs to the old tab; stop it before the editors change hands.
-        execution?.Cancel();
+        AbandonRun();
         pickerOpen = false;
         await SaveActiveTab();
         tabs.Activate(index);
@@ -1239,7 +1242,7 @@ public partial class BlazorQLIde :
 
     async Task AddTab()
     {
-        execution?.Cancel();
+        AbandonRun();
         pickerOpen = false;
         await SaveActiveTab();
         // New tabs start empty; only the very first default tab carries the welcome text.
@@ -1258,7 +1261,7 @@ public partial class BlazorQLIde :
         var closingActive = index == tabs.ActiveIndex;
         if (closingActive)
         {
-            execution?.Cancel();
+            AbandonRun();
             pickerOpen = false;
         }
 
@@ -1470,6 +1473,8 @@ public partial class BlazorQLIde :
     /// <summary>Ctrl-Enter: with several operations in the document the caret decides.</summary>
     async Task RunFromKeyboard()
     {
+        // The caret has just decided, so the picker has nothing left to ask.
+        pickerOpen = false;
         if (running)
         {
             execution?.Cancel();
@@ -1524,12 +1529,43 @@ public partial class BlazorQLIde :
     async Task RunPicked(OperationFact operation)
     {
         pickerOpen = false;
+        // The picker can still be on screen when a run has started some other way (Ctrl-Enter).
+        // Picking then is not a request to replace that run.
+        if (running)
+        {
+            return;
+        }
+
         var query = await operationEditor!.GetValue();
         await Run(query, operation.Name, multipleOperations: true);
     }
 
+    /// <summary>
+    /// Cancels the run in flight and disowns it. A run stopped by the user still gets to report
+    /// "stopped" in the footer; one whose tab is going away does not — that status line would
+    /// appear under a tab it says nothing about, after <see cref="LoadActiveTab"/> cleared it.
+    /// </summary>
+    void AbandonRun()
+    {
+        if (execution is null)
+        {
+            return;
+        }
+
+        execution.Cancel();
+        execution = null;
+        running = false;
+        runGeneration++;
+    }
+
     async Task Run(string query, string? operationName, bool multipleOperations)
     {
+        // Whatever was running belongs to an earlier ask. Cancel it, and take the generation with
+        // it: from here the older run owns none of the response pane, the status line or the
+        // running flag, whether it has noticed the cancellation yet or not.
+        execution?.Cancel();
+        var generation = ++runGeneration;
+
         // Fill in default leaf selections first; the filled text is what runs (and what the user
         // sees, briefly highlighted).
         query = await FillLeafs(query);
@@ -1573,7 +1609,15 @@ public partial class BlazorQLIde :
             string.IsNullOrWhiteSpace(headersText) ? null : headersText,
             operationName);
 
-        execution = new();
+        // The pre-flight above awaits the editors several times over, which is room enough for
+        // another run to have started and made this one stale.
+        if (generation != runGeneration)
+        {
+            return;
+        }
+
+        var source = new CancelSource();
+        execution = source;
         running = true;
         StateHasChanged();
 
@@ -1584,8 +1628,13 @@ public partial class BlazorQLIde :
         var status = "OK";
         try
         {
-            await foreach (var payload in Fetcher.FetchAsync(new(query, variables.Value, operationName), headers, execution.Token))
+            await foreach (var payload in Fetcher.FetchAsync(new(query, variables.Value, operationName), headers, source.Token))
             {
+                if (generation != runGeneration)
+                {
+                    break;
+                }
+
                 merger.Add(payload);
                 await SetResponse(merger.Render());
             }
@@ -1608,20 +1657,23 @@ public partial class BlazorQLIde :
         finally
         {
             stopwatch.Stop();
-            // The sidecar decorator is transparent for the footer — look through it at the transport.
-            var transport = Fetcher is SidecarFetcher sidecar
-                ? sidecar.Inner
-                : Fetcher;
-            // The HTTP status code replaces "OK" outright; error/stopped wording still wins a slot.
-            statusLine = transport is HttpFetcher { LastStatus: { } httpStatus }
-                ? status == "OK"
-                    ? $"{httpStatus.StatusCode} · {stopwatch.ElapsedMilliseconds} ms"
-                    : $"{httpStatus.StatusCode} · {status} · {stopwatch.ElapsedMilliseconds} ms"
-                : $"{status} · {stopwatch.ElapsedMilliseconds} ms";
-            execution.Dispose();
-            execution = null;
-            running = false;
-            StateHasChanged();
+            source.Dispose();
+            if (generation == runGeneration)
+            {
+                // The sidecar decorator is transparent for the footer — look through it at the transport.
+                var transport = Fetcher is SidecarFetcher sidecar
+                    ? sidecar.Inner
+                    : Fetcher;
+                // The HTTP status code replaces "OK" outright; error/stopped wording still wins a slot.
+                statusLine = transport is HttpFetcher { LastStatus: { } httpStatus }
+                    ? status == "OK"
+                        ? $"{httpStatus.StatusCode} · {stopwatch.ElapsedMilliseconds} ms"
+                        : $"{httpStatus.StatusCode} · {status} · {stopwatch.ElapsedMilliseconds} ms"
+                    : $"{status} · {stopwatch.ElapsedMilliseconds} ms";
+                execution = null;
+                running = false;
+                StateHasChanged();
+            }
         }
     }
 
@@ -1863,7 +1915,7 @@ public partial class BlazorQLIde :
             return;
         }
 
-        execution?.Cancel();
+        AbandonRun();
         pickerOpen = false;
         await SaveActiveTab();
         if (!string.IsNullOrWhiteSpace(tabs.Active.Query))

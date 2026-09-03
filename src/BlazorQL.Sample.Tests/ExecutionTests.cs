@@ -147,4 +147,73 @@ public class ExecutionTests :
             null,
             new() {Timeout = 30_000});
     }
+
+    /// <summary>
+    /// Ctrl-Enter runs the operation at the caret, which settles the question the picker was
+    /// asking. Leaving it open let a click on one of its entries start a second run alongside the
+    /// first, and the first run's unwinding then tore down the second's.
+    /// </summary>
+    [Test]
+    public async Task RunningFromTheKeyboardClosesTheOperationPicker()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync(
+            """
+            query First { id }
+            query Second { isTest }
+            """);
+
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForSelectorAsync("[data-testid='operation-picker']", 10);
+
+        // The binding belongs to the editor, so the editor has to have the keys. The caret is at
+        // the end of the document, so this runs Second.
+        await page.EvaluateAsync("() => monaco.editor.getEditors()[0].focus()");
+        await page.Keyboard.PressAsync("Control+Enter");
+
+        await page.WaitForSelectorAsync(
+            "[data-testid='operation-picker']",
+            new()
+            {
+                State = WaitForSelectorState.Detached,
+                Timeout = 10_000
+            });
+
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('isTest'))
+            """,
+            null,
+            new() {Timeout = 30_000});
+    }
+
+    /// <summary>
+    /// Leaving a tab while a subscription streams: the run is stopped, but its "stopped · N ms"
+    /// belongs to the tab that is no longer in front, and LoadActiveTab has already cleared the
+    /// footer for the new one.
+    /// </summary>
+    [Test]
+    public async Task ARunAbandonedByASwitchOfTabsLeavesNoStatusBehind()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync("subscription { message(delay: 600) }");
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForSelectorAsync("[data-testid='spinner']", 10);
+
+        // A fresh tab, while the subscription is still streaming into the old one.
+        await page.ClickAsync("[data-testid='tab-add']");
+        await page.WaitForSelectorAsync("[data-testid='status-line']", new() {State = WaitForSelectorState.Detached});
+
+        // Long enough for every event of the abandoned subscription to have come and gone.
+        await page.WaitForTimeoutAsync(4000);
+
+        Assert.That(await page.QuerySelectorAsync("[data-testid='status-line']"), Is.Null);
+    }
 }

@@ -116,7 +116,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   describe A while requests go to B. Hold a per-load `CancelSource`, cancel it at the top of each
   `LoadSchema`, and ignore a result whose generation is not current.
 
-- [ ] **Two runs can overlap through the operation picker**
+- [x] **Two runs can overlap through the operation picker**
   `src/BlazorQL/BlazorQLIde.razor.cs:1437-1461`, `:1490-1495`, `:1545-1547`, `:1577-1594`
   `RunFromKeyboard` does not close the picker, and `RunPicked` has no `running` guard. Ctrl-Enter
   with the picker open, then click a picker entry: the second `Run` replaces `execution` without
