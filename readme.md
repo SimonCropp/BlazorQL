@@ -87,4 +87,4 @@ Neither `BlazorQL` nor `BlazorQL.Bundled` depends on it. The rules here run over
 
 ## Icon
 
-Placeholder icon; final icon pending.
+https://thenounproject.com/icon/pattern-7303880/
