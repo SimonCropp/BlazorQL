@@ -127,7 +127,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   but the cancelled run's `finally` writes `stopped · N ms` afterwards, so the status of the old
   tab's run appears under the new tab.
 
-- [ ] **`VariablesChecker` throws on duplicate variable names and diagnostics go stale**
+- [x] **`VariablesChecker` throws on duplicate variable names and diagnostics go stale**
   (repro confirmed)
   `src/BlazorQL/Language/VariablesChecker.cs:13-14`, `src/BlazorQL/BlazorQLIde.razor.cs:680-685`
   `ToDictionary` throws `ArgumentException` for `query Q($v: Int, $v: Int)`. `RunDiagnostics`

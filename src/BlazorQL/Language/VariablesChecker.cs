@@ -10,8 +10,14 @@ public static class VariablesChecker
     public static IReadOnlyList<string> Check(SchemaIndex schema, GraphQLOperationDefinition operation, JsonElement? variables)
     {
         var errors = new List<string>();
-        var declared = operation.Variables?.ToDictionary(_ => _.Variable.Name.StringValue, _ => _)
-                       ?? [];
+        var declared = new Dictionary<string, GraphQLVariableDefinition>(StringComparer.Ordinal);
+        foreach (var variable in operation.Variables?.Items ?? [])
+        {
+            // First wins. UniqueVariableNames is a known validator gap, so a document declaring one
+            // name twice does reach here, and building this lookup is not where that gets reported
+            // -- nor where the whole diagnostics pass may be lost to an exception.
+            declared.TryAdd(variable.Variable.Name.StringValue, variable);
+        }
 
         if (variables is {ValueKind: JsonValueKind.Object} value)
         {
