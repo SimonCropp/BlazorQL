@@ -17,7 +17,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `src/BlazorQL/Language/FragmentMerger.cs:51-61`, `:125-128`
   `Flatten` creates a fresh `seenSpreads` for every selection set, so the guard never sees a
   spread that is already being inlined further up. `Deduplicate` then calls `Flatten` on the
-  inline fragment it just produced, and the recursion never ends. `{ person { ...F } } fragment F
+  inline fragment it produced, and the recursion never ends. `{ person { ...F } } fragment F
   on Person { name ...F }` and an `A <-> B` pair both end in `StackOverflowException`. In WebAssembly
   a stack overflow takes the whole runtime down, so Shift-Ctrl-M or the merge button on such a
   document is a page reload. Cycles are not caught earlier because `NoFragmentCycles` is a known
@@ -249,7 +249,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `store.Notify()` re-renders the panel per event. `Entries` copies the list under a lock on every
   access and the panel reads it four times per render. Check the cap before serializing, snapshot
   once per render, and consider a byte cap per entry: 100 entries x 25 documents of unbounded size
-  is a lot of memory for a debug panel.
+  is much memory for a debug panel.
 
 - [ ] **Language providers re-fetch the model they already hold, and rescan offsets per marker**
   `src/BlazorQL/BlazorQLIde.razor.cs:411-412`, `:452-453`, `:491`, `:727-747`, `:1841-1889`
