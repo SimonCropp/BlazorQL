@@ -37,7 +37,7 @@ public static class FieldRemover
         foreach (var operation in info.Document.Definitions.OfType<GraphQLOperationDefinition>())
         {
             List<Step> chain = [];
-            if (!Resolve(operation.SelectionSet, path, 0, fragments, chain))
+            if (!Resolve(operation.SelectionSet, path, 0, fragments, chain, new(StringComparer.Ordinal)))
             {
                 continue;
             }
@@ -60,14 +60,16 @@ public static class FieldRemover
     /// <summary>
     /// Walks the path through the document, recording the fields it passes. Fragments are followed:
     /// a path segment can perfectly well be satisfied by a field the query only mentions through a
-    /// spread.
+    /// spread. <paramref name="active"/> is the set of fragments already open on this branch, which
+    /// is what stops a cycle from being followed forever.
     /// </summary>
     static bool Resolve(
         GraphQLSelectionSet? set,
         IReadOnlyList<string> path,
         int depth,
         IReadOnlyDictionary<string, GraphQLFragmentDefinition> fragments,
-        List<Step> chain)
+        List<Step> chain,
+        HashSet<string> active)
     {
         if (set is null ||
             depth == path.Count)
@@ -92,7 +94,7 @@ public static class FieldRemover
                         return true;
                     }
 
-                    if (Resolve(field.SelectionSet, path, depth + 1, fragments, chain))
+                    if (Resolve(field.SelectionSet, path, depth + 1, fragments, chain, active))
                     {
                         return true;
                     }
@@ -102,7 +104,7 @@ public static class FieldRemover
                     continue;
 
                 case GraphQLInlineFragment inline:
-                    if (Resolve(inline.SelectionSet, path, depth, fragments, chain))
+                    if (Resolve(inline.SelectionSet, path, depth, fragments, chain, active))
                     {
                         return true;
                     }
@@ -111,7 +113,18 @@ public static class FieldRemover
 
                 case GraphQLFragmentSpread spread
                     when fragments.TryGetValue(spread.FragmentName.Name.StringValue, out var fragment):
-                    if (Resolve(fragment.SelectionSet, path, depth, fragments, chain))
+                    // A spread does not consume a path segment, so a fragment that spreads its way
+                    // back to itself would be re-entered forever. NoFragmentCycles is a deliberate
+                    // validator gap, so such a document does reach here.
+                    var name = spread.FragmentName.Name.StringValue;
+                    if (!active.Add(name))
+                    {
+                        continue;
+                    }
+
+                    var found = Resolve(fragment.SelectionSet, path, depth, fragments, chain, active);
+                    active.Remove(name);
+                    if (found)
                     {
                         return true;
                     }

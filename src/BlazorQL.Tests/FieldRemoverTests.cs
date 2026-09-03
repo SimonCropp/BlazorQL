@@ -295,4 +295,72 @@ public class FieldRemoverTests
         Assert.That(result, Is.Not.Null);
         Assert.That(DocumentInfo.Parse(result!).Parses, Is.True);
     }
+
+    /// <summary>
+    /// A spread does not consume a path segment, so a fragment cycle is a branch the walk can
+    /// re-enter forever. NoFragmentCycles is a validator gap, so such a document does get here.
+    /// </summary>
+    [Test]
+    public void ReturnsNullForAPathThatDoesNotResolveThroughASelfSpreadingFragment()
+    {
+        var text =
+            """
+            query {
+              accessGroups {
+                ...F
+              }
+            }
+
+            fragment F on AccessGroup {
+              id
+              ...F
+            }
+            """;
+
+        Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"]), Is.Null);
+    }
+
+    [Test]
+    public void ResolvesThroughAPairOfFragmentsThatSpreadEachOther()
+    {
+        var text =
+            """
+            query {
+              accessGroups {
+                ...A
+              }
+            }
+
+            fragment A on AccessGroup {
+              id
+              ...B
+            }
+
+            fragment B on AccessGroup {
+              name
+              ...A
+            }
+            """;
+
+        Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"]), Is.Null);
+        Assert.That(
+            FieldRemover.Remove(text, ["accessGroups", "name"]),
+            Is.EqualTo(
+                """
+                query {
+                  accessGroups {
+                    ...A
+                  }
+                }
+
+                fragment A on AccessGroup {
+                  id
+                  ...B
+                }
+
+                fragment B on AccessGroup {
+                  ...A
+                }
+                """));
+    }
 }

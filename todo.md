@@ -26,7 +26,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `Flatten`/`Inline` and skip a spread that is already on the path, or run a cycle check first
   and report `Cannot spread fragment "F" within itself` the way graphql-js does.
 
-- [ ] **Remove-field crashes the app on a fragment cycle** (repro confirmed)
+- [x] **Remove-field crashes the app on a fragment cycle** (repro confirmed)
   `src/BlazorQL/Language/FieldRemover.cs:112-119`
   `Resolve` follows spreads without advancing `depth` and without a visited set. A path that does
   not resolve keeps re-entering the cycle until the stack is gone. Lower exposure than the merge
