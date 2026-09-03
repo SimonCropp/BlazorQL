@@ -443,9 +443,11 @@ public partial class BlazorQLIde :
                 return EmptyCompletions();
             }
 
-            var model = await Global.GetModel(JS, modelUri);
-            var text = await model.GetValue(EndOfLinePreference.LF, false);
-            var offset = ToOffset(text, position.LineNumber, position.Column);
+            // The held model is the one this uri names — that is what the guard above checked —
+            // so asking monaco for it again is an interop round trip for something already in hand,
+            // paid on every trigger character.
+            var text = await operationModel.GetValue(EndOfLinePreference.LF, false);
+            var offset = new LineIndex(text).Offset(position.LineNumber, position.Column);
             var range = ReplacedWordRange(text, position, offset);
 
             return new()
@@ -484,9 +486,9 @@ public partial class BlazorQLIde :
                 return null!;
             }
 
-            var model = await Global.GetModel(JS, modelUri);
-            var text = await model.GetValue(EndOfLinePreference.LF, false);
-            var hover = HoverEngine.Hover(Schema, text, ToOffset(text, position.LineNumber, position.Column));
+            var text = await operationModel.GetValue(EndOfLinePreference.LF, false);
+            var lines = new LineIndex(text);
+            var hover = HoverEngine.Hover(Schema, text, lines.Offset(position.LineNumber, position.Column));
             if (hover is null)
             {
                 return null!;
@@ -501,7 +503,7 @@ public partial class BlazorQLIde :
                         Value = hover.Markdown
                     }
                 ],
-                Range = ToRange(text, hover.Start, hover.End)
+                Range = lines.Range(hover.Start, hover.End)
             };
         }
         catch
@@ -523,8 +525,7 @@ public partial class BlazorQLIde :
                 return null!;
             }
 
-            var model = await Global.GetModel(JS, modelUri);
-            var line = await model.GetLineContent(position.LineNumber);
+            var line = await responseModel.GetLineContent(position.LineNumber);
 
             var start = position.Column - 1;
             var end = start;
@@ -692,16 +693,18 @@ public partial class BlazorQLIde :
             var text = await operationEditor.GetValue();
             var document = DocumentInfo.Parse(text);
             var markers = new List<MarkerData>();
+            // One index for the pass rather than a scan from the top of the document per marker.
+            var lines = new LineIndex(text);
             if (validator is not null)
             {
                 foreach (var diagnostic in validator.Validate(document))
                 {
-                    markers.Add(ToMarker(text, diagnostic.Message, diagnostic.IsError, diagnostic.Line, diagnostic.Column));
+                    markers.Add(ToMarker(lines, text, diagnostic.Message, diagnostic.IsError, diagnostic.Line, diagnostic.Column));
                 }
             }
             else if (document.SyntaxError is not null)
             {
-                markers.Add(ToMarker(text, $"Syntax Error: {document.SyntaxError}", isError: true, document.SyntaxErrorLine, document.SyntaxErrorColumn));
+                markers.Add(ToMarker(lines, text, $"Syntax Error: {document.SyntaxError}", isError: true, document.SyntaxErrorLine, document.SyntaxErrorColumn));
             }
 
             await Global.SetModelMarkers(JS, operationModel, "blazorql", markers);
@@ -752,11 +755,11 @@ public partial class BlazorQLIde :
         };
 
     /// <summary>A marker spanning the word at the diagnostic's position (at least one column).</summary>
-    static MarkerData ToMarker(string text, string message, bool isError, int line, int column)
+    static MarkerData ToMarker(LineIndex lines, string text, string message, bool isError, int line, int column)
     {
         line = Math.Max(line, 1);
         column = Math.Max(column, 1);
-        var offset = ToOffset(text, line, column);
+        var offset = lines.Offset(line, column);
         var end = offset;
         while (end < text.Length && (char.IsLetterOrDigit(text[end]) || text[end] == '_'))
         {
@@ -1151,7 +1154,7 @@ public partial class BlazorQLIde :
         }
 
         var text = await operationEditor.GetValue();
-        var schemaReference = SchemaReferenceResolver.Resolve(Schema, text, ToOffset(text, position.LineNumber, position.Column));
+        var schemaReference = SchemaReferenceResolver.Resolve(Schema, text, new LineIndex(text).Offset(position.LineNumber, position.Column));
         if (schemaReference is null)
         {
             return;
@@ -1518,7 +1521,7 @@ public partial class BlazorQLIde :
         if (operations.Count > 1)
         {
             var position = await operationEditor.GetPosition();
-            var offset = position is null ? 0 : ToOffset(query, position.LineNumber, position.Column);
+            var offset = position is null ? 0 : new LineIndex(query).Offset(position.LineNumber, position.Column);
             var at = operations.FirstOrDefault(_ => _.Start <= offset && offset <= _.End);
             operationName = (at ?? operations[0]).Name;
         }
@@ -1763,13 +1766,14 @@ public partial class BlazorQLIde :
     {
         // Insertion indices address the original text; earlier insertions shift the later ones.
         var shift = 0;
+        var lines = new LineIndex(text);
         var decorations = new List<ModelDeltaDecoration>();
         foreach (var insertion in insertions.OrderBy(_ => _.Index))
         {
             var start = insertion.Index + shift;
             decorations.Add(new()
             {
-                Range = ToRange(text, start, start + insertion.Text.Length),
+                Range = lines.Range(start, start + insertion.Text.Length),
                 Options = new()
                 {
                     ClassName = "blazorql-auto-inserted-leaf",
@@ -2022,56 +2026,6 @@ public partial class BlazorQLIde :
     static readonly Dictionary<string, string> emptyHeaders = [];
 
     // ---- Coordinate helpers (Monaco is 1-based line/column; the language services use offsets) ----
-
-    static int ToOffset(string text, int line, int column)
-    {
-        var offset = 0;
-        var currentLine = 1;
-        while (currentLine < line && offset < text.Length)
-        {
-            if (text[offset] == '\n')
-            {
-                currentLine++;
-            }
-
-            offset++;
-        }
-
-        return Math.Min(offset + (column - 1), text.Length);
-    }
-
-    static BlazorMonaco.Range ToRange(string text, int start, int end)
-    {
-        var (startLine, startColumn) = ToLineColumn(text, start);
-        var (endLine, endColumn) = ToLineColumn(text, end);
-        return new()
-        {
-            StartLineNumber = startLine,
-            StartColumn = startColumn,
-            EndLineNumber = endLine,
-            EndColumn = endColumn
-        };
-    }
-
-    static (int Line, int Column) ToLineColumn(string text, int offset)
-    {
-        var line = 1;
-        var column = 1;
-        for (var i = 0; i < offset && i < text.Length; i++)
-        {
-            if (text[i] == '\n')
-            {
-                line++;
-                column = 1;
-            }
-            else
-            {
-                column++;
-            }
-        }
-
-        return (line, column);
-    }
 
     public async ValueTask DisposeAsync()
     {

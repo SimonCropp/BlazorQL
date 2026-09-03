@@ -251,7 +251,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   once per render, and consider a byte cap per entry: 100 entries x 25 documents of unbounded size
   is much memory for a debug panel.
 
-- [ ] **Language providers re-fetch the model they already hold, and rescan offsets per marker**
+- [x] **Language providers re-fetch the model they already hold, and rescan offsets per marker**
   `src/BlazorQL/BlazorQLIde.razor.cs:411-412`, `:452-453`, `:491`, `:727-747`, `:1841-1889`
   `ProvideCompletions`, `ProvideOperationHover` and `ProvideResponseImageHover` call
   `Global.GetModel` and then `GetValue`, two interop round trips per request (space is a trigger
