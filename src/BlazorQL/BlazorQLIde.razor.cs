@@ -161,8 +161,21 @@ public partial class BlazorQLIde :
     Debouncer responseChangeDebounce = new();
     Debouncer diagnosticsDebounce = new(400);
 
-    /// <summary>The schema printed as SDL, once loaded.</summary>
-    public string? SchemaSdl { get; private set; }
+    /// <summary>
+    /// The schema printed as SDL, once loaded. Printed on first ask rather than on every schema
+    /// load: the SDL view is a toggle most sessions never open, and printing a large schema is not
+    /// free.
+    /// </summary>
+    public string? SchemaSdl =>
+        Schema is null ? null : schemaSdl ??= SdlPrinter.Print(Schema);
+
+    string? schemaSdl;
+
+    /// <summary>
+    /// Held rather than written as a lambda in the markup: a fresh delegate every render is a
+    /// changed parameter, and the doc explorer has enough of those already.
+    /// </summary>
+    Func<string?>? sdlProvider;
 
     /// <summary>The parsed introspection result, once loaded — what the doc explorer navigates.</summary>
     public SchemaIndex? Schema { get; private set; }
@@ -182,6 +195,7 @@ public partial class BlazorQLIde :
     protected override async Task OnInitializedAsync()
     {
         module = new(JS);
+        sdlProvider = () => SchemaSdl;
         reference = DotNetObjectReference.Create(callbacks);
         callbacks.PaneResize += OnPaneResize;
         callbacks.GlobalShortcut += OnGlobalShortcut;
@@ -1017,7 +1031,7 @@ public partial class BlazorQLIde :
             }
 
             Schema = schema;
-            SchemaSdl = SdlPrinter.Print(schema);
+            schemaSdl = null;
             validator = new(schema);
             // Revalidate whatever is in the editors against the fresh schema.
             ScheduleDiagnostics();

@@ -17,9 +17,12 @@ public partial class PluginPane
     [Parameter]
     public SchemaIndex? Schema { get; set; }
 
-    /// <summary>The schema printed as SDL, for the documentation explorer's SDL view.</summary>
+    /// <summary>
+    /// Asked for the schema as SDL, for the documentation explorer's SDL view. A function rather
+    /// than the text, so printing a large schema is not paid for a view nobody opened.
+    /// </summary>
     [Parameter]
-    public string? SchemaSdl { get; set; }
+    public Func<string?>? SdlProvider { get; set; }
 
     /// <summary>Carries jump-to-doc navigation into the documentation explorer.</summary>
     [Parameter]

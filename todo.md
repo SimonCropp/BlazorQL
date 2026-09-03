@@ -259,7 +259,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   same model. `ToOffset`/`ToLineColumn` are O(n) scans repeated per diagnostic marker and per leaf
   decoration. Use the held `TextModel`, and compute line starts once per text.
 
-- [ ] **SDL is printed eagerly on every schema load and crosses interop twice**
+- [x] **SDL is printed eagerly on every schema load and crosses interop twice**
   `src/BlazorQL/BlazorQLIde.razor.cs:983`, `src/BlazorQL/Components/DocExplorer/DocExplorer.razor.cs:352-360`, `:368-378`
   `SdlPrinter.Print` runs for every introspection whether or not the SDL view is ever opened, and
   when it is, `SdlOptions` passes the whole SDL as the editor's construction value and

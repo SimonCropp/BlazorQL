@@ -19,9 +19,12 @@ public partial class DocExplorer :
     [Parameter]
     public SchemaIndex? Schema { get; set; }
 
-    /// <summary>The schema printed as SDL — the SDL view's content.</summary>
+    /// <summary>
+    /// The schema printed as SDL — the SDL view's content. Asked for rather than passed, because
+    /// printing it is not free and this is a view most sessions never open. Null hides the toggle.
+    /// </summary>
     [Parameter]
-    public string? SchemaSdl { get; set; }
+    public Func<string?>? SdlProvider { get; set; }
 
     /// <summary>Receives jump-to-doc navigation from the IDE.</summary>
     [Parameter]
@@ -105,10 +108,14 @@ public partial class DocExplorer :
             CloseSearch();
         }
 
-        if (sdlModel is not null && SchemaSdl != lastSdl)
+        // Only once the view has been opened: the model exists exactly then, and asking before
+        // that would print the SDL for a view nobody has looked at.
+        if (sdlModel is not null &&
+            Sdl() is var sdl &&
+            sdl != lastSdl)
         {
-            lastSdl = SchemaSdl;
-            return sdlModel.SetValue(SchemaSdl ?? "");
+            lastSdl = sdl;
+            return sdlModel.SetValue(sdl);
         }
 
         return Task.CompletedTask;
@@ -349,10 +356,11 @@ public partial class DocExplorer :
 
     // ---- SDL view ----
 
-    StandaloneEditorConstructionOptions SdlOptions(StandaloneCodeEditor _)
+    static StandaloneEditorConstructionOptions SdlOptions(StandaloneCodeEditor _)
     {
-        // A null theme keeps whatever theme the IDE has set globally.
-        var options = EditorDefaults.Create("graphql", SchemaSdl ?? "", theme: null);
+        // Constructed empty, as the other editors are: OnSdlEditorInit puts the text on the
+        // named model it moves the editor onto, so passing it here would marshal it twice.
+        var options = EditorDefaults.Create("graphql", "", theme: null);
         options.ReadOnly = true;
         options.WordWrap = "on";
         options.Contextmenu = false;
@@ -372,14 +380,17 @@ public partial class DocExplorer :
             return;
         }
 
-        lastSdl = SchemaSdl;
-        sdlModel = await NamedModels.Create(JS, SchemaSdl ?? "", "graphql", sdlModelUri);
+        lastSdl = Sdl();
+        sdlModel = await NamedModels.Create(JS, lastSdl, "graphql", sdlModelUri);
         await sdlEditor.SetModel(sdlModel);
     }
 
+    string Sdl() =>
+        SdlProvider?.Invoke() ?? "";
+
     void ToggleSdl()
     {
-        if (SchemaSdl is null)
+        if (SdlProvider is null)
         {
             return;
         }

@@ -31,7 +31,7 @@ else
                                          IsOperation="QueryGenerator.CanGenerateOperation(Schema, currentType)"
                                          OnClick="CopyGenerated" />
                 }
-                @if (SchemaSdl is not null)
+                @if (SdlProvider is not null)
                 {
                     <button type="button"
                             class="blazorql-doc-sdl-toggle @(sdlVisible ? "blazorql-active" : null)"
