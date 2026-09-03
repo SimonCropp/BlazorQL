@@ -1,0 +1,9 @@
+global using System.Text;
+global using System.Text.Json;
+global using BenchmarkDotNet.Attributes;
+global using BlazorQL;
+global using GraphQL;
+global using GraphQL.Execution;
+global using GraphQL.Resolvers;
+global using GraphQL.SystemTextJson;
+global using GraphQL.Types;

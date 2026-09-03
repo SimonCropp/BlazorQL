@@ -266,7 +266,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `OnSdlEditorInit` then creates the named model with the same text. Make `SchemaSdl` lazy
   (first toggle) and construct the editor with an empty value, as the other editors do.
 
-- [ ] **`ParseJsonc` leaks pooled `JsonDocument` buffers**
+- [x] **`ParseJsonc` leaks pooled `JsonDocument` buffers**
   `src/BlazorQL/Language/Formatter.cs:68-92`, `src/BlazorQL/BlazorQLIde.razor.cs:698`, `:1683`
   The document is never disposed on the success path (it cannot be, the returned `JsonElement`
   points into it), and this runs on every diagnostics pass and every run. Return

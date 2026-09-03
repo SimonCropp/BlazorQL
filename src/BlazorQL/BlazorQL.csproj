@@ -14,6 +14,7 @@
   <ItemGroup>
     <SupportedPlatform Include="browser" />
     <InternalsVisibleTo Include="BlazorQL.Tests" />
+    <InternalsVisibleTo Include="BlazorQL.Benchmarks" />
     <PackageReference Include="BlazorMonaco" />
     <PackageReference Include="GraphQL-Parser" />
     <PackageReference Include="HttpMultipart" PrivateAssets="all" />

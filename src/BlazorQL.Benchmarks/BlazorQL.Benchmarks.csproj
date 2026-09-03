@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <!-- BenchmarkDotNet builds and runs the benchmark assembly out of process in Release. -->
+    <IsPublishable>false</IsPublishable>
+    <!-- The generated runner is not held to the same style rules as the library. -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <ProjectReference Include="..\BlazorQL\BlazorQL.csproj" />
+    <!--
+      The GraphiQL test schema, already ported for the sample. Linked rather than copied so a
+      benchmark measures the same schema the tests do.
+    -->
+    <Compile Include="..\BlazorQL.Sample\SampleSchema.cs" Link="SampleSchema.cs" />
+    <PackageReference Include="GraphQL" />
+    <PackageReference Include="GraphQL.SystemTextJson" />
+  </ItemGroup>
+</Project>

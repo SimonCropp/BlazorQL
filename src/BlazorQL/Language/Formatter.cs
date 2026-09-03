@@ -82,12 +82,17 @@ public static class Formatter
             return (false, null, $"{what} are invalid JSON: {exception.Message}");
         }
 
-        if (document.RootElement.ValueKind != JsonValueKind.Object)
+        using (document)
         {
-            document.Dispose();
-            return (false, null, $"{what} are not a JSON object.");
-        }
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return (false, null, $"{what} are not a JSON object.");
+            }
 
-        return (true, document.RootElement, null);
+            // Cloned so the document can go. Its element points into a pooled buffer that
+            // JsonDocument rents and only returns on dispose, and this runs on every diagnostics
+            // pass and every run — returning the element live meant never giving the buffer back.
+            return (true, document.RootElement.Clone(), null);
+        }
     }
 }

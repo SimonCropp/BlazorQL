@@ -10,6 +10,7 @@
     <File Path="../mdsnippets.json" />
   </Folder>
   <Project Path="BlazorQL/BlazorQL.csproj" />
+  <Project Path="BlazorQL.Benchmarks/BlazorQL.Benchmarks.csproj" />
   <Project Path="BlazorQL.Bundled/BlazorQL.Bundled.csproj" />
   <Project Path="BlazorQL.Sample/BlazorQL.Sample.csproj" />
   <Project Path="BlazorQL.Tests/BlazorQL.Tests.csproj" />
