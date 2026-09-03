@@ -143,7 +143,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             {
                 if (!usedVariables.Contains(name))
                 {
-                    Error(operation, $"Variable '${name}' is never used.");
+                    Error(operation, $"Variable \"${name}\" is never used.");
                 }
             }
         }
