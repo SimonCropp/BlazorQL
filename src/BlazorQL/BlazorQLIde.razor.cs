@@ -1633,6 +1633,7 @@ public partial class BlazorQLIde :
         running = true;
         StateHasChanged();
 
+        var graphQLRequest = new GraphQLRequest(query, variables.Value, operationName);
         var merger = new IncrementalMerger();
         // Elapsed covers the full fetch; the status text is what the footer line shows. An HTTP
         // fetcher contributes its status code; elsewhere "OK" stands in for success.
@@ -1640,7 +1641,7 @@ public partial class BlazorQLIde :
         var status = "OK";
         try
         {
-            await foreach (var payload in Fetcher.FetchAsync(new(query, variables.Value, operationName), headers, source.Token))
+            await foreach (var payload in Fetcher.FetchAsync(graphQLRequest, headers, source.Token))
             {
                 if (generation != runGeneration)
                 {
@@ -1672,10 +1673,9 @@ public partial class BlazorQLIde :
             source.Dispose();
             if (generation == runGeneration)
             {
-                // The sidecar decorator is transparent for the footer — look through it at the transport.
-                var transport = Fetcher is SidecarFetcher sidecar
-                    ? sidecar.Inner
-                    : Fetcher;
+                // The decorators are transparent for the footer — look through them at whatever
+                // this request actually reached.
+                var transport = Transport(Fetcher, graphQLRequest);
                 // The HTTP status code replaces "OK" outright; error/stopped wording still wins a slot.
                 statusLine = transport is HttpFetcher { LastStatus: { } httpStatus }
                     ? status == "OK"
@@ -1688,6 +1688,20 @@ public partial class BlazorQLIde :
             }
         }
     }
+
+    /// <summary>
+    /// The fetcher a request actually reaches. The footer's HTTP status belongs to the transport,
+    /// not to whatever the host app configured, and a split fetcher's answer depends on the
+    /// request: reading the http one's last status after a subscription would report the status of
+    /// a request that is not this one.
+    /// </summary>
+    static IGraphQLFetcher Transport(IGraphQLFetcher fetcher, GraphQLRequest request) =>
+        fetcher switch
+        {
+            SidecarFetcher sidecar => Transport(sidecar.Inner, request),
+            SplitFetcher split => Transport(split.For(request), request),
+            _ => fetcher
+        };
 
     /// <summary>
     /// Fills in default leaf selections for fields that need them, returning the text the run

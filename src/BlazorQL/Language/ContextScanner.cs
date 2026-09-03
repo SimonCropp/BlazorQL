@@ -15,7 +15,11 @@ public enum ScanMode
     FragmentSpread
 }
 
-/// <summary>What the scanner resolved at the caret.</summary>
+/// <summary>
+/// What the scanner resolved at the caret. <c>CurrentDirective</c> is set when the caret is inside
+/// a directive's argument list, where the arguments on offer are the directive's own and not the
+/// enclosing field's.
+/// </summary>
 public sealed record ScanResult(
     ScanMode Mode,
     IntrospectionType? CurrentType,
@@ -24,10 +28,6 @@ public sealed record ScanResult(
     IntrospectionType? CurrentInputType,
     IReadOnlyList<string> DeclaredVariables,
     IReadOnlyList<string> FragmentNames,
-    /// <summary>
-    /// Set when the caret is inside a directive's argument list, where the arguments on offer are
-    /// the directive's own and not the enclosing field's.
-    /// </summary>
     IntrospectionDirective? CurrentDirective = null);
 
 /// <summary>

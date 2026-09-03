@@ -19,14 +19,19 @@ public sealed class SplitFetcher(IGraphQLFetcher other, IGraphQLFetcher subscrip
     /// <summary>The fetcher subscriptions go to.</summary>
     public IGraphQLFetcher Subscriptions { get; } = subscriptions;
 
+    /// <summary>
+    /// Which of the two a request goes to. Public because a caller that keys off the concrete
+    /// transport — the IDE's status footer reads <see cref="HttpFetcher.LastStatus"/> — has to ask
+    /// the same question this does, and asking after the fact would read the other one's leftovers.
+    /// </summary>
+    public IGraphQLFetcher For(GraphQLRequest request) =>
+        IsSubscription(request) ? Subscriptions : Other;
+
     public IAsyncEnumerable<JsonElement> FetchAsync(
         GraphQLRequest request,
         IReadOnlyDictionary<string, string> headers,
-        Cancel cancel)
-    {
-        var fetcher = IsSubscription(request) ? Subscriptions : Other;
-        return fetcher.FetchAsync(request, headers, cancel);
-    }
+        Cancel cancel) =>
+        For(request).FetchAsync(request, headers, cancel);
 
     static bool IsSubscription(GraphQLRequest request)
     {

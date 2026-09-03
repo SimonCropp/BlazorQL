@@ -171,3 +171,49 @@ public class CompressedBundledIdeTests :
         Assert.That(ConsoleErrors(), Is.Empty);
     }
 }
+
+/// <summary>
+/// A mount with a separate subscription endpoint, which is what a real server usually looks like:
+/// queries over http, subscriptions over a websocket. The IDE's fetcher is then a SplitFetcher, and
+/// the status footer has to see through it to the transport a query actually went out on.
+/// </summary>
+[TestFixture]
+[Category("Browser")]
+public class SplitEndpointTests :
+    BundledFixture
+{
+    protected override void Configure(BlazorQLIdeOptions options)
+    {
+        options.Endpoint = "/graphql";
+        // Nothing listens on it; this suite runs no subscription. Setting it is what makes the
+        // fetcher a split one.
+        options.SubscriptionEndpoint = "ws://127.0.0.1:1/graphql";
+    }
+
+    [Test]
+    public async Task TheFooterReportsTheHttpStatusOfAQuery()
+    {
+        var page = await OpenIdeAsync();
+
+        await page.EvaluateAsync(
+            """
+            () => monaco.editor.getEditors()[0].setValue('{ id isTest }')
+            """);
+        await page.ClickAsync("[data-testid='execute']");
+
+        await page.WaitForFunctionAsync(
+            """
+            () => monaco.editor
+                    .getModels()
+                    .some(_ => _.uri.path.includes('response') &&
+                               _.getValue().includes('abc123'))
+            """,
+            null,
+            new() {Timeout = 30_000});
+
+        var status = await page.WaitForSelectorAsync("[data-testid='status-line']", new() {Timeout = 10_000});
+
+        Assert.That(await status!.TextContentAsync(), Does.StartWith("200 ·").And.EndWith("ms"));
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+}

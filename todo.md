@@ -151,7 +151,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   before Monaco initializes, and a persisted-open history pane does too, so a click before `ready`
   is a `NullReferenceException`. Gate on `ready` (or null-check like `PrettifyEditors` does).
 
-- [ ] **The status footer does not see through `SplitFetcher`**
+- [x] **The status footer does not see through `SplitFetcher`**
   `src/BlazorQL/BlazorQLIde.razor.cs:1580-1589`, `src/BlazorQL.Bundled.Host/Shell.razor.cs:36`
   Only `SidecarFetcher.Inner` is unwrapped. The bundled host with `SubscriptionEndpoint` set wraps
   the `HttpFetcher` in a `SplitFetcher`, so that configuration never shows an HTTP status code.
