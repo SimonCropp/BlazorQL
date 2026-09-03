@@ -264,7 +264,7 @@ public static class FieldRemover
     {
         var to = end;
         while (to < text.Length &&
-               (text[to] is ' ' or '\t' or ','))
+               text[to] is ' ' or '\t' or ',')
         {
             to++;
         }
@@ -275,7 +275,7 @@ public static class FieldRemover
         {
             var from = start;
             while (from > 0 &&
-                   (text[from - 1] is ' ' or '\t' or ','))
+                   text[from - 1] is ' ' or '\t' or ',')
             {
                 from--;
             }
