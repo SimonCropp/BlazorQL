@@ -159,6 +159,12 @@ public partial class BlazorQLIde :
     /// <summary>Validates operations against the loaded schema. Null until introspection lands.</summary>
     SchemaValidator? validator;
 
+    /// <summary>Cancels the introspection in flight when a newer one starts.</summary>
+    CancelSource? schemaLoad;
+
+    /// <summary>Which load is current. A result carrying an older number is not installed.</summary>
+    int schemaGeneration;
+
     protected override async Task OnInitializedAsync()
     {
         module = new(JS);
@@ -951,12 +957,20 @@ public partial class BlazorQLIde :
         }
     }
 
+    /// <summary>
+    /// Introspects and installs the result. A load already in flight describes a fetcher or an
+    /// endpoint that has since been replaced, so it is cancelled, and its result is dropped even if
+    /// it lands anyway -- otherwise applying endpoint A then B could leave the schema, the SDL and
+    /// the validator describing A while every request goes to B.
+    /// </summary>
     async Task LoadSchema()
     {
+        schemaLoad?.Cancel();
+        using var cancelSource = new CancelSource(TimeSpan.FromSeconds(60));
+        schemaLoad = cancelSource;
+        var generation = ++schemaGeneration;
         try
         {
-            using var cancelSource = new CancelSource(TimeSpan.FromSeconds(60));
-
             // An endpoint behind an Authorization header has no schema without it, so
             // introspection goes out with whatever the headers editor holds, as GraphiQL does.
             var (headers, _) = await CurrentHeaders();
@@ -976,6 +990,11 @@ public partial class BlazorQLIde :
                 }
             }
 
+            if (generation != schemaGeneration)
+            {
+                return;
+            }
+
             if (schema is null)
             {
                 await SetResponse(IntrospectionFailure(payload));
@@ -991,7 +1010,19 @@ public partial class BlazorQLIde :
         }
         catch (Exception exception)
         {
+            if (generation != schemaGeneration)
+            {
+                return;
+            }
+
             await SetResponse(ErrorJson($"Introspection failed: {exception.Message}"));
+        }
+        finally
+        {
+            if (ReferenceEquals(schemaLoad, cancelSource))
+            {
+                schemaLoad = null;
+            }
         }
     }
 

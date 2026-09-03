@@ -108,7 +108,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `Unknown fragment "F"`. GraphiQL's `mergeAst` has the same flaw; that is not a reason to keep it.
   After inlining, keep any definition whose name is still spread.
 
-- [ ] **Overlapping schema loads race; a stale schema can win**
+- [x] **Overlapping schema loads race; a stale schema can win**
   `src/BlazorQL/BlazorQLIde.razor.cs:221-233`, `:343-356`, `:954-993`, `:1028-1041`
   `OnParametersSetAsync` starts `LoadSchema` for a swapped-in fetcher without cancelling the one
   in flight; `RefetchSchema` and `EditorReady` can overlap it too. Apply endpoint A, then B before
