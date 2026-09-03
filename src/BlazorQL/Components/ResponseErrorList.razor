@@ -1,0 +1,21 @@
+@namespace BlazorQL
+
+@if (Actionable.Count > 0)
+{
+    <div class="blazorql-response-errors" data-testid="response-errors">
+        @foreach (var error in Actionable)
+        {
+            <div class="blazorql-response-error" data-testid="response-error">
+                <code class="blazorql-response-error-path">@error.PathText</code>
+                <span class="blazorql-response-error-message">@error.Message</span>
+                <button type="button"
+                        class="blazorql-response-error-remove"
+                        data-testid="response-error-remove"
+                        title="@($"Remove {error.PathText} from the operation")"
+                        @onclick="() => OnRemove.InvokeAsync(error)">
+                    Remove field
+                </button>
+            </div>
+        }
+    </div>
+}

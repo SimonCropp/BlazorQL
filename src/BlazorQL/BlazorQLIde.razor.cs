@@ -1720,6 +1720,45 @@ public partial class BlazorQLIde :
     bool HasResponse =>
         ready && !string.IsNullOrWhiteSpace(tabs.Active.Response);
 
+    /// <summary>
+    /// The errors the current response carried. Recomputed from the response text rather than
+    /// cached alongside it, so a response arriving by any route — executed, merged from an
+    /// incremental payload, restored from storage — is covered by the same code.
+    /// </summary>
+    IReadOnlyList<ResponseError> ResponseFieldErrors =>
+        ready ? ResponseErrors.Parse(tabs.Active.Response) : [];
+
+    /// <summary>
+    /// Takes the field an error points at out of the operation. Useful after a broad exploratory
+    /// query where a few fields failed and the rest returned: this gets to the subset that works
+    /// without hand-editing, which is the whole reason a generated query is worth running.
+    /// </summary>
+    /// <remarks>
+    /// Deliberately per error rather than one button that strips them all. Removal is not always
+    /// the right answer — a field that failed for want of an argument wants the argument — so the
+    /// choice stays with the reader, one field at a time.
+    /// </remarks>
+    async Task RemoveErroredField(ResponseError error)
+    {
+        if (operationEditor is null)
+        {
+            return;
+        }
+
+        var text = await operationEditor.GetValue();
+        var removed = FieldRemover.Remove(text, error.Path);
+        if (removed is null)
+        {
+            // The path does not resolve against what the editor holds now, or the field is all the
+            // operation selects. Either way there is no edit to make that leaves a valid document.
+            statusLine = $"Could not remove {error.PathText} from the operation.";
+            return;
+        }
+
+        await operationEditor.SetValue(removed);
+        statusLine = $"Removed {error.PathText} from the operation.";
+    }
+
     // ---- History + dialogs ----
 
     /// <summary>Clicking a history item loads it into the active tab's editors.</summary>

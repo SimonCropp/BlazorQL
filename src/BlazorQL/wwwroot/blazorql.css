@@ -622,6 +622,59 @@ html[data-theme='dark'] .blazorql {
     gap: 0.25rem;
 }
 
+/* Per-error actions under the response pane: one row per error that names a field. */
+.blazorql-response-errors {
+    border-top: 1px solid var(--blazorql-border);
+    background: var(--blazorql-panel);
+    max-height: 8rem;
+    overflow-y: auto;
+}
+
+.blazorql-response-error {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+}
+
+.blazorql-response-error + .blazorql-response-error {
+    border-top: 1px solid var(--blazorql-border);
+}
+
+.blazorql-response-error-path {
+    flex: none;
+    font-family: Consolas, "Courier New", monospace;
+    color: var(--blazorql-error);
+}
+
+/* The message is the part that can run long, so it is the part that truncates. */
+.blazorql-response-error-message {
+    flex: 1;
+    min-width: 0;
+    color: var(--blazorql-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.blazorql-response-error-remove {
+    flex: none;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.blazorql-response-error-remove:hover {
+    color: var(--blazorql-text);
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
 .blazorql-status-line {
     border-top: 1px solid var(--blazorql-border);
     padding: 0.25rem 0.75rem;

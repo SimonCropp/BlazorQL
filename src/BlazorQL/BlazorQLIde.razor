@@ -191,6 +191,7 @@
                             </div>
                         }
                     </section>
+                    <ResponseErrorList Errors="ResponseFieldErrors" OnRemove="RemoveErroredField" />
                     @if (statusLine is not null)
                     {
                         <div class="blazorql-status-line" data-testid="status-line">@statusLine</div>
