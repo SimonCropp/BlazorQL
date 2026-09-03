@@ -92,9 +92,10 @@ public sealed class BlazorQLIdeOptions
 
     /// <summary>
     /// Applied to the directives before <see cref="WriteContentSecurityPolicy"/> sends them, for
-    /// the app's own hardening or to widen one the IDE leaves narrow. Ordered and mutable, so an
-    /// entry can be added or replaced - appending a duplicate directive to the header would not
-    /// override anything, because the first occurrence is the one that counts.
+    /// the app's own hardening or to widen one the IDE leaves narrow. Keyed by directive name so an
+    /// entry can be added or replaced - appending a duplicate to the header would not override
+    /// anything, because the first occurrence of a directive is the one that counts. The order they
+    /// come back in carries no meaning; a policy is a set.
     /// </summary>
     /// <example>
     /// <code>

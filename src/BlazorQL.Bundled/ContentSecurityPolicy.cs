@@ -29,8 +29,9 @@ public static class ContentSecurityPolicy
     }
 
     /// <summary>
-    /// The directives, in order, for an app that composes its own policy. Mutable and ordered, so a
-    /// caller can widen <c>connect-src</c> for a cross-origin endpoint or add its own hardening.
+    /// The directives, for an app that composes its own policy. Mutable and keyed by directive
+    /// name, so a caller can widen <c>connect-src</c> for a cross-origin endpoint or add its own
+    /// hardening. Enumeration order is not meaningful - a policy is a set of directives.
     /// </summary>
     public static IDictionary<string, string> Directives(string? nonce = null) =>
         new Dictionary<string, string>(StringComparer.Ordinal)

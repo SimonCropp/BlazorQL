@@ -13,7 +13,7 @@ nonce on every script element — no middleware, and nothing to keep in step by 
 default, because a policy is the app's to decide.
 
 Add the app's own directives, or widen one the IDE leaves narrow, through
-`ConfigureContentSecurityPolicy`. The directives are ordered and mutable, so an entry can be
+`ConfigureContentSecurityPolicy`. They are mutable and keyed by directive name, so an entry can be
 replaced — appending a duplicate to the header would change nothing, because the first occurrence
 of a directive is the one that counts:
 
@@ -73,8 +73,8 @@ rather than an inline `<style>`, so `style-src 'self'` already covers it.
 
 An app that builds one policy for every route can still take the directives from the package rather
 than transcribing them. `ContentSecurityPolicy.Build` returns the header value and
-`ContentSecurityPolicy.Directives` returns the ordered set behind it, both taking the same
-`configure` shape:
+`ContentSecurityPolicy.Directives` returns the map behind it, both taking the same `configure`
+shape:
 
 ```csharp
 var policy = ContentSecurityPolicy.Build(nonce, _ => _["frame-ancestors"] = "'none'");
