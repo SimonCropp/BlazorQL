@@ -119,12 +119,45 @@ export function trackPointer(elementId, resizerId, direction) {
     const onDown = down => {
         down.preventDefault();
         element.setPointerCapture(down.pointerId);
-        const onMove = move => {
+
+        // Pointer moves arrive faster than frames, and every one that reaches .NET re-renders the
+        // whole IDE. So only the last position of a frame is sent, and none is sent while a
+        // previous call is still out. The layout read moves in here with it, once per frame
+        // instead of once per move.
+        let position = null;
+        let frame = 0;
+        let pending = false;
+
+        const send = () => {
+            frame = 0;
+            if (pending || position === null) {
+                return;
+            }
+
             const rect = element.parentElement.getBoundingClientRect();
             const size = direction === 'x' ? rect.width : rect.height;
-            const offset = direction === 'x' ? move.clientX - rect.left : move.clientY - rect.top;
-            if (size > 0) {
-                dotNet.invokeMethodAsync('OnPaneResize', resizerId, Math.min(Math.max(offset / size, 0), 1), size);
+            const origin = direction === 'x' ? rect.left : rect.top;
+            const offset = position - origin;
+            position = null;
+            if (size <= 0) {
+                return;
+            }
+
+            pending = true;
+            dotNet.invokeMethodAsync('OnPaneResize', resizerId, Math.min(Math.max(offset / size, 0), 1), size)
+                .finally(() => {
+                    pending = false;
+                    // A move that arrived while the call was out still has to land.
+                    if (position !== null && frame === 0) {
+                        frame = requestAnimationFrame(send);
+                    }
+                });
+        };
+
+        const onMove = move => {
+            position = direction === 'x' ? move.clientX : move.clientY;
+            if (frame === 0) {
+                frame = requestAnimationFrame(send);
             }
         };
         const stop = up => {
@@ -132,6 +165,13 @@ export function trackPointer(elementId, resizerId, direction) {
             element.removeEventListener('pointermove', onMove);
             element.removeEventListener('pointerup', stop);
             element.removeEventListener('pointercancel', stop);
+            if (frame !== 0) {
+                cancelAnimationFrame(frame);
+                frame = 0;
+            }
+
+            // Where the drag ended is the one position that must not be lost to the coalescing.
+            send();
         };
         element.addEventListener('pointermove', onMove);
         element.addEventListener('pointerup', stop);

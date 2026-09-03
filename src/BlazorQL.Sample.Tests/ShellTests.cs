@@ -186,4 +186,61 @@ public class ShellTests :
         await page.ClickAsync("[data-testid='tools-variables']");
         await page.WaitForSelectorAsync("#blazorql-variables-editor .monaco-editor", 10);
     }
+
+    /// <summary>
+    /// A pane drag used to call into .NET on every pointermove, and every one of those re-rendered
+    /// the whole IDE. The moves are now coalesced to one call a frame — and the position the drag
+    /// ended on, which coalescing must never lose, still lands.
+    /// </summary>
+    [Test]
+    public async Task APaneDragCoalescesItsMovesAndKeepsTheLastOne()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        var scheduled = await page.EvaluateAsync<int>(
+            """
+            () => {
+                const resizer = document.getElementById('blazorql-session-resizer');
+                const rect = resizer.parentElement.getBoundingClientRect();
+
+                let frames = 0;
+                const raf = window.requestAnimationFrame;
+                window.requestAnimationFrame = callback => {
+                    frames++;
+                    return raf.call(window, callback);
+                };
+
+                const send = (type, clientX) => resizer.dispatchEvent(
+                    new PointerEvent(type, {bubbles: true, pointerId: 1, clientX, clientY: rect.top + 10}));
+
+                send('pointerdown', rect.left + rect.width * 0.5);
+                // Fifty moves in one task, as a real drag delivers between frames.
+                for (let step = 0; step < 50; step++) {
+                    send('pointermove', rect.left + rect.width * (0.5 - step * 0.004));
+                }
+
+                send('pointerup', rect.left + rect.width * 0.3);
+                window.requestAnimationFrame = raf;
+                return frames;
+            }
+            """);
+
+        // One frame for fifty moves, not fifty.
+        Assert.That(scheduled, Is.GreaterThan(0).And.LessThan(5));
+
+        // The drag ended at 0.3 of the container, and that is where the editors column sits.
+        await page.WaitForFunctionAsync(
+            """
+            () => {
+                const column = document.querySelector('.blazorql-editors-column');
+                const grow = parseFloat(getComputedStyle(column).flexGrow);
+                return Math.abs(grow - 0.3) < 0.02;
+            }
+            """,
+            null,
+            new() {Timeout = 10_000});
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
 }

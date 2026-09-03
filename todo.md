@@ -196,7 +196,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
 
 ## Performance
 
-- [ ] **Every pointer move during a pane drag re-renders the whole IDE**
+- [x] **Every pointer move during a pane drag re-renders the whole IDE**
   `src/BlazorQL/wwwroot/blazorql.js:115-140`, `src/BlazorQL/BlazorQLIde.razor.cs:1141-1180`
   `trackPointer` calls into .NET on every `pointermove` with no coalescing, and `OnPaneResize`
   calls `StateHasChanged` each time. Because every child component takes `EventCallback`
