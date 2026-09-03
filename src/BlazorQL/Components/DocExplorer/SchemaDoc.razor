@@ -24,18 +24,18 @@
 
     <div class="blazorql-doc-section-title">All Schema Types</div>
     <div class="blazorql-doc-type-list">
-        @foreach (var type in OtherTypes())
+        @foreach (var entry in otherTypes)
         {
             <div>
-                <TypeLink Type="new() {Kind = type.Kind, Name = type.Name}" OnNavigate="OnNavigateType" />
-                @if (QueryGenerator.CanGenerateOperation(Schema, type))
+                <TypeLink Type="new() {Kind = entry.Type.Kind, Name = entry.Type.Name}" OnNavigate="OnNavigateType" />
+                @if (entry.CanGenerateOperation)
                 {
-                    <GenerateQueryButton Type="type" OnClick="OnGenerateQuery" />
+                    <GenerateQueryButton Type="entry.Type" OnClick="OnGenerateQuery" />
                 }
-                @if (QueryGenerator.CanGenerate(type))
+                @if (entry.CanGenerate)
                 {
-                    <CopyGeneratedButton Type="type"
-                                         IsOperation="QueryGenerator.CanGenerateOperation(Schema, type)"
+                    <CopyGeneratedButton Type="entry.Type"
+                                         IsOperation="entry.CanGenerateOperation"
                                          OnClick="OnCopyGenerated" />
                 }
             </div>

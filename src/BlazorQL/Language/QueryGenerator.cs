@@ -30,10 +30,8 @@ public static class QueryGenerator
          schema.PathFromQuery(type.Name) is {Count: > 0});
 
     /// <summary>The non-deprecated root query fields returning the type.</summary>
-    static List<IntrospectionField> RootFields(SchemaIndex schema, IntrospectionType type) =>
-        schema.Find(schema.QueryTypeName)?.Fields?
-            .Where(_ => !_.IsDeprecated && _.Type.Unwrap().Name == type.Name)
-            .ToList() ?? [];
+    static IReadOnlyList<IntrospectionField> RootFields(SchemaIndex schema, IntrospectionType type) =>
+        schema.RootFieldsReturning(type.Name);
 
     /// <summary>The generated document, or null when the type has nothing selectable.</summary>
     public static string? Generate(SchemaIndex schema, IntrospectionType type)
@@ -91,7 +89,7 @@ public static class QueryGenerator
             return Wrap($"{keyword} {type.Name}", lines);
         }
 
-        public string? RootFieldsOperation(IntrospectionType type, List<IntrospectionField> rootFields)
+        public string? RootFieldsOperation(IntrospectionType type, IReadOnlyList<IntrospectionField> rootFields)
         {
             List<string> lines = [];
             foreach (var field in rootFields)

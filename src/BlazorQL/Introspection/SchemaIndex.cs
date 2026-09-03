@@ -170,6 +170,42 @@ public sealed class SchemaIndex
         return table.EnumValues.GetValueOrDefault(name);
     }
 
+    /// <summary>
+    /// The non-deprecated query-root fields whose return type is <paramref name="name"/>, built on
+    /// first ask. The documentation explorer asks for every type the schema declares, and a scan of
+    /// the root's fields per ask is quadratic in the size of the schema.
+    /// </summary>
+    public IReadOnlyList<IntrospectionField> RootFieldsReturning(string name)
+    {
+        rootFields ??= BuildRootFields();
+        return rootFields.GetValueOrDefault(name, []);
+    }
+
+    Dictionary<string, IReadOnlyList<IntrospectionField>>? rootFields;
+
+    Dictionary<string, IReadOnlyList<IntrospectionField>> BuildRootFields()
+    {
+        var found = new Dictionary<string, IReadOnlyList<IntrospectionField>>(StringComparer.Ordinal);
+        foreach (var field in Find(QueryTypeName)?.Fields ?? [])
+        {
+            if (field.IsDeprecated ||
+                field.Type.Unwrap().Name is not {} returned)
+            {
+                continue;
+            }
+
+            if (!found.TryGetValue(returned, out var fields))
+            {
+                fields = new List<IntrospectionField>();
+                found[returned] = fields;
+            }
+
+            ((List<IntrospectionField>) fields).Add(field);
+        }
+
+        return found;
+    }
+
     /// <summary>The named directive, or null.</summary>
     public IntrospectionDirective? Directive(string name)
     {

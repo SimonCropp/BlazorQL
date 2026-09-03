@@ -206,7 +206,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   sending while a previous `invokeMethodAsync` is still pending; alternatively apply the flex
   style directly in JS during the drag and commit the ratio to C# on `pointerup`.
 
-- [ ] **`SchemaDoc` recomputes generate-ability and re-sorts every type on every render**
+- [x] **`SchemaDoc` recomputes generate-ability and re-sorts every type on every render**
   `src/BlazorQL/Components/DocExplorer/SchemaDoc.razor:27-40`, `SchemaDoc.razor.cs:41-44`,
   `src/BlazorQL/Language/QueryGenerator.cs:24-36`
   `OtherTypes()` sorts all types per render, and `CanGenerateOperation` is called twice per type,
