@@ -224,7 +224,7 @@ public static class FieldRemover
         // Right to left throughout, so an earlier cut's offsets are still good after a later one.
         var operations = document.Definitions
             .OfType<GraphQLOperationDefinition>()
-            .Where(_ => _.Variables is {Items.Count: > 0})
+            .Where(_ => _.Variables is { Items.Count: > 0 })
             .OrderByDescending(_ => _.Location.Start);
 
         foreach (var operation in operations)
