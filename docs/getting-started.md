@@ -79,4 +79,4 @@ On boot the component introspects through the fetcher, feeds the schema to the e
 | `ConfirmCloseTab` | — | Async veto for tab closes. |
 | `Logo` / `ToolbarContent` / `FooterContent` | — | Render fragments for the header logo, extra toolbar buttons, and the response footer. |
 
-One `<BlazorQLIde/>` per page.
+One `<BlazorQLIde/>` per page. The language providers are registered with the page's monaco and routed to the live instance by model uri, so a second one on the same page would answer for the first. The registration is per JS runtime, which under Blazor Server means per circuit rather than per process.

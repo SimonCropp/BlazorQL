@@ -181,7 +181,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   editor was torn down, a failed interop call) is lost. Catch and log, or route through
   `InvokeAsync` with a handler.
 
-- [ ] **Page-global statics assume one JS runtime**
+- [x] **Page-global statics assume one JS runtime**
   `src/BlazorQL/BlazorQLIde.razor.cs:111-112`
   `active` and `providersRegistered` are process-wide. Fine for WebAssembly (the documented host),
   but under Blazor Server the second circuit would never register providers and completions would

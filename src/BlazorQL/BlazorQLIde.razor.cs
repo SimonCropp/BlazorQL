@@ -107,9 +107,20 @@ public partial class BlazorQLIde :
     int editorsInitialized;
     bool resolvedDark;
 
-    // The one live instance the (globally registered, once) language providers route through.
-    static BlazorQLIde? active;
-    static bool providersRegistered;
+    /// <summary>
+    /// The language providers are registered with the page's monaco, which has no idea which
+    /// component asked, so they route through whichever instance is live — one per page, as
+    /// documented. Keyed by JS runtime rather than held in a plain static so that a host with more
+    /// than one (Blazor Server, where every circuit has its own) registers per circuit instead of
+    /// the first circuit answering for every later one.
+    /// </summary>
+    static readonly ConditionalWeakTable<IJSRuntime, Providers> providers = [];
+
+    sealed class Providers
+    {
+        public BlazorQLIde? Active { get; set; }
+        public bool Registered { get; set; }
+    }
 
     // Shell state. Pane ratios are the first pane's share of the container (see PaneState).
     TabStore tabs = new();
@@ -368,18 +379,19 @@ public partial class BlazorQLIde :
 
     async Task RegisterProviders()
     {
-        active = this;
-        if (providersRegistered)
+        var registration = providers.GetOrCreateValue(JS);
+        registration.Active = this;
+        if (registration.Registered)
         {
             return;
         }
 
-        providersRegistered = true;
+        registration.Registered = true;
 
         var provider = new CompletionItemProvider(
             [" ", "(", "$", "@", ":", "{", "."],
             (modelUri, position, _) =>
-                active?.ProvideCompletions(modelUri, position) ?? Task.FromResult(EmptyCompletions()));
+                registration.Active?.ProvideCompletions(modelUri, position) ?? Task.FromResult(EmptyCompletions()));
         await BlazorMonaco.Languages.Global.RegisterCompletionItemProvider(JS, "graphql", provider);
 
         await BlazorMonaco.Languages.Global.RegisterHoverProviderAsync(
@@ -387,7 +399,7 @@ public partial class BlazorQLIde :
             "graphql",
             (modelUri, position, _) =>
                 // ReSharper disable once ConstantConditionalAccessQualifier
-                active?.ProvideOperationHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
+                registration.Active?.ProvideOperationHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
 
         // Hovering a value ending in an image extension in the response editor previews the image.
         await BlazorMonaco.Languages.Global.RegisterHoverProviderAsync(
@@ -395,7 +407,7 @@ public partial class BlazorQLIde :
             "json",
             (modelUri, position, _) =>
                 // ReSharper disable once ConstantConditionalAccessQualifier
-                active?.ProvideResponseImageHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
+                registration.Active?.ProvideResponseImageHover(modelUri, position) ?? Task.FromResult<Hover>(null!));
     }
 
     static CompletionList EmptyCompletions() =>
@@ -2039,9 +2051,10 @@ public partial class BlazorQLIde :
         headersChangeDebounce.Dispose();
         responseChangeDebounce.Dispose();
         diagnosticsDebounce.Dispose();
-        if (ReferenceEquals(active, this))
+        if (providers.TryGetValue(JS, out var registration) &&
+            ReferenceEquals(registration.Active, this))
         {
-            active = null;
+            registration.Active = null;
         }
 
         reference?.Dispose();
