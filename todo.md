@@ -175,7 +175,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   after the built-in one. Route content headers to `message.Content.Headers` and let a user
   `Accept` replace the default.
 
-- [ ] **Failures inside debounced callbacks are unobserved**
+- [x] **Failures inside debounced callbacks are unobserved**
   `src/BlazorQL/Services/Debouncer.cs:10-16`
   `RunAfterDelay` is fire-and-forget, so an exception from the action (a `GetValue` after the
   editor was torn down, a failed interop call) is lost. Catch and log, or route through
