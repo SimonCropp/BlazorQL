@@ -14,8 +14,13 @@ public partial class BlazorQLSidecar :
     IJSObjectReference? module;
     DotNetObjectReference<BlazorQLSidecar>? reference;
 
-    SidecarEntry? Selected =>
-        Store.Entries.FirstOrDefault(_ => _.Id == selectedId);
+    /// <summary>
+    /// The selected entry within a snapshot the caller already took. <see cref="SidecarStore.Entries"/>
+    /// copies the list under a lock on every access, so the panel takes one snapshot per render and
+    /// answers everything from it.
+    /// </summary>
+    SidecarEntry? SelectedIn(IReadOnlyList<SidecarEntry> entries) =>
+        entries.FirstOrDefault(_ => _.Id == selectedId);
 
     protected override void OnInitialized() =>
         Store.Changed += OnChanged;

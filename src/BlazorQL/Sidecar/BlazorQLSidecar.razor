@@ -14,21 +14,24 @@
 }
 @if (open)
 {
+    @* One snapshot per render: Entries copies the list under a lock on every access. *@
+    var entries = Store.Entries;
+
     <aside class="blazorql-sidecar" data-testid="blazorql-sidecar" role="complementary" aria-label="BlazorQL debug sidecar">
         <header class="blazorql-sidecar-header">
-            <h2>GraphQL <span class="blazorql-sidecar-count" data-testid="blazorql-sidecar-count">@Store.Entries.Count</span></h2>
+            <h2>GraphQL <span class="blazorql-sidecar-count" data-testid="blazorql-sidecar-count">@entries.Count</span></h2>
             <button type="button" data-testid="blazorql-sidecar-clear" title="Forget every captured request" @onclick="Clear">Clear</button>
             <button type="button" data-testid="blazorql-sidecar-close" title="Hide the sidecar (@Store.Options.ToggleShortcut)" @onclick="Toggle">Close</button>
         </header>
         <div class="blazorql-sidecar-body">
-            @if (Store.Entries.Count == 0)
+            @if (entries.Count == 0)
             {
                 <p class="blazorql-sidecar-empty" data-testid="blazorql-sidecar-empty">No GraphQL requests captured yet.</p>
             }
             else
             {
                 <ol class="blazorql-sidecar-entries" data-testid="blazorql-sidecar-entries">
-                    @foreach (var entry in Store.Entries)
+                    @foreach (var entry in entries)
                     {
                         <li class="@(entry.Id == selectedId ? "blazorql-sidecar-selected" : null)" @key="entry.Id" @onclick="() => Select(entry.Id)">
                             <span class="blazorql-sidecar-kind">@entry.Kind</span>
@@ -38,7 +41,7 @@
                         </li>
                     }
                 </ol>
-                @if (Selected is { } selected)
+                @if (SelectedIn(entries) is { } selected)
                 {
                     <div class="blazorql-sidecar-detail" data-testid="blazorql-sidecar-detail">
                         <div class="blazorql-sidecar-actions">

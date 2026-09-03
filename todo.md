@@ -241,7 +241,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   O(declared x provided). Build `Dictionary<string, ...>` indexes lazily (on `SchemaIndex` or the
   introspection records) and use them everywhere.
 
-- [ ] **Sidecar pretty-prints documents it will discard, and snapshots the log four times per render**
+- [x] **Sidecar pretty-prints documents it will discard, and snapshots the log four times per render**
   `src/BlazorQL/Sidecar/SidecarFetcher.cs:68`, `SidecarStore.cs:20-29`,
   `BlazorQLSidecar.razor:19,24,31`, `BlazorQLSidecar.razor.cs:17-18`
   `Pretty(current)` runs before `AddDocument` checks `MaxDocumentsPerEntry`, so a long

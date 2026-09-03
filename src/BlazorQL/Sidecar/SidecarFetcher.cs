@@ -65,7 +65,8 @@ public sealed class SidecarFetcher(IGraphQLFetcher inner, SidecarStore store) :
                     throw;
                 }
 
-                entry.AddDocument(Pretty(current), store.Options.MaxDocumentsPerEntry, stopwatch.Elapsed);
+                var document = current;
+                entry.AddDocument(() => Pretty(document), store.Options.MaxDocumentsPerEntry, stopwatch.Elapsed);
                 store.Notify();
                 yield return current;
             }

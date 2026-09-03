@@ -119,12 +119,30 @@ public sealed class SidecarEntry
         }
     }
 
-    internal void AddDocument(string json, int maxKept, TimeSpan elapsed)
+    /// <summary>
+    /// Records that a document arrived, keeping its text only while under the cap.
+    /// <paramref name="render"/> is a function rather than the text because rendering one the cap
+    /// will drop is waste a long subscription would pay for on every event.
+    /// </summary>
+    internal void AddDocument(Func<string> render, int maxKept, TimeSpan elapsed)
     {
+        bool keep;
         lock (sync)
         {
             documentCount++;
             duration = elapsed;
+            keep = documents.Count < maxKept;
+        }
+
+        if (!keep)
+        {
+            return;
+        }
+
+        var json = render();
+        lock (sync)
+        {
+            // Re-checked: something else may have taken the last slot in between.
             if (documents.Count < maxKept)
             {
                 documents.Add(json);
