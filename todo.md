@@ -162,7 +162,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   Chrome copes; Firefox and Safari have cancelled downloads when the blob URL is revoked before
   the click has been processed. Revoke on a `setTimeout` (or after `requestAnimationFrame`).
 
-- [ ] **`TabStore.Close` on the last tab leaves an empty store**
+- [x] **`TabStore.Close` on the last tab leaves an empty store**
   `src/BlazorQL/Services/TabStore.cs:35-46`
   `ActiveIndex` becomes -1 and `Active` throws `ArgumentOutOfRangeException` (repro confirmed).
   The UI hides the close button for a single tab (`TabBar.razor:28`), so it is unreachable today,

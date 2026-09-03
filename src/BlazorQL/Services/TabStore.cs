@@ -30,10 +30,20 @@ public sealed partial class TabStore
     public void Activate(int index) =>
         ActiveIndex = index;
 
-    /// <summary>Removes the tab, keeping the active tab sensible: closing the active tab activates
-    /// its neighbour; closing an earlier tab shifts the active index down with the list.</summary>
-    public void Close(int index)
+    /// <summary>
+    /// Removes the tab, keeping the active tab sensible: closing the active tab activates its
+    /// neighbour; closing an earlier tab shifts the active index down with the list. False when the
+    /// tab is the last one, which is refused — an empty store has no <see cref="Active"/> to give,
+    /// and everything reads it. The tab bar hides the close button in that case, but the rule
+    /// belongs here rather than in the markup.
+    /// </summary>
+    public bool Close(int index)
     {
+        if (tabs.Count <= 1)
+        {
+            return false;
+        }
+
         tabs.RemoveAt(index);
         if (ActiveIndex >= tabs.Count)
         {
@@ -43,6 +53,8 @@ public sealed partial class TabStore
         {
             ActiveIndex--;
         }
+
+        return true;
     }
 
     // What one tab looks like on disk — GraphiQL's tabState shape. Response is deliberately

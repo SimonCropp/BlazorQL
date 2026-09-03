@@ -1259,15 +1259,15 @@ public partial class BlazorQLIde :
         }
 
         var closingActive = index == tabs.ActiveIndex;
+        if (!tabs.Close(index))
+        {
+            return;
+        }
+
         if (closingActive)
         {
             AbandonRun();
             pickerOpen = false;
-        }
-
-        tabs.Close(index);
-        if (closingActive)
-        {
             await LoadActiveTab();
         }
 

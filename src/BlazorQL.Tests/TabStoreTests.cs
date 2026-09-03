@@ -72,4 +72,33 @@ public class TabStoreTests
         store.Activate(0);
         Assert.That(store.Active.Query, Is.EqualTo("one"));
     }
+
+    /// <summary>
+    /// The tab bar hides the close button for a lone tab, so this is unreachable through the UI --
+    /// but the store is what has to hold the invariant. Without one, ActiveIndex went to -1 and
+    /// Active threw for everything that read it afterwards.
+    /// </summary>
+    [Test]
+    public void ClosingTheLastTabIsRefused()
+    {
+        var store = new TabStore();
+        store.Add("only");
+
+        Assert.That(store.Close(0), Is.False);
+        Assert.That(store.Tabs, Has.Count.EqualTo(1));
+        Assert.That(store.ActiveIndex, Is.Zero);
+        Assert.That(store.Active.Query, Is.EqualTo("only"));
+    }
+
+    [Test]
+    public void ClosingDownToOneTabStops()
+    {
+        var store = new TabStore();
+        store.Add("one");
+        store.Add("two");
+
+        Assert.That(store.Close(1), Is.True);
+        Assert.That(store.Close(0), Is.False);
+        Assert.That(store.Active.Query, Is.EqualTo("one"));
+    }
 }
