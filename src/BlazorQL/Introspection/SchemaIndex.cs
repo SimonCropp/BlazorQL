@@ -111,6 +111,97 @@ public sealed class SchemaIndex
     }
 
     /// <summary>
+    /// Member lookups, built per type on first ask. The language layer resolves a member by name on
+    /// every keystroke — diagnostics walk the whole document, completion and hover walk to the
+    /// caret — and a linear scan of a type with hundreds of fields is paid once per selected field
+    /// every time. Lazily, because a session touches a handful of types out of a schema's hundreds.
+    /// </summary>
+    /// <remarks>
+    /// Keyed by type name, which is unique in a schema. The types passed in are expected to be this
+    /// index's own, as everything reaching them through <see cref="Find"/> is.
+    /// </remarks>
+    readonly Dictionary<string, Members> members = new(StringComparer.Ordinal);
+
+    sealed class Members
+    {
+        public Dictionary<string, IntrospectionField>? Fields { get; set; }
+        public Dictionary<string, IntrospectionInputValue>? InputFields { get; set; }
+        public Dictionary<string, IntrospectionEnumValue>? EnumValues { get; set; }
+    }
+
+    Dictionary<string, IntrospectionDirective>? directivesByName;
+
+    /// <summary>The named field of a type, or null. See <see cref="members"/>.</summary>
+    public IntrospectionField? Field(IntrospectionType? type, string name)
+    {
+        if (type is null)
+        {
+            return null;
+        }
+
+        var table = MembersOf(type);
+        table.Fields ??= Build(type.Fields, _ => _.Name);
+        return table.Fields.GetValueOrDefault(name);
+    }
+
+    /// <summary>The named input field of a type, or null. See <see cref="members"/>.</summary>
+    public IntrospectionInputValue? InputField(IntrospectionType? type, string name)
+    {
+        if (type is null)
+        {
+            return null;
+        }
+
+        var table = MembersOf(type);
+        table.InputFields ??= Build(type.InputFields, _ => _.Name);
+        return table.InputFields.GetValueOrDefault(name);
+    }
+
+    /// <summary>The named enum value of a type, or null. See <see cref="members"/>.</summary>
+    public IntrospectionEnumValue? EnumValue(IntrospectionType? type, string name)
+    {
+        if (type is null)
+        {
+            return null;
+        }
+
+        var table = MembersOf(type);
+        table.EnumValues ??= Build(type.EnumValues, _ => _.Name);
+        return table.EnumValues.GetValueOrDefault(name);
+    }
+
+    /// <summary>The named directive, or null.</summary>
+    public IntrospectionDirective? Directive(string name)
+    {
+        directivesByName ??= Build(Directives, _ => _.Name);
+        return directivesByName.GetValueOrDefault(name);
+    }
+
+    Members MembersOf(IntrospectionType type)
+    {
+        if (members.TryGetValue(type.Name, out var table))
+        {
+            return table;
+        }
+
+        table = new();
+        members[type.Name] = table;
+        return table;
+    }
+
+    /// <summary>First wins, which is what the linear scan these replace would have found.</summary>
+    static Dictionary<string, T> Build<T>(IReadOnlyList<T>? items, Func<T, string> name)
+    {
+        var table = new Dictionary<string, T>(StringComparer.Ordinal);
+        foreach (var item in items ?? [])
+        {
+            table.TryAdd(name(item), item);
+        }
+
+        return table;
+    }
+
+    /// <summary>
     /// Parses a standard introspection result. Accepts the <c>__schema</c> object wrapped in
     /// <c>data</c> (a full response) or at the root (a bare result). Null when neither shape fits.
     /// </summary>

@@ -27,9 +27,10 @@ public static class HoverEngine
         }
 
         if (scan.Mode == ScanMode.Selection &&
-            scan.CurrentType?.Fields?.FirstOrDefault(_ => _.Name == word) is { } field)
+            scan.CurrentType is {} selected &&
+            schema.Field(selected, word) is { } field)
         {
-            var signature = $"{scan.CurrentType.Name}.{field.Name}: {field.Type.Display()}";
+            var signature = $"{selected.Name}.{field.Name}: {field.Type.Display()}";
             var description = field.Description;
             if (field.IsDeprecated)
             {

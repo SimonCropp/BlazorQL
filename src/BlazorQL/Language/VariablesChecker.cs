@@ -159,7 +159,7 @@ public static class VariablesChecker
                 var fields = type.InputFields ?? [];
                 foreach (var property in value.EnumerateObject())
                 {
-                    var field = fields.FirstOrDefault(_ => _.Name == property.Name);
+                    var field = schema.InputField(type, property.Name);
                     if (field is null)
                     {
                         errors.Add($"{path}.{property.Name} is not a field of {typeName}.");

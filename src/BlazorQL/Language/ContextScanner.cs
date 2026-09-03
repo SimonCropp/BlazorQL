@@ -310,7 +310,7 @@ static class ContextScanner
         {
             // The directive being applied. Nothing structural changes, but a "(" straight after it
             // opens its argument list rather than the enclosing field's.
-            pendingDirective = new(schema.Directives.FirstOrDefault(_ => _.Name == name));
+            pendingDirective = new(schema.Directive(name));
             afterAt = false;
             return;
         }
@@ -393,7 +393,7 @@ static class ContextScanner
                     return;
                 }
 
-                frame.LastField = frame.Type?.Fields?.FirstOrDefault(_ => _.Name == name);
+                frame.LastField = schema.Field(frame.Type, name);
                 break;
 
             case FrameKind.Arguments:
@@ -417,7 +417,7 @@ static class ContextScanner
                 }
                 else
                 {
-                    frame.CurrentInputField = frame.Type?.InputFields?.FirstOrDefault(_ => _.Name == name);
+                    frame.CurrentInputField = schema.InputField(frame.Type, name);
                 }
 
                 break;

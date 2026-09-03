@@ -69,7 +69,7 @@ public static class LeafFiller
             switch (selection)
             {
                 case GraphQLField field:
-                    var definition = type.Fields?.FirstOrDefault(_ => _.Name == field.Name.StringValue);
+                    var definition = schema.Field(type, field.Name.StringValue);
                     if (definition is null)
                     {
                         continue;
@@ -124,7 +124,7 @@ public static class LeafFiller
             builder.Append("  ");
             builder.Append(name);
 
-            var field = type.Fields?.FirstOrDefault(_ => _.Name == name);
+            var field = schema.Field(type, name);
             var fieldType = field is null ? null : schema.Find(field.Type.Unwrap().Name);
             if (fieldType is not null &&
                 !IsLeaf(fieldType) &&

@@ -24,13 +24,16 @@ public partial class FieldDoc
 
     protected override void OnParametersSet()
     {
+        // Resolved per page rather than per render: OnParametersSet runs on every render of the
+        // explorer, and on a type with hundreds of fields these are two scans of all of them.
         var key = $"{Parent.Name}.{FieldName}";
-        if (lastKey != key)
+        if (lastKey == key)
         {
-            lastKey = key;
-            showDeprecatedArgs = false;
+            return;
         }
 
+        lastKey = key;
+        showDeprecatedArgs = false;
         field = Parent.Fields?.FirstOrDefault(_ => _.Name == FieldName);
         inputField = field is null
             ? Parent.InputFields?.FirstOrDefault(_ => _.Name == FieldName)

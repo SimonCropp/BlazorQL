@@ -64,4 +64,47 @@ public class SchemaIndexTests
         using var document = JsonDocument.Parse("""{"data": {"something": 1}}""");
         Assert.That(SchemaIndex.Parse(document.RootElement), Is.Null);
     }
+
+    /// <summary>
+    /// The member lookups the language layer resolves names through. Built lazily per type, so the
+    /// first ask and every one after it have to agree.
+    /// </summary>
+    [Test]
+    public void MemberLookupsFindWhatAScanWouldHave()
+    {
+        using var document = JsonDocument.Parse(SchemaJson());
+        var schema = SchemaIndex.Parse(document.RootElement)!;
+
+        var query = schema.Find("Query")!;
+        Assert.That(schema.Field(query, "hasArgs")!.Name, Is.EqualTo("hasArgs"));
+        Assert.That(schema.Field(query, "hasArgs")!.Name, Is.EqualTo("hasArgs"));
+        Assert.That(schema.Field(query, "nope"), Is.Null);
+        Assert.That(schema.Field(null, "hasArgs"), Is.Null);
+
+        var input = schema.Find("PetInput")!;
+        Assert.That(schema.InputField(input, "name")!.Name, Is.EqualTo("name"));
+        Assert.That(schema.InputField(input, "nope"), Is.Null);
+        Assert.That(schema.InputField(null, "name"), Is.Null);
+
+        var color = schema.Find("Color")!;
+        Assert.That(schema.EnumValue(color, "RED")!.Name, Is.EqualTo("RED"));
+        Assert.That(schema.EnumValue(color, "MAUVE"), Is.Null);
+        Assert.That(schema.EnumValue(null, "RED"), Is.Null);
+
+        Assert.That(schema.Directive("repeat")!.Name, Is.EqualTo("repeat"));
+        Assert.That(schema.Directive("nope"), Is.Null);
+    }
+
+    /// <summary>A type has fields or input fields, never both. Asking for the other gives nothing.</summary>
+    [Test]
+    public void TheWrongKindOfMemberIsNotFound()
+    {
+        using var document = JsonDocument.Parse(SchemaJson());
+        var schema = SchemaIndex.Parse(document.RootElement)!;
+
+        var query = schema.Find("Query")!;
+
+        Assert.That(schema.InputField(query, "hasArgs"), Is.Null);
+        Assert.That(schema.EnumValue(query, "hasArgs"), Is.Null);
+    }
 }

@@ -9,6 +9,8 @@
     <IsPublishable>false</IsPublishable>
     <!-- The generated runner is not held to the same style rules as the library. -->
     <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <!-- A [Benchmark] is an instance method whether or not it touches instance state. -->
+    <NoWarn>$(NoWarn);CA1822</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />

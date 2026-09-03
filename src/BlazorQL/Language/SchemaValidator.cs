@@ -300,7 +300,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                 return;
             }
 
-            var definition = parent.Fields?.FirstOrDefault(_ => _.Name == name);
+            var definition = index.Field(parent, name);
             if (definition is null)
             {
                 // A union carries no fields of its own, so the author has to narrow first. Saying so
@@ -465,7 +465,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             foreach (var directive in directives?.Items ?? [])
             {
                 var name = directive.Name.StringValue;
-                var declared = index.Directives.FirstOrDefault(_ => _.Name == name);
+                var declared = index.Directive(name);
                 if (declared is null)
                 {
                     Error(directive.Name, $"Unknown directive \"@{name}\".");
@@ -578,7 +578,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             }
 
             var literal = enumValue.Name.StringValue;
-            var declared = type.EnumValues?.FirstOrDefault(_ => _.Name == literal);
+            var declared = index.EnumValue(type, literal);
             if (declared is null)
             {
                 Error(value, $"Value \"{literal}\" does not exist in \"{type.Name}\" enum.");
@@ -605,7 +605,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             foreach (var field in fields)
             {
                 var name = field.Name.StringValue;
-                var definition = type.InputFields?.FirstOrDefault(_ => _.Name == name);
+                var definition = index.InputField(type, name);
                 if (definition is null)
                 {
                     Error(field.Name, $"Field \"{name}\" is not defined by type \"{type.Name}\".");
@@ -615,6 +615,9 @@ public sealed class SchemaValidator(SchemaIndex index)
                 CheckValue(field.Value, definition.Type, definition.DefaultValue);
             }
 
+            // Named once rather than rescanned per declared field, which was quadratic on an
+            // input type with many of them.
+            var provided = new HashSet<string>(fields.Select(_ => _.Name.StringValue), StringComparer.Ordinal);
             foreach (var definition in type.InputFields ?? [])
             {
                 if (definition.Type.Kind != "NON_NULL" ||
@@ -623,7 +626,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                     continue;
                 }
 
-                if (fields.All(_ => _.Name.StringValue != definition.Name))
+                if (!provided.Contains(definition.Name))
                 {
                     Error(
                         value,

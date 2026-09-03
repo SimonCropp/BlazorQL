@@ -230,7 +230,7 @@ one-instance-per-page limitation. Those are documented choices, not defects.
   `SetResponse` instead of reading it back through interop; (c) cache the parsed error list keyed
   on the response string reference.
 
-- [ ] **Linear member lookups throughout the language layer**
+- [x] **Linear member lookups throughout the language layer**
   `src/BlazorQL/Language/SchemaValidator.cs:221,281,306,385,394,508,535,553`,
   `src/BlazorQL/Language/ContextScanner.cs:359,371,383`, `LeafFiller.cs:72,127`,
   `HoverEngine.cs:30,43`, `VariablesChecker.cs:139,156`, `Components/DocExplorer/FieldDoc.razor.cs:34-37`
