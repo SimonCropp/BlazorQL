@@ -243,4 +243,60 @@ public class ShellTests :
 
         Assert.That(ConsoleErrors(), Is.Empty);
     }
+
+    /// <summary>
+    /// Importing a pasted request: the dialog parses as it is filled in, Import opens a tab holding
+    /// the query, variables and the headers that survived filtering, and the tab that was already
+    /// open survives it.
+    /// </summary>
+    [Test]
+    public async Task ImportingAPastedRequestOpensANewTab()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync("query Existing { id }");
+
+        await page.ClickAsync("[data-testid='tab-import']");
+        await page.WaitForSelectorAsync("[data-testid='import-dialog']", 10);
+
+        // Filled rather than pasted: a real clipboard paste needs permissions the harness does not
+        // grant, and the dialog parses on input either way.
+        await page.FillAsync("[data-testid='import-text']", importedCurl);
+        await page.WaitForSelectorAsync("[data-testid='import-summary']:has-text('1 variable')", 10);
+
+        await page.ClickAsync("[data-testid='import-confirm']");
+        await page.WaitForSelectorAsync(".blazorql-tab.blazorql-active .blazorql-tab-button:has-text('EnableUser')", 10);
+
+        var operation = await page.GetModelValueAsync("blazorql-operation");
+        var variables = await page.GetModelValueAsync("blazorql-variables");
+        var headers = await page.GetModelValueAsync("blazorql-request-headers");
+
+        Assert.Multiple(() =>
+        {
+            // The one-line body arrived indented, not as it was pasted.
+            Assert.That(operation, Does.Contain("mutation EnableUser("));
+            Assert.That(variables, Does.Contain("\"id\""));
+            // The custom header survived; the content type and the client hints did not.
+            Assert.That(headers, Does.Contain("authorization"));
+            Assert.That(headers, Does.Not.Contain("sec-ch-ua"));
+        });
+
+        // LoadActiveTab opened the tools strip, because the imported tab has variables.
+        Assert.That(await page.Locator(".blazorql-editor-tools.blazorql-collapsed").CountAsync(), Is.Zero);
+
+        var status = await page.WaitForSelectorAsync("[data-testid='status-line']", 10);
+        Assert.That(await status!.TextContentAsync(), Is.EqualTo("Imported 1 request · 1 of 3 headers imported"));
+
+        // The tab that was open before the import still holds its own text.
+        await page.ClickAsync(".blazorql-tab-button:has-text('Existing')");
+        await WaitForOperationTextAsync(page, "_.getValue().includes('Existing')");
+
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+
+    const string importedCurl =
+        """
+        curl --url 'https://example.com/graphql' -H 'authorization: Bearer abc' -H 'content-type: application/json' -H 'sec-ch-ua: "Chromium";v="152"' --data-raw '{"operationName":"EnableUser","variables":{"id":"a"},"query":"mutation EnableUser($id:ID!){enableUser(id:$id){success}}"}'
+        """;
 }

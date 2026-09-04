@@ -1,0 +1,27 @@
+﻿operation: <not pinned>
+headers:   0 of 0
+
+---- query ----
+query CurrentUserPermissions {
+  canViewBill {
+    ...CanObject
+    __typename
+  }
+  currentUser {
+    id
+    firstName
+    lastName
+    __typename
+  }
+}
+
+fragment CanObject on Can {
+  allowed
+  userHasRights
+  reasonDenied
+  __typename
+}
+
+---- variables ----
+
+---- headers ----

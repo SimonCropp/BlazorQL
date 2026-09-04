@@ -15,6 +15,7 @@ An in-browser GraphQL IDE built in Blazor WASM. The editors are Monaco via the B
 - **Schema-aware editing**: completion (fields, arguments, input objects, enums, variables, fragments, directives), live validation with deprecation warnings, and hover docs — computed in C#, against the introspected schema.
 - **Documentation explorer**: navigable schema docs with markdown descriptions, deprecated sections, argument defaults, bucketed search, an SDL view, generate-a-query buttons per type, and Ctrl-click jump-to-doc from the editor.
 - **Tabs** with derived titles, rename, and full persistence across reloads.
+- **Import a request**: paste a url, a curl command (bash or cmd), a PowerShell command, a `fetch` call, or a JSON request body copied from a network tab, and get a tab with the query, variables, and the headers worth replaying.
 - **Variables and headers editors** — JSONC tolerated, with variables validated against the operation's declarations.
 - **Execution**: run-at-caret, an operation picker for multi-operation documents, subscriptions, and incremental delivery (`@defer`/`@stream`) merged live into the response.
 - **History**: 20-item log plus unlimited favorites, labels, and a search box.
@@ -25,7 +26,7 @@ An in-browser GraphQL IDE built in Blazor WASM. The editors are Monaco via the B
 
 Dark mode:
 
-<img src="tests/BlazorQL.Sample.Tests/UiScreenshotTests.HeroDark.verified.png" border="1" alt="BlazorQL in dark mode">
+<img src="src/BlazorQL.Sample.Tests/UiScreenshotTests.HeroDark.verified.png" border="1" alt="BlazorQL in dark mode">
 
 
 ## Usage

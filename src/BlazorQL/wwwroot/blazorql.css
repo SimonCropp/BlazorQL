@@ -502,7 +502,8 @@ html[data-theme='dark'] .blazorql {
 }
 
 .blazorql-tab-close,
-.blazorql-tab-add {
+.blazorql-tab-add,
+.blazorql-tab-import {
     display: grid;
     place-items: center;
     width: 1.5rem;
@@ -515,13 +516,15 @@ html[data-theme='dark'] .blazorql {
 }
 
 .blazorql-tab-close svg,
-.blazorql-tab-add svg {
+.blazorql-tab-add svg,
+.blazorql-tab-import svg {
     width: 0.85rem;
     height: 0.85rem;
 }
 
 .blazorql-tab-close:hover,
-.blazorql-tab-add:hover {
+.blazorql-tab-add:hover,
+.blazorql-tab-import:hover {
     background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
     color: var(--blazorql-text);
 }
@@ -1043,7 +1046,8 @@ html[data-theme='dark'] .blazorql {
     flex: none;
 }
 
-.blazorql-dialog-button-group button {
+.blazorql-dialog-button-group button,
+.blazorql-dialog-actions button {
     border: 1px solid var(--blazorql-border);
     border-radius: 4px;
     background: transparent;
@@ -1053,7 +1057,8 @@ html[data-theme='dark'] .blazorql {
     cursor: pointer;
 }
 
-.blazorql-dialog-button-group button:hover:not(:disabled) {
+.blazorql-dialog-button-group button:hover:not(:disabled),
+.blazorql-dialog-actions button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
 }
 
@@ -1062,7 +1067,8 @@ html[data-theme='dark'] .blazorql {
     border-color: var(--blazorql-accent);
 }
 
-.blazorql-dialog-button-group button:disabled {
+.blazorql-dialog-button-group button:disabled,
+.blazorql-dialog-actions button:disabled {
     opacity: 0.6;
     cursor: default;
 }
@@ -1082,6 +1088,82 @@ html[data-theme='dark'] .blazorql {
 .blazorql-shortkeys-table code {
     font-family: Consolas, "Courier New", monospace;
     font-size: 0.85em;
+}
+
+/* ---- Import-request dialog ---- */
+
+/* The default panel is too narrow to read a pasted request in. */
+.blazorql-dialog[data-testid="import-dialog"] {
+    width: min(46rem, calc(100vw - 2rem));
+}
+
+.blazorql-import-body {
+    padding: 0.7rem 0;
+    border-top: 1px solid var(--blazorql-border);
+}
+
+.blazorql-import-label {
+    margin-bottom: 0.4rem;
+    color: var(--blazorql-muted);
+}
+
+.blazorql-import-label code {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.85em;
+}
+
+.blazorql-import-input {
+    display: block;
+    width: 100%;
+    resize: vertical;
+    padding: 0.4rem 0.5rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: var(--blazorql-bg);
+    color: var(--blazorql-text);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    /* Wrapped rather than scrolled sideways: a captured request's last line is its body, which is
+       one very long line, and leaving it unwrapped means a paste lands showing the far right of it
+       and nothing else. Each header still starts on its own line. */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-y: auto;
+}
+
+.blazorql-import-input::placeholder {
+    color: var(--blazorql-muted);
+}
+
+.blazorql-import-input:focus-visible {
+    outline: none;
+    border-color: var(--blazorql-accent);
+}
+
+/* Holds the line's height so the buttons do not jump as the summary appears and clears. */
+.blazorql-import-summary {
+    min-height: 1.4em;
+    margin-top: 0.4rem;
+    color: var(--blazorql-muted);
+    font-size: 0.85rem;
+}
+
+.blazorql-import-summary.blazorql-import-invalid {
+    color: var(--blazorql-error);
+}
+
+.blazorql-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--blazorql-border);
+}
+
+.blazorql-import-confirm:enabled {
+    color: var(--blazorql-accent);
+    border-color: var(--blazorql-accent);
 }
 
 /* ---- Editor hosts ---- */

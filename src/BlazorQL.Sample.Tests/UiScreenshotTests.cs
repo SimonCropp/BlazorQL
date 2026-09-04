@@ -114,6 +114,37 @@ public class UiScreenshotTests :
             .PageScreenshotOptions(new(), screenshotOnly: true);
     }
 
+    /// <summary>
+    /// The import dialog holding a pasted cURL command. Worth its own capture: this is the only
+    /// textarea in the RCL, so it is the only place the input tokens are exercised at all.
+    /// </summary>
+    [Test]
+    public async Task ImportDialog()
+    {
+        var page = await NewSizedPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+        await ForceTheme(page, "light");
+
+        await page.ClickAsync("[data-testid='tab-import']");
+        await page.WaitForSelectorAsync("[data-testid='import-dialog']", 10);
+        await page.FillAsync("[data-testid='import-text']", importedCurl);
+        await page.WaitForSelectorAsync("[data-testid='import-summary']:has-text('headers imported')", 10);
+
+        await Verify(page)
+            .PageScreenshotOptions(new(), screenshotOnly: true);
+    }
+
+    const string importedCurl =
+        """
+        curl 'https://example.com/graphql' \
+          -H 'accept: application/json, text/plain, */*' \
+          -H 'authorization: Bearer eyJhbGciOiJSUzI1NiJ9' \
+          -H 'content-type: application/json' \
+          -H 'df-client-version: 1.0.5233' \
+          -H 'sec-ch-ua-platform: "Windows"' \
+          --data-raw '{"operationName":"EnableUser","variables":{"id":"bca79fdd","rowVersion":76863},"query":"mutation EnableUser($id:ID!,$rowVersion:Int!){enableUser(id:$id,rowVersion:$rowVersion){success __typename}}"}'
+        """;
+
     async Task<IPage> OpenWithQueryRun(string theme)
     {
         var page = await NewSizedPageAsync();

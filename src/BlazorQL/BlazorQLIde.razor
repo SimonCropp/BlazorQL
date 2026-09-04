@@ -1,4 +1,4 @@
-@namespace BlazorQL
+﻿@namespace BlazorQL
 @using BlazorMonaco.Editor
 @inject IJSRuntime JS
 
@@ -31,6 +31,7 @@
                         OnActivate="ActivateTab"
                         OnClose="CloseTab"
                         OnAdd="AddTab"
+                        OnImport="OpenImport"
                         OnRename="RenameTab" />
             <div class="blazorql-logo">
                 @if (Logo is null)
@@ -219,5 +220,11 @@
     @if (shortKeysOpen)
     {
         <ShortKeysDialog OnClose="CloseShortKeys" />
+    }
+    @if (importOpen)
+    {
+        <ImportRequestDialog HeadersEnabled="IsHeadersEditorEnabled"
+                             OnImport="ImportRequests"
+                             OnClose="CloseImport" />
     }
 </div>

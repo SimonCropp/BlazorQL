@@ -145,6 +145,7 @@ public partial class BlazorQLIde :
     bool persistHeaders;
     bool settingsOpen;
     bool shortKeysOpen;
+    bool importOpen;
 
     // M7: the status footer under the response pane, and the pending focus request the Ctrl-Alt-K
     // shortcut leaves for the render that opens the docs pane.
@@ -2022,6 +2023,76 @@ public partial class BlazorQLIde :
 
     void CloseShortKeys() =>
         shortKeysOpen = false;
+
+    void OpenImport() =>
+        importOpen = true;
+
+    void CloseImport() =>
+        importOpen = false;
+
+    /// <summary>
+    /// Turns imported requests into tabs, one each, the way a generated document becomes one: the
+    /// active tab is taken while it is still blank rather than being stranded behind the import.
+    /// </summary>
+    async Task ImportRequests(IReadOnlyList<ImportedRequest> requests)
+    {
+        importOpen = false;
+        if (operationEditor is null ||
+            requests.Count == 0)
+        {
+            return;
+        }
+
+        AbandonRun();
+        pickerOpen = false;
+        await SaveActiveTab();
+        foreach (var request in requests)
+        {
+            if (!string.IsNullOrWhiteSpace(tabs.Active.Query))
+            {
+                tabs.Add("", DefaultHeaders ?? "");
+            }
+
+            var tab = tabs.Active;
+            tab.Query = request.Query;
+            tab.Variables = request.Variables;
+            tab.OperationName = request.OperationName;
+            if (IsHeadersEditorEnabled &&
+                request.Headers.Length > 0)
+            {
+                // Imported headers replace the host's defaults rather than merging into them: a
+                // hybrid of the two describes no request that was ever sent, and the merge rule
+                // that looks most sensible (imported wins) would make a default Authorization
+                // appear or vanish depending on whether the capture happened to mention one. A
+                // request whose headers were all filtered away keeps the defaults, since nothing
+                // there is being contradicted.
+                tab.Headers = request.Headers;
+            }
+        }
+
+        await LoadActiveTab();
+        // After LoadActiveTab, which clears the status line for the tab it has just loaded.
+        statusLine = ImportStatus(requests);
+        SchedulePersist();
+    }
+
+    string ImportStatus(IReadOnlyList<ImportedRequest> requests)
+    {
+        var text = requests.Count == 1
+            ? "Imported 1 request"
+            : $"Imported {requests.Count} requests";
+
+        // The dialog is gone by now, so this is the only place the filtered-header count can be
+        // reported — and it is the one fact the editors themselves do not show.
+        var request = requests[0];
+        if (IsHeadersEditorEnabled &&
+            request.HeadersFound > 0)
+        {
+            return $"{text} · {request.HeadersImported} of {request.HeadersFound} headers imported";
+        }
+
+        return text;
+    }
 
     static readonly Dictionary<string, string> emptyHeaders = [];
 
