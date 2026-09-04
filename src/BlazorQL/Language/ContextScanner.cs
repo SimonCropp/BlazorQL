@@ -193,7 +193,7 @@ static class ContextScanner
                 var name = text[start..i];
                 HandleName(schema, frames, name, variables,
                     ref pendingRoot, ref afterEllipsis, ref afterOn, ref afterAt, ref afterDollar,
-                    ref inVariableDefinitions, ref variableAwaitingType, ref pendingDirective);
+                    ref inVariableDefinitions, ref variableAwaitingType, out pendingDirective);
                 continue;
             }
 
@@ -304,7 +304,7 @@ static class ContextScanner
         ref bool afterDollar,
         ref bool inVariableDefinitions,
         ref bool variableAwaitingType,
-        ref PendingDirective? pendingDirective)
+        out PendingDirective? pendingDirective)
     {
         if (afterAt)
         {
