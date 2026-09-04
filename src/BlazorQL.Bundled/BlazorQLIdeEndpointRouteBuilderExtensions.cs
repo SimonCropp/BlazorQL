@@ -3,6 +3,28 @@ namespace BlazorQL;
 /// <summary>Mounts the BlazorQL IDE in an ASP.NET Core app.</summary>
 public static class BlazorQLIdeEndpointRouteBuilderExtensions
 {
+    /// <summary>Where the IDE mounts when the pattern is left to the package.</summary>
+    [StringSyntax("Route")]
+    public const string DefaultPattern = "/blazorql";
+
+    /// <summary>
+    /// Serves the IDE at <see cref="DefaultPattern"/>, configured. The overload exists so that an
+    /// app with something to configure but no reason to move the mount does not have to name the
+    /// pattern purely to reach the second parameter.
+    /// </summary>
+    /// <example>
+    /// <code>app.MapBlazorQL(_ =&gt; _.DocumentTitle = "Orders");</code>
+    /// </example>
+    /// <returns>The mounted endpoints, as <see cref="MapBlazorQL(IEndpointRouteBuilder,string,Action{BlazorQLIdeOptions})"/>.</returns>
+    public static IEndpointConventionBuilder MapBlazorQL(
+        this IEndpointRouteBuilder endpoints,
+        Action<BlazorQLIdeOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        return endpoints.MapBlazorQL(DefaultPattern, configure);
+    }
+
     /// <summary>
     /// Serves the IDE at <paramref name="pattern"/>. The whole WebAssembly application is embedded
     /// in this assembly, so there is nothing to deploy alongside it and no Blazor SDK involved.
@@ -16,7 +38,7 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
     /// </returns>
     public static IEndpointConventionBuilder MapBlazorQL(
         this IEndpointRouteBuilder endpoints,
-        [StringSyntax("Route")] string pattern = "/blazorql",
+        [StringSyntax("Route")] string pattern = DefaultPattern,
         Action<BlazorQLIdeOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(endpoints);

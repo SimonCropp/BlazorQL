@@ -37,6 +37,12 @@ public abstract class BundledFixture
     /// <summary>The pattern passed to MapBlazorQL.</summary>
     protected virtual string Mount => "/blazorql";
 
+    /// <summary>
+    /// Mount through the overload that takes only the configuration, leaving the pattern to the
+    /// package. <see cref="Mount"/> then has to agree with what the package defaults to.
+    /// </summary>
+    protected virtual bool MountAtDefault => false;
+
     /// <summary>Turns on the consumer's own response compression, which must not double-encode.</summary>
     protected virtual bool UseResponseCompression => false;
 
@@ -92,7 +98,14 @@ public abstract class BundledFixture
         }
 
         MapSchema(host);
-        host.MapBlazorQL(Mount, Configure);
+        if (MountAtDefault)
+        {
+            host.MapBlazorQL(Configure);
+        }
+        else
+        {
+            host.MapBlazorQL(Mount, Configure);
+        }
 
         await host.StartAsync();
         var origin = host.Urls.Single().TrimEnd('/');

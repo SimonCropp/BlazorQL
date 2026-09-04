@@ -59,7 +59,7 @@ For a site that is not a Blazor app, `BlazorQL.Bundled` ships the same IDE as a 
 assembly with the whole WebAssembly application embedded - one package reference and one line:
 
 ```csharp
-app.MapBlazorQL("/blazorql", _ => _.Endpoint = "/graphql");
+app.MapBlazorQL();
 ```
 
 
