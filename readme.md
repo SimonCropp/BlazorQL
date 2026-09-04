@@ -1,4 +1,4 @@
-# <img src="icon.png" height="40px" alt="/src/icon.png"> BlazorQL
+# <img src="/src/icon.png" height="30px"> BlazorQL
 
 [![NuGet Status](https://img.shields.io/nuget/v/BlazorQL.svg?label=BlazorQL)](https://www.nuget.org/packages/BlazorQL/)
 [![NuGet Status](https://img.shields.io/nuget/v/BlazorQL.Bundled.svg?label=BlazorQL.Bundled)](https://www.nuget.org/packages/BlazorQL.Bundled/)
