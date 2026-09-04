@@ -37,17 +37,20 @@ The import button beside the tab strip takes a request copied out of a browser's
 
 ### Copy
 
-<img src="copy-as-curl.png" border="1" alt="Chrome devtools network tab, right-click menu on a graphql request, Copy submenu open showing Copy as cURL (cmd), Copy as cURL (bash), Copy as PowerShell and Copy as fetch">
+<img src="copy-as-curl.png" width="344" border="1" alt="Chrome devtools network tab, right-click menu on a graphql request, Copy submenu open showing Copy as cURL (cmd), Copy as cURL (bash), Copy as PowerShell and Copy as fetch">
 
 
 ### Button
 
-<img src="import-button.png" border="1" alt="The import button beside the tab strip, hovered, showing the tooltip Import request into a new tab">
+<img src="import-button.png" width="479" border="1" alt="The import button beside the tab strip, hovered, showing the tooltip Import request into a new tab">
 
 
 ### Dialog
 
-<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.ImportDialog.verified.png" border="1" alt="The import dialog holding a pasted curl command, summarised as mutation EnableUser, two variables, two of five headers imported">
+<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.ImportDialog.verified.png" width="700" border="1" alt="The import dialog holding a pasted curl command, summarised as mutation EnableUser, two variables, two of five headers imported">
+
+
+### Browser-controlled headers
 
 Browser-controlled headers are dropped rather than imported — cookies, `origin`, `referer`, `user-agent`, the `sec-` client hints, and `content-length`. A page cannot set any of them, so importing them would be dead weight, and the cookie is where a captured session token lives. `authorization`, `x-` headers, and anything else application-specific survive; the status line reports how many of how many were kept. A batched body — a JSON array, as Apollo sends — becomes one tab per operation. The endpoint url is discarded: the IDE keeps talking to the fetcher the host app configured.
 
