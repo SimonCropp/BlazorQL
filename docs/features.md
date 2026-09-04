@@ -9,7 +9,7 @@ The variables editor validates against the active operation's variable declarati
 
 ## Documentation explorer
 
-<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.DocExplorer.verified.png" border="1" alt="The documentation explorer on a type page: fields with arguments and defaults, descriptions, and the deprecated section">
+<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.DocExplorer.verified.png" width="700" border="1" alt="The documentation explorer on a type page: fields with arguments and defaults, descriptions, and the deprecated section">
 
 Navigable schema documentation: the root page lists root types and every schema type; type pages show implemented interfaces, fields with inline arguments and default values, first-paragraph description previews, and deprecated members behind a toggle; field pages show the full type, arguments, and deprecation reasons in markdown. Search (200 ms debounce) matches type names, field names, and argument names, with matches inside the current type listed before the rest. The SDL button switches the pane to the schema printed as SDL. Ctrl-click a name in the operation editor to jump to its docs.
 
@@ -62,4 +62,4 @@ The share button copies a link carrying the query and variables in the url fragm
 
 ## Settings
 
-<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.SettingsDialog.verified.png" border="1" alt="The settings dialog: persist headers, theme, and clear storage">
+<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.SettingsDialog.verified.png" width="700" border="1" alt="The settings dialog: persist headers, theme, and clear storage">
