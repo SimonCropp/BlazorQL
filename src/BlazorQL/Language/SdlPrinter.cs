@@ -162,8 +162,7 @@ public static class SdlPrinter
             foreach (var argument in args)
             {
                 Description(builder, argument.Description, indent + "  ");
-                builder.Append($"{indent}  {Argument(argument)}");
-                builder.AppendLine();
+                builder.AppendLine($"{indent}  {Argument(argument)}");
             }
 
             builder.Append($"{indent})");

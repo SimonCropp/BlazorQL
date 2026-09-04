@@ -1,0 +1,38 @@
+@namespace BlazorQL
+
+<DialogShell Title="Import request"
+             TestId="import-dialog"
+             FocusPanel="false"
+             OnClose="OnClose">
+    <div class="blazorql-import-body">
+        <div class="blazorql-import-label">
+            Paste a request copied from a browser's network tab — a url, a curl command, a
+            PowerShell command, a <code>fetch</code> call, or a JSON request body.
+        </div>
+        <textarea class="blazorql-import-input"
+                  data-testid="import-text"
+                  rows="10"
+                  spellcheck="false"
+                  autocomplete="off"
+                  aria-label="Request to import"
+                  aria-invalid="@(error is null ? null : "true")"
+                  placeholder="@placeholder"
+                  @ref="input"
+                  @oninput="OnInput"
+                  @onkeydown="OnKeyDown">@text</textarea>
+        <div class="blazorql-import-summary @(error is null ? null : "blazorql-import-invalid")"
+             data-testid="import-summary"
+             role="status"
+             aria-live="polite">@Summary</div>
+    </div>
+    <div class="blazorql-dialog-actions">
+        <button type="button"
+                data-testid="import-cancel"
+                @onclick="() => OnClose.InvokeAsync()">Cancel</button>
+        <button type="button"
+                class="blazorql-import-confirm"
+                data-testid="import-confirm"
+                disabled="@(requests.Count == 0)"
+                @onclick="Import">Import</button>
+    </div>
+</DialogShell>

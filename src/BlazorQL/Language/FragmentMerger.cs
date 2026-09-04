@@ -137,8 +137,11 @@ public static class FragmentMerger
             var target = spread.FragmentName.Name.StringValue;
             if (onPath.Contains(target))
             {
-                var via = path.Skip(path.IndexOf(target) + 1).Select(_ => $"\"{_}\"");
-                var through = via.Any() ? $" via {string.Join(", ", via)}" : "";
+                var via = path
+                    .Skip(path.IndexOf(target) + 1)
+                    .Select(_ => $"\"{_}\"")
+                    .ToArray();
+                var through = via.Length != 0 ? $" via {string.Join(", ", via)}" : "";
                 return $"Cannot spread fragment \"{target}\" within itself{through}.";
             }
 

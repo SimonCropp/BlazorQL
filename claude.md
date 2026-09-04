@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 An in-browser GraphQL IDE — a GraphiQL alternative — shipped as **two packages** built from one Razor Class Library. Everything lives under `src/`, including the tests and the sample.
 
 - `src/BlazorQL` is the RCL, shipping the `<BlazorQLIde/>` component for apps that are already Blazor WebAssembly.
-- `src/BlazorQL.Bundled` hosts that same IDE in any ASP.NET Core app from a single assembly — `app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql")`, no Blazor SDK, no static files, and **no package dependencies at all**. It embeds a published build of `src/BlazorQL.Bundled.Host` (a minimal WASM shell around the component) as brotli-compressed resources. See `docs/bundled.md`.
+- `src/BlazorQL.Bundled` hosts that same IDE in any ASP.NET Core app from a single assembly — `app.MapBlazorQL("/blazorql", _ => _.Endpoint = "/graphql")`, no Blazor SDK, no static files, and **no package dependencies at all**. It embeds a published build of `src/BlazorQL.Bundled.Host` (a minimal WASM shell around the component) as brotli-compressed resources. See `docs/bundled.md`.
 
 `src/BlazorQL.Sample` is a standalone Blazor WASM app that executes a schema **entirely client-side** (GraphQL.NET, `SampleSchema.cs`) and deploys to GitHub Pages. It is routed: `/` (`Pages/Home.razor`) is an ordinary consuming app — load-time query, mutation, subscription — demonstrating the debug sidecar, and `/explorer` (`Pages/Explorer.razor`) hosts the IDE with the endpoint bar. Both resolve the one DI-registered sidecar-wrapped `IGraphQLFetcher`. The `/explorer` deep link survives static hosting because `.github/workflows/pages.yml` copies `index.html` over `404.html`.
 

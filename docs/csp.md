@@ -5,7 +5,7 @@ server-rendered pages will not run it. Which directives it needs is the package'
 than the app's, so `BlazorQL.Bundled` will send them:
 
 ```csharp
-app.MapBlazorQL("/graphql-ide", _ => _.WriteContentSecurityPolicy = true);
+app.MapBlazorQL("/blazorql", _ => _.WriteContentSecurityPolicy = true);
 ```
 
 That writes the policy on the page the mount serves, mints a per-request nonce, and stamps that
@@ -19,7 +19,7 @@ of a directive is the one that counts:
 
 ```csharp
 app.MapBlazorQL(
-    "/graphql-ide",
+    "/blazorql",
     _ =>
     {
         _.WriteContentSecurityPolicy = true;
@@ -84,7 +84,7 @@ Pair it with the `Nonce` option, which hands the mount a nonce the app has alrea
 of generating one:
 
 ```csharp
-app.MapBlazorQL("/graphql-ide", _ => _.Nonce = context => (string?) context.Items["CspNonce"]);
+app.MapBlazorQL("/blazorql", _ => _.Nonce = context => (string?) context.Items["CspNonce"]);
 ```
 
 

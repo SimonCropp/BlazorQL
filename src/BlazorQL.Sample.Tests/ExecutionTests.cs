@@ -141,9 +141,7 @@ public class ExecutionTests :
 
         // B declares it, so the pane has nothing left to say.
         await page.WaitForFunctionAsync(
-            """
-            () => monaco.editor.getModelMarkers({owner: 'blazorql-variables'}).length === 0
-            """,
+            "() => monaco.editor.getModelMarkers({owner: 'blazorql-variables'}).length === 0",
             null,
             new() {Timeout = 30_000});
     }

@@ -1,0 +1,22 @@
+﻿operation: <not pinned>
+headers:   1 of 3
+
+---- query ----
+mutation EnableUser($input: EnableUserStateInput) {
+  enableUser(input: $input) {
+    success
+    __typename
+  }
+}
+
+---- variables ----
+{
+  "input": {
+    "id": "bca79fdd"
+  }
+}
+
+---- headers ----
+{
+  "df-client-version": "1.0.5233"
+}

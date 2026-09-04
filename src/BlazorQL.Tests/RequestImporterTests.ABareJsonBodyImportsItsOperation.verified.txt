@@ -1,0 +1,16 @@
+﻿operation: <not pinned>
+headers:   0 of 0
+
+---- query ----
+mutation EnableUser($id: ID!) {
+  enableUser(id: $id) {
+    success
+  }
+}
+
+---- variables ----
+{
+  "id": "a"
+}
+
+---- headers ----

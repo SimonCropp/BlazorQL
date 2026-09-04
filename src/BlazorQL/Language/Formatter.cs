@@ -15,7 +15,7 @@ public static class Formatter
     static JsonSerializerOptions jsonOptions = new()
     {
         WriteIndented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     static JsonDocumentOptions jsoncOptions = new()

@@ -232,18 +232,19 @@ public sealed class SchemaValidator(SchemaIndex index)
 
         void WalkFragmentDefinition(GraphQLFragmentDefinition fragment)
         {
-            var conditionName = fragment.TypeCondition.Type.Name.StringValue;
+            var type = fragment.TypeCondition.Type;
+            var conditionName = type.Name.StringValue;
             var condition = index.Find(conditionName);
             if (condition is null)
             {
-                Error(fragment.TypeCondition.Type, $"Unknown type \"{conditionName}\".");
+                Error(type, $"Unknown type \"{conditionName}\".");
                 return;
             }
 
             if (!IsComposite(condition))
             {
                 Error(
-                    fragment.TypeCondition.Type,
+                    type,
                     $"Fragment \"{fragment.FragmentName.Name.StringValue}\" cannot condition on non composite type \"{conditionName}\".");
                 return;
             }

@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace BlazorQL;
 
 /// <summary>
@@ -62,13 +60,13 @@ public sealed class IncrementalMerger
     static readonly JsonSerializerOptions renderOptions = new()
     {
         WriteIndented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     static readonly JsonWriterOptions writerOptions = new()
     {
         Indented = true,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
     public void Add(JsonElement payload)

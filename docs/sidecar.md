@@ -4,7 +4,7 @@ An opt-out debug panel for apps that use BlazorQL fetchers. It opens on the righ
 
 Here it is beside [the sample](sample.md)'s app page — an ordinary Blazor page consuming a GraphQL API, with the sidecar showing the query the page ran on load:
 
-<img src="../tests/BlazorQL.Sample.Tests/UiScreenshotTests.Home.verified.png" border="1" alt="The sidecar open beside an ordinary app page, showing the query the page ran on load">
+<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.Home.verified.png" width="700" border="1" alt="The sidecar open beside an ordinary app page, showing the query the page ran on load">
 
 
 ## Wiring it up

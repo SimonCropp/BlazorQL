@@ -297,3 +297,31 @@ public class WrittenCspDefersToTheAppTests :
         Assert.That(csp, Is.EqualTo("default-src 'self'; script-src 'self'"));
     }
 }
+
+/// <summary>
+/// The overload that takes only the configuration, for an app that has something to configure but
+/// no reason to move the mount off the default.
+/// </summary>
+[TestFixture]
+public class DefaultMountTests :
+    BundledFixture
+{
+    protected override bool MountAtDefault => true;
+
+    /// <summary>Where the overload put it, which is what the test is checking.</summary>
+    protected override string Mount => BlazorQLIdeEndpointRouteBuilderExtensions.DefaultPattern;
+
+    protected override void Configure(BlazorQLIdeOptions options) =>
+        options.DocumentTitle = "Configured";
+
+    [Test]
+    public async Task TheDefaultPatternIsWhereItMounts()
+    {
+        using var client = new HttpClient();
+
+        var html = await client.GetStringAsync(IdeUrl + "/");
+
+        Assert.That(BlazorQLIdeEndpointRouteBuilderExtensions.DefaultPattern, Is.EqualTo("/blazorql"));
+        Assert.That(html, Does.Contain("<title>Configured</title>"));
+    }
+}

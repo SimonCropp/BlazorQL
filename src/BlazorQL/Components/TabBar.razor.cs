@@ -19,6 +19,10 @@ public partial class TabBar
     [Parameter]
     public EventCallback OnAdd { get; set; }
 
+    /// <summary>Raised by the import button; the IDE opens the import dialog.</summary>
+    [Parameter]
+    public EventCallback OnImport { get; set; }
+
     /// <summary>Raised when an inline rename commits: (tab index, new title or null to clear).</summary>
     [Parameter]
     public EventCallback<(int Index, string? Title)> OnRename { get; set; }

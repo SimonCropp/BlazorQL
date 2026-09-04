@@ -151,8 +151,13 @@ public class GraphQLWsProtocolTests
         using var cancelSource = new CancelSource();
         var socket = new StalledSendSocket(cancelSource);
 
-        var run = Task.Run(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token));
-        var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20)));
+        // The failsafe gets a source of its own. cancelSource is the token the socket cancels
+        // itself, so sharing it would complete the delay at the same moment the run is released and
+        // leave the two racing rather than giving the run twenty seconds to finish.
+        using var failsafe = new CancelSource();
+        var run = Task.Run(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token), cancelSource.Token);
+        var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20), failsafe.Token));
+        await failsafe.CancelAsync();
 
         Assert.That(finished, Is.SameAs(run), "the enumerator's disposal never returned");
         Assert.CatchAsync<OperationCanceledException>(() => run);
@@ -167,12 +172,14 @@ public class GraphQLWsProtocolTests
     {
         bool acked;
 
-        public async Task SendAsync(string json, Cancel cancel)
+        public Task SendAsync(string json, Cancel cancel)
         {
             if (json.Contains("complete", StringComparison.Ordinal))
             {
-                await Task.Delay(Timeout.Infinite, cancel);
+                return Task.Delay(Timeout.Infinite, cancel);
             }
+
+            return Task.CompletedTask;
         }
 
         public async Task<string?> ReceiveAsync(Cancel cancel)

@@ -82,7 +82,7 @@ public class MarkdownViewTests
     {
         var markup = Render($"[text]({url})");
 
-        Assert.That(Targets(markup), Is.EqualTo(new[] {url}));
+        Assert.That(Targets(markup), Is.EqualTo([url]));
     }
 
     [Test]
@@ -117,12 +117,14 @@ public class SpecifiedByLinkTests
     {
         using var context = new BunitContext();
         return context.Render<TypeDoc>(_ => _
-                .Add(component => component.Type, new IntrospectionType
-                {
-                    Kind = "SCALAR",
-                    Name = "Url",
-                    SpecifiedByURL = url
-                }))
+                .Add(
+                    _ => _.Type,
+                    new()
+                    {
+                        Kind = "SCALAR",
+                        Name = "Url",
+                        SpecifiedByURL = url
+                    }))
             .Markup;
     }
 

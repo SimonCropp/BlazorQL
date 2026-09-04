@@ -20,6 +20,14 @@ public partial class DialogShell
     [Parameter]
     public RenderFragment? ChildContent { get; set; }
 
+    /// <summary>
+    /// False leaves the opening focus to the content. A dialog whose first control is a text field
+    /// focuses that field itself, and two focus calls on one render is a race worth not having. The
+    /// panel keeps its tabindex either way, so Escape still lands once anything inside it is focused.
+    /// </summary>
+    [Parameter]
+    public bool FocusPanel { get; set; } = true;
+
     ElementReference panel;
 
     Task OnKeyDown(KeyboardEventArgs args)
@@ -34,7 +42,8 @@ public partial class DialogShell
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (firstRender &&
+            FocusPanel)
         {
             await panel.FocusAsync();
         }

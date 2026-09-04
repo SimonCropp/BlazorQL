@@ -140,7 +140,7 @@ public class ServingTests :
         using var response = await client.GetAsync(IdeUrl);
 
         Assert.That((int) response.StatusCode, Is.InRange(300, 399));
-        Assert.That(response.Headers.Location!.ToString(), Does.EndWith("/graphql-ide/"));
+        Assert.That(response.Headers.Location!.ToString(), Does.EndWith("/blazorql/"));
     }
 
     [Test]
@@ -151,7 +151,7 @@ public class ServingTests :
         using var response = await Get(client, "/", brotli: false);
         var html = await response.Content.ReadAsStringAsync();
 
-        Assert.That(html, Does.Contain("/graphql-ide/"));
+        Assert.That(html, Does.Contain("/blazorql/"));
         Assert.That(html, Does.Contain("window.blazorqlConfig"));
         Assert.That(response.Headers.CacheControl!.NoStore, Is.True);
     }
