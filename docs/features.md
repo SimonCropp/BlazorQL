@@ -34,6 +34,10 @@ Tabs hold query, variables, headers, and response each; titles derive from the o
 
 The import button beside the tab strip takes a request copied out of a browser's network tab and opens it as a new tab, with the query and variables pretty-printed. Every shape devtools' copy menu produces is accepted: a GET url carrying `query`/`variables` parameters, curl in either the bash or the cmd flavour, the PowerShell `Invoke-WebRequest` form, a `fetch` call, and a bare JSON request body. The dialog reports what it found before anything is imported, so a paste it cannot read says why rather than opening an empty tab.
 
+<img src="import-button.png" border="1" alt="The import button beside the tab strip, hovered, showing the tooltip Import request into a new tab">
+
+<img src="copy-as-curl.png" border="1" alt="Chrome devtools network tab, right-click menu on a graphql request, Copy submenu open showing Copy as cURL (cmd), Copy as cURL (bash), Copy as PowerShell and Copy as fetch">
+
 <img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.ImportDialog.verified.png" border="1" alt="The import dialog holding a pasted curl command, summarised as mutation EnableUser, two variables, two of five headers imported">
 
 Browser-controlled headers are dropped rather than imported — cookies, `origin`, `referer`, `user-agent`, the `sec-` client hints, and `content-length`. A page cannot set any of them, so importing them would be dead weight, and the cookie is where a captured session token lives. `authorization`, `x-` headers, and anything else application-specific survive; the status line reports how many of how many were kept. A batched body — a JSON array, as Apollo sends — becomes one tab per operation. The endpoint url is discarded: the IDE keeps talking to the fetcher the host app configured.
