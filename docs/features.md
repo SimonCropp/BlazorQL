@@ -35,14 +35,14 @@ Tabs hold query, variables, headers, and response each; titles derive from the o
 The import button beside the tab strip takes a request copied out of a browser's network tab and opens it as a new tab, with the query and variables pretty-printed. Every shape devtools' copy menu produces is accepted: a GET url carrying `query`/`variables` parameters, curl in either the bash or the cmd flavour, the PowerShell `Invoke-WebRequest` form, a `fetch` call, and a bare JSON request body. The dialog reports what it found before anything is imported, so a paste it cannot read says why rather than opening an empty tab.
 
 
-### Button
-
-<img src="import-button.png" border="1" alt="The import button beside the tab strip, hovered, showing the tooltip Import request into a new tab">
-
-
 ### Copy
 
 <img src="copy-as-curl.png" border="1" alt="Chrome devtools network tab, right-click menu on a graphql request, Copy submenu open showing Copy as cURL (cmd), Copy as cURL (bash), Copy as PowerShell and Copy as fetch">
+
+
+### Button
+
+<img src="import-button.png" border="1" alt="The import button beside the tab strip, hovered, showing the tooltip Import request into a new tab">
 
 
 ### Dialog
