@@ -126,7 +126,7 @@ public class SubPathBundledIdeTests :
     {
         var page = await OpenIdeAsync();
 
-        Assert.That(page.Url, Does.Contain("/app/graphql-ide/"));
+        Assert.That(page.Url, Does.Contain("/app/blazorql/"));
         Assert.That(ConsoleErrors(), Is.Empty);
     }
 }

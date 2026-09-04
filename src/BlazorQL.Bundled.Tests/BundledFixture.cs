@@ -35,7 +35,7 @@ public abstract class BundledFixture
     protected virtual string PathBase => "";
 
     /// <summary>The pattern passed to MapBlazorQL.</summary>
-    protected virtual string Mount => "/graphql-ide";
+    protected virtual string Mount => "/blazorql";
 
     /// <summary>Turns on the consumer's own response compression, which must not double-encode.</summary>
     protected virtual bool UseResponseCompression => false;

@@ -3,7 +3,7 @@
 An in-browser GraphQL IDE for any ASP.NET Core app, in one assembly.
 
 ```csharp
-app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql");
+app.MapBlazorQL("/blazorql", _ => _.Endpoint = "/graphql");
 ```
 
 No Blazor SDK, no static files to deploy, and no package dependencies: the whole WebAssembly

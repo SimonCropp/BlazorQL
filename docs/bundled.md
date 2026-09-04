@@ -14,7 +14,7 @@ dotnet add package BlazorQL.Bundled
 ```
 
 ```csharp
-app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql");
+app.MapBlazorQL("/blazorql", _ => _.Endpoint = "/graphql");
 ```
 
 Nothing else is deployed. The whole WebAssembly application — the .NET runtime, the IDE, and the
@@ -63,7 +63,7 @@ The endpoint is resolved in the browser against the page it was served from, so 
 `MapBlazorQL` returns the endpoints it registered, so conventions apply to both of them:
 
 ```csharp
-app.MapBlazorQL("/graphql-ide").RequireAuthorization("Admin");
+app.MapBlazorQL("/blazorql").RequireAuthorization("Admin");
 ```
 
 This works with cookie authentication. It does **not** work with a bearer-only scheme: the
@@ -77,7 +77,7 @@ The IDE is a WebAssembly application, so a `'self'` policy stops it dead: no run
 language workers. Rather than restate the directives in every app, the mount can send them:
 
 ```csharp
-app.MapBlazorQL("/graphql-ide", _ => _.WriteContentSecurityPolicy = true);
+app.MapBlazorQL("/blazorql", _ => _.WriteContentSecurityPolicy = true);
 ```
 
 That also mints a per-request nonce and stamps it on every script element in the page, so the

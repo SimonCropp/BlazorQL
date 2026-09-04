@@ -21,10 +21,10 @@ public class IdeEndpointTests
     [Test]
     public async Task ThePageCarriesTheRequestsBaseHref()
     {
-        var endpoint = new IdeEndpoint(new(), "/graphql-ide");
+        var endpoint = new IdeEndpoint(new(), "/blazorql");
 
-        Assert.That(await Render(endpoint, "/one"), Does.Contain("""<base href="/one/graphql-ide/" />"""));
-        Assert.That(await Render(endpoint, "/two"), Does.Contain("""<base href="/two/graphql-ide/" />"""));
+        Assert.That(await Render(endpoint, "/one"), Does.Contain("""<base href="/one/blazorql/" />"""));
+        Assert.That(await Render(endpoint, "/two"), Does.Contain("""<base href="/two/blazorql/" />"""));
         Assert.That(endpoint.CachedPages, Is.EqualTo(2));
     }
 
@@ -32,7 +32,7 @@ public class IdeEndpointTests
     [Test]
     public async Task ARepeatedBasePathAddsNothing()
     {
-        var endpoint = new IdeEndpoint(new(), "/graphql-ide");
+        var endpoint = new IdeEndpoint(new(), "/blazorql");
 
         await Render(endpoint, "/same");
         await Render(endpoint, "/same");
@@ -43,7 +43,7 @@ public class IdeEndpointTests
     [Test]
     public async Task ThousandsOfBasePathsDoNotGrowTheCacheWithoutLimit()
     {
-        var endpoint = new IdeEndpoint(new(), "/graphql-ide");
+        var endpoint = new IdeEndpoint(new(), "/blazorql");
 
         for (var index = 0; index < 2000; index++)
         {
@@ -53,6 +53,6 @@ public class IdeEndpointTests
         Assert.That(endpoint.CachedPages, Is.LessThanOrEqualTo(32));
 
         // And every one of them still got its own base href, cached or not.
-        Assert.That(await Render(endpoint, "/prefix1999"), Does.Contain("""<base href="/prefix1999/graphql-ide/" />"""));
+        Assert.That(await Render(endpoint, "/prefix1999"), Does.Contain("""<base href="/prefix1999/blazorql/" />"""));
     }
 }

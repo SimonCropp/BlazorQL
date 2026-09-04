@@ -8,7 +8,7 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
     /// in this assembly, so there is nothing to deploy alongside it and no Blazor SDK involved.
     /// </summary>
     /// <example>
-    /// <code>app.MapBlazorQL("/graphql-ide", _ => _.Endpoint = "/graphql");</code>
+    /// <code>app.MapBlazorQL("/blazorql", _ => _.Endpoint = "/graphql");</code>
     /// </example>
     /// <returns>
     /// The mounted endpoints, so conventions apply to both of them:
@@ -16,7 +16,7 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
     /// </returns>
     public static IEndpointConventionBuilder MapBlazorQL(
         this IEndpointRouteBuilder endpoints,
-        [StringSyntax("Route")] string pattern = "/graphql-ide",
+        [StringSyntax("Route")] string pattern = "/blazorql",
         Action<BlazorQLIdeOptions>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -53,7 +53,7 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
 
     /// <summary>
     /// The bare mount. Routing ignores a trailing slash when matching, so this endpoint answers both
-    /// <c>/graphql-ide</c> and <c>/graphql-ide/</c> and has to tell them apart itself — redirecting
+    /// <c>/blazorql</c> and <c>/blazorql/</c> and has to tell them apart itself — redirecting
     /// unconditionally would send the slashed form to itself forever.
     /// </summary>
     /// <remarks>
