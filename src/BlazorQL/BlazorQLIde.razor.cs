@@ -1901,15 +1901,14 @@ public partial class BlazorQLIde :
             if (!ReferenceEquals(responseErrorsFor, text))
             {
                 responseErrorsFor = text;
-                responseErrors = ResponseErrors.Parse(text);
+                field = ResponseErrors.Parse(text);
             }
 
-            return responseErrors;
+            return field;
         }
-    }
+    } = [];
 
     string? responseErrorsFor;
-    IReadOnlyList<ResponseError> responseErrors = [];
 
     /// <summary>
     /// Takes the field an error points at out of the operation. Useful after a broad exploratory

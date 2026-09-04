@@ -1,5 +1,3 @@
-using System.Text;
-
 /// <summary>
 /// Devtools' "Copy as PowerShell", which is an <c>Invoke-WebRequest</c> call rather than a curl
 /// command: named parameters, a hashtable of headers, backtick line continuations, and backtick

@@ -77,7 +77,7 @@ public class GraphQLWsFetcherTests
 
                 using var socket = WebSocket.CreateFromStream(
                     stream,
-                    new WebSocketCreationOptions
+                    new()
                     {
                         IsServer = true,
                         SubProtocol = "graphql-transport-ws"

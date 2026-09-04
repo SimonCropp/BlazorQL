@@ -1,5 +1,3 @@
-using System.Text;
-
 /// <summary>
 /// Devtools' "Copy as fetch" (and its Node.js variant). The options object is worth a special note:
 /// devtools double-quotes every key and writes every value as a JSON value, so the object is valid

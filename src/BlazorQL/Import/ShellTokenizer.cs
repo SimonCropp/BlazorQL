@@ -1,5 +1,3 @@
-using System.Text;
-
 /// <summary>
 /// Turns a copied curl command back into its arguments. Bash and cmd get separate walks on purpose:
 /// their quoting rules have nothing in common beyond "whitespace separates arguments", and one
@@ -330,7 +328,7 @@ static class ShellTokenizer
                index < text.Length &&
                Uri.IsHexDigit(text[index]))
         {
-            value = (value * 16) + Uri.FromHex(text[index]);
+            value = value * 16 + Uri.FromHex(text[index]);
             index++;
             digits++;
         }

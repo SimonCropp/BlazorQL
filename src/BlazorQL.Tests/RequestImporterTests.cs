@@ -369,7 +369,7 @@ public class RequestImporterTests
         """;
 
     const string powerShell =
-        """"
+        """
         Invoke-WebRequest -UseBasicParsing -Uri "https://legislation.dfdev.lab/graphql" `
         -Method "POST" `
         -Headers @{
@@ -378,10 +378,10 @@ public class RequestImporterTests
           "authorization"="Bearer abc"
         } `
         -Body "{`"operationName`":`"EnableUser`",`"variables`":{`"input`":{`"id`":`"bca79fdd`"}},`"query`":`"mutation EnableUser(`$input:EnableUserStateInput){enableUser(input:`$input){success __typename}}`"}"
-        """";
+        """;
 
     const string fetchCall =
-        """"
+        """
         fetch("https://legislation.dfdev.lab/graphql", {
           "headers": {
             "accept": "application/json, text/plain, */*",
@@ -393,5 +393,5 @@ public class RequestImporterTests
           "mode": "cors",
           "credentials": "include"
         });
-        """";
+        """;
 }

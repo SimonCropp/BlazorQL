@@ -151,8 +151,8 @@ public class GraphQLWsProtocolTests
         using var cancelSource = new CancelSource();
         var socket = new StalledSendSocket(cancelSource);
 
-        var run = Task.Run(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token));
-        var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20)));
+        var run = Task.Run(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token), cancelSource.Token);
+        var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20), cancelSource.Token));
 
         Assert.That(finished, Is.SameAs(run), "the enumerator's disposal never returned");
         Assert.CatchAsync<OperationCanceledException>(() => run);
@@ -167,12 +167,14 @@ public class GraphQLWsProtocolTests
     {
         bool acked;
 
-        public async Task SendAsync(string json, Cancel cancel)
+        public Task SendAsync(string json, Cancel cancel)
         {
             if (json.Contains("complete", StringComparison.Ordinal))
             {
-                await Task.Delay(Timeout.Infinite, cancel);
+                return Task.Delay(Timeout.Infinite, cancel);
             }
+
+            return Task.CompletedTask;
         }
 
         public async Task<string?> ReceiveAsync(Cancel cancel)

@@ -160,8 +160,7 @@ public static class RequestImporter
         // "PS C:\Users\me> curl ..." and anything else shaped like a PowerShell prompt.
         var arrow = text.IndexOf('>');
         if (text.StartsWith("PS ", StringComparison.Ordinal) &&
-            arrow > 0 &&
-            arrow < 200)
+            arrow is > 0 and < 200)
         {
             return text[(arrow + 1)..].TrimStart();
         }

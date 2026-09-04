@@ -26,8 +26,7 @@ public static class HoverEngine
             return new(Markdown($"{Keyword(type.Kind)} {type.Name}", type.Description), start, end);
         }
 
-        if (scan.Mode == ScanMode.Selection &&
-            scan.CurrentType is {} selected &&
+        if (scan is { Mode: ScanMode.Selection, CurrentType: {} selected } &&
             schema.Field(selected, word) is { } field)
         {
             var signature = $"{selected.Name}.{field.Name}: {field.Type.Display()}";

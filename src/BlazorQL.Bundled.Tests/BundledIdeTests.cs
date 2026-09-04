@@ -196,9 +196,7 @@ public class SplitEndpointTests :
         var page = await OpenIdeAsync();
 
         await page.EvaluateAsync(
-            """
-            () => monaco.editor.getEditors()[0].setValue('{ id isTest }')
-            """);
+            "() => monaco.editor.getEditors()[0].setValue('{ id isTest }')");
         await page.ClickAsync("[data-testid='execute']");
 
         await page.WaitForFunctionAsync(

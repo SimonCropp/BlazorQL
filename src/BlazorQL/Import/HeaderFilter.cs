@@ -1,7 +1,3 @@
-using System.Buffers;
-using System.Text;
-using System.Text.Encodings.Web;
-
 /// <summary>
 /// Which captured headers are worth replaying. A denylist rather than an allowlist, because the
 /// headers worth keeping are app-specific — an authorization scheme, an x-* correlation id, a
@@ -115,7 +111,7 @@ static class HeaderFilter
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8JsonWriter(
                    buffer,
-                   new JsonWriterOptions
+                   new()
                    {
                        Indented = true,
                        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping

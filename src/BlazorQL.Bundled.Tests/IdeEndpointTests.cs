@@ -8,8 +8,13 @@ public class IdeEndpointTests
 {
     static async Task<string> Render(IdeEndpoint endpoint, string pathBase)
     {
-        var context = new DefaultHttpContext();
-        context.Request.PathBase = pathBase;
+        var context = new DefaultHttpContext
+        {
+            Request =
+            {
+                PathBase = pathBase
+            }
+        };
         var body = new MemoryStream();
         context.Response.Body = body;
 
