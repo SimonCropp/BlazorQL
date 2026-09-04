@@ -64,7 +64,11 @@ public partial class DocExplorer :
     DocEntry Previous => stack[^2];
 
     bool ShowSearch =>
-        Current is DocRootEntry or DocTypeEntry { Type.Kind: "OBJECT" or "INTERFACE" or "INPUT_OBJECT" };
+        Current is DocRootEntry or
+            DocTypeEntry
+            {
+                Type.Kind: "OBJECT" or "INTERFACE" or "INPUT_OBJECT"
+            };
 
     string SearchPlaceholder
     {
@@ -194,7 +198,8 @@ public partial class DocExplorer :
         }
 
         Push(new DocTypeEntry(type));
-        if (reference.Kind is "Field" or "Argument" && reference.FieldName is not null)
+        if (reference.Kind is "Field" or "Argument" &&
+            reference.FieldName is not null)
         {
             Push(new DocFieldEntry(type, reference.FieldName));
         }
