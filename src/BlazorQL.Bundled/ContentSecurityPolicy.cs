@@ -2,8 +2,8 @@ namespace BlazorQL;
 
 /// <summary>
 /// The Content-Security-Policy the IDE needs, as directives. Every entry here is here because
-/// something breaks without it, and three of the four unobvious ones break silently - a blocked
-/// font, a blocked worker, and a runtime that never compiles all leave a page that looks fine.
+/// something breaks without it, and the three unobvious ones all break silently - a blocked font, a
+/// blocked worker, and a runtime that never compiles each leave a page that looks fine.
 /// </summary>
 /// <remarks>
 /// Knowing this is the package's job, not the consuming app's. Set
@@ -16,9 +16,9 @@ public static class ContentSecurityPolicy
     /// The policy as a header value, ready for <c>Content-Security-Policy</c>.
     /// </summary>
     /// <param name="nonce">
-    /// The nonce the page's script elements carry, which lets the policy name one instead of
-    /// allowing <c>'unsafe-inline'</c>. Null falls back to <c>'unsafe-inline'</c>, because the page
-    /// cannot boot without one or the other.
+    /// The nonce the page's script elements carry. Only for an app whose own policy names a nonce
+    /// and no host source; the IDE has no inline script, so null - the usual case - is a complete
+    /// policy on its own.
     /// </param>
     /// <param name="configure">Applied to the directives before they are joined.</param>
     public static string Build(string? nonce = null, Action<IDictionary<string, string>>? configure = null)
@@ -37,10 +37,11 @@ public static class ContentSecurityPolicy
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["default-src"] = "'self'",
-            // 'wasm-unsafe-eval' compiles the .NET runtime; without it the app never starts. The
-            // nonce (or 'unsafe-inline') covers the page's own two inline scripts, and 'self'
-            // covers the ones Monaco's AMD loader injects at runtime, which cannot carry a nonce.
-            ["script-src"] = $"'self' {(nonce is {Length: > 0} ? $"'nonce-{nonce}'" : "'unsafe-inline'")} 'wasm-unsafe-eval'",
+            // 'wasm-unsafe-eval' compiles the .NET runtime; without it the app never starts. 'self'
+            // covers every script element - the page has no inline ones, and its configuration
+            // travels in a data block the browser does not execute - including the ones Monaco's
+            // AMD loader injects at runtime, which could not carry a nonce anyway.
+            ["script-src"] = nonce is {Length: > 0} ? $"'self' 'nonce-{nonce}' 'wasm-unsafe-eval'" : "'self' 'wasm-unsafe-eval'",
             // Monaco writes its own styles.
             ["style-src"] = "'self' 'unsafe-inline'",
             ["img-src"] = "'self' data:",
@@ -54,8 +55,4 @@ public static class ContentSecurityPolicy
             // work, but every keystroke logs a violation.
             ["worker-src"] = "'self' blob:"
         };
-
-    /// <summary>A nonce, in the shape the header and the page both want.</summary>
-    internal static string NewNonce() =>
-        RandomNumberGenerator.GetHexString(32);
 }

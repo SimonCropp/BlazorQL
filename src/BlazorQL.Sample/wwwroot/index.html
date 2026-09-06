@@ -24,16 +24,10 @@
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
     <script src="_framework/blazor.webassembly.js" autostart="false"></script>
     <!--
-        Blazor is started by hand, once Monaco is actually there. The script tag above only *registers*
-        editor.main.js with the AMD loader; the loader then fetches the bundle's chunks and publishes
-        window.monaco some time later. Blazor's own boot races that, and the editor components call
-        monaco.editor.create the moment they first render — so whichever finishes second decides whether
-        the page gets editors at all. Requiring the module before starting Blazor removes the race in
-        both directions; the errorback still starts the app if Monaco genuinely fails to load.
+        Starts Blazor once Monaco has published itself, which the tag above cannot do on its own.
+        A file rather than an inline block, so script-src 'self' covers it. See docs/csp.md.
     -->
-    <script>
-        require(['vs/editor/editor.main'], () => Blazor.start(), () => Blazor.start());
-    </script>
+    <script src="_content/BlazorQL/blazorql-boot.js"></script>
 </body>
 
 </html>

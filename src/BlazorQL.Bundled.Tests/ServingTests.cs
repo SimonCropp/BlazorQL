@@ -152,13 +152,14 @@ public class ServingTests :
         var html = await response.Content.ReadAsStringAsync();
 
         Assert.That(html, Does.Contain("/blazorql/"));
-        Assert.That(html, Does.Contain("window.blazorqlConfig"));
+        Assert.That(html, Does.Contain("id=\"blazorql-config\""));
         Assert.That(response.Headers.CacheControl!.NoStore, Is.True);
     }
 
     /// <summary>
-    /// A DefaultQuery holding a closing script tag must not be able to end the script element it is
-    /// written into.
+    /// A DefaultQuery holding a closing script tag must not be able to end the data block it is
+    /// written into. The html parser treats that block as raw text like any other script element,
+    /// so this is the same escape the executable version needed.
     /// </summary>
     [Test]
     public async Task TheConfigCannotBreakOutOfItsScriptElement()
@@ -167,7 +168,7 @@ public class ServingTests :
 
         using var response = await Get(client, "/", brotli: false);
         var html = await response.Content.ReadAsStringAsync();
-        var config = html[html.IndexOf("window.blazorqlConfig", StringComparison.Ordinal)..];
+        var config = html[html.IndexOf("id=\"blazorql-config\"", StringComparison.Ordinal)..];
         var script = config[..config.IndexOf("</script>", StringComparison.Ordinal)];
 
         // The query survived, but only in escaped form.

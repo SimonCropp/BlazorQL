@@ -58,14 +58,18 @@ public sealed class BlazorQLIdeOptions
     public bool MapUnknownPathsToIde { get; set; }
 
     /// <summary>
-    /// The CSP nonce for a request, stamped onto every script element in the page. Set it to serve
-    /// the IDE under a policy that names a nonce instead of allowing <c>unsafe-inline</c>; null,
-    /// the default, renders no nonce attributes at all.
+    /// The CSP nonce for a request, stamped onto every script element in the page. Only needed to
+    /// serve the IDE under an app-wide policy that names a nonce and no host source: the page has
+    /// no inline script, so <c>script-src 'self'</c> already runs it and null, the default, renders
+    /// no nonce attributes at all.
     /// </summary>
     /// <remarks>
-    /// The value has to be the one in that response's own Content-Security-Policy header, which
-    /// this package never writes - the policy belongs to the consumer. Returning null or an empty
-    /// string for a request renders that page without the attributes.
+    /// The value has to be the one in that response's own Content-Security-Policy header. Returning
+    /// null or an empty string for a request renders that page without the attributes.
+    /// <para>
+    /// A nonce-only policy also needs <c>'strict-dynamic'</c> to reach the script elements Monaco's
+    /// AMD loader injects at runtime, which cannot carry one.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>_.Nonce = context =&gt; (string?) context.Items["CspNonce"];</code>
@@ -73,16 +77,15 @@ public sealed class BlazorQLIdeOptions
     public Func<HttpContext, string?>? Nonce { get; set; }
 
     /// <summary>
-    /// Sends the Content-Security-Policy the IDE needs on the page this mount serves, with a
-    /// per-request nonce that the page's scripts carry. Off by default, because a policy is the
-    /// app's to decide - but knowing which directives the IDE needs is not, so this is the one line
-    /// that gets them right.
+    /// Sends the Content-Security-Policy the IDE needs on the page this mount serves. Off by
+    /// default, because a policy is the app's to decide - but knowing which directives the IDE
+    /// needs is not, so this is the one line that gets them right.
     /// </summary>
     /// <remarks>
     /// The header is written on the page only, not on the assets, and only when the response does
-    /// not already carry one - an app that sets its own policy for the mount keeps it. Setting
-    /// <see cref="Nonce"/> as well hands the value over rather than generating one, for an app that
-    /// mints the nonce itself.
+    /// not already carry one - an app that sets its own policy for the mount keeps it. The policy
+    /// is the same bytes on every request, because the page has nothing in it that a nonce would
+    /// cover; setting <see cref="Nonce"/> as well adds that nonce to the header and the page both.
     /// <para>
     /// See <see cref="BlazorQL.ContentSecurityPolicy"/> to fold the same directives into a policy
     /// the app writes on its own.

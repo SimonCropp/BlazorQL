@@ -3,7 +3,7 @@
 An in-browser GraphQL IDE for an ASP.NET Core app that is not a Blazor app, in one assembly.
 
 The `BlazorQL` package is a Razor Class Library: it assumes a Blazor WebAssembly host, and it needs
-five script and stylesheet tags wired into `index.html` in a load-bearing order. That is a
+six script and stylesheet tags wired into `index.html` in a load-bearing order. That is a
 reasonable ask of a team already running Blazor, and an unreasonable one of a team that has a
 GraphQL endpoint and wants an IDE next to it and nothing more.
 
@@ -54,9 +54,9 @@ Everything is configured through `MapBlazorQL`:
 | `DocumentTitle` | `GraphQL IDE` | The browser tab title. |
 | `BasePathOverride` | null | Overrides the base path baked into the page. See *Behind a proxy*. |
 | `MapUnknownPathsToIde` | false | Serves the IDE for unknown extensionless paths under the mount instead of answering 404. |
-| `WriteContentSecurityPolicy` | false | Sends the policy the IDE needs on the page, with a per-request nonce. See *Content Security Policy*. |
+| `WriteContentSecurityPolicy` | false | Sends the policy the IDE needs on the page. See *Content Security Policy*. |
 | `ConfigureContentSecurityPolicy` | null | Adds to or replaces those directives. |
-| `Nonce` | null | `Func<HttpContext, string?>` supplying the CSP nonce to stamp on every script element. See *Content Security Policy*. |
+| `Nonce` | null | `Func<HttpContext, string?>` supplying a CSP nonce to stamp on every script element, for an app already running a nonce-based policy. The IDE does not need one. See *Content Security Policy*. |
 
 The endpoint is resolved in the browser against the page it was served from, so a root-relative
 `/graphql` follows the app wherever it is hosted.
@@ -84,9 +84,9 @@ language workers. Rather than restate the directives in every app, the mount can
 app.MapBlazorQL(_ => _.WriteContentSecurityPolicy = true);
 ```
 
-That also mints a per-request nonce and stamps it on every script element in the page, so the
-policy names a nonce rather than allowing `'unsafe-inline'`. A response that already carries a
-policy keeps it.
+Nothing in the page is inline — the bootstrap is a file and the configuration is a json data block
+the browser never executes — so `script-src 'self'` runs it, with no `'unsafe-inline'` and no nonce
+to mint. A response that already carries a policy keeps it.
 
 [The whole policy, what each directive is for, and how to fold it into a header the app writes
 itself](csp.md).
