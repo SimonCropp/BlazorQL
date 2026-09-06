@@ -20,7 +20,7 @@ An in-browser GraphQL IDE built in Blazor WASM. The editors are Monaco via the B
 - **Execution**: run-at-caret, an operation picker for multi-operation documents, subscriptions, and incremental delivery (`@defer`/`@stream`) merged live into the response.
 - **History**: 20-item log plus unlimited favorites, labels, and a search box.
 - **Toolbar**: prettify, merge fragments, copy, share links (query + variables in the url fragment - never headers), response copy/download, and a status line.
-- **Transports**: HTTP (including `multipart/mixed` incremental responses), graphql-transport-ws subscriptions, or any custom `IGraphQLFetcher` - the sample executes a GraphQL.NET schema inside the WASM app and runs on GitHub Pages with no server at all.
+- **Transports**: HTTP - including `multipart/mixed` incremental responses and `text/event-stream` subscriptions (GraphQL over SSE), so one endpoint covers everything a Hot Chocolate server serves - plus graphql-transport-ws subscriptions, or any custom `IGraphQLFetcher`: the sample executes a GraphQL.NET schema inside the WASM app and runs on GitHub Pages with no server at all.
 - **Theming**: system/light/dark, followed by the editors.
 - **Debug sidecar**: an opt-out panel that logs every request through a wrapped fetcher - query, variables, headers, and each response document - with a deep link that opens any captured query in the IDE.
 

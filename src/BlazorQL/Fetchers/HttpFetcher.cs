@@ -3,12 +3,17 @@ namespace BlazorQL;
 /// <summary>
 /// Executes over HTTP POST. A plain JSON response yields one document; a
 /// <c>multipart/mixed</c> incremental-delivery response (@defer/@stream, per deferSpec 20220824)
-/// yields each part as it streams in.
+/// yields each part as it streams in; a <c>text/event-stream</c> response (GraphQL over SSE) yields
+/// each event, which is how a subscription runs without a second transport beside this one.
 /// </summary>
 public sealed class HttpFetcher(HttpClient http, string url) :
     IGraphQLFetcher
 {
-    const string accept = "application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8";
+    // The streaming types come last, and in that order, because they are what the endpoint should
+    // fall back to rather than what it should reach for: a query it can answer as one document is
+    // still answered as one document, and only an operation that cannot be — a subscription — takes
+    // the server to the bottom of the list.
+    const string accept = "application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8, text/event-stream;q=0.7";
 
     public HttpFetcher(string url)
         : this(new(), url)
@@ -29,7 +34,8 @@ public sealed class HttpFetcher(HttpClient http, string url) :
         LastStatus = null;
         using var message = new HttpRequestMessage(HttpMethod.Post, Url);
         // Lets the browser hand back the body as it streams, instead of buffering it — a no-op
-        // outside WASM, essential for multipart parts arriving over time.
+        // outside WASM, essential for multipart parts and SSE events arriving over time. Without it
+        // a subscription shows nothing until it ends, and one that never ends shows nothing at all.
         message.SetBrowserResponseStreamingEnabled(true);
 
         var body = JsonSerializer.Serialize(request, WebJson.Default.GraphQLRequest);
@@ -81,6 +87,20 @@ public sealed class HttpFetcher(HttpClient http, string url) :
                     }
 
                     yield return ParseDocument(buffered, response);
+                }
+            }
+
+            yield break;
+        }
+
+        if (string.Equals(contentType?.MediaType, "text/event-stream", StringComparison.OrdinalIgnoreCase))
+        {
+            var events = await response.Content.ReadAsStreamAsync(cancel);
+            await using (events)
+            {
+                await foreach (var result in GraphQLSseProtocol.Run(events, cancel))
+                {
+                    yield return result;
                 }
             }
 

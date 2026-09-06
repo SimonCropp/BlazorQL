@@ -1,3 +1,5 @@
+using System.Threading.Channels;
+
 /// <summary>
 /// A real GraphQL endpoint over the GraphiQL test schema, for the IDE to talk to. This is the half
 /// of the loop the WebAssembly sample cannot provide: its schema runs in the browser, so nothing
@@ -62,7 +64,63 @@ public static class SampleSchemaServer
                 }
             });
 
+        // A subscription has no single document to answer with, so it takes the streaming type the
+        // fetcher offered — which is how a real server comes to serve SSE without being asked to.
+        if (result.Streams is {Count: > 0} streams &&
+            context.Request.Headers.Accept.ToString().Contains("text/event-stream", StringComparison.OrdinalIgnoreCase))
+        {
+            await StreamEvents(context, streams.Values.First());
+            return;
+        }
+
         context.Response.ContentType = "application/json";
         await serializer.WriteAsync(context.Response.Body, result);
+    }
+
+    /// <summary>
+    /// Serves one subscription as GraphQL over SSE, in the distinct-connections mode the fetcher
+    /// speaks: a next event per result, then complete.
+    /// </summary>
+    static async Task StreamEvents(HttpContext context, IObservable<ExecutionResult> stream)
+    {
+        context.Response.ContentType = "text/event-stream";
+        context.Response.Headers.CacheControl = "no-cache";
+
+        var events = Channel.CreateUnbounded<ExecutionResult>();
+        using var subscription = stream.Subscribe(new ChannelObserver(events.Writer));
+        var cancel = context.RequestAborted;
+        try
+        {
+            await foreach (var result in events.Reader.ReadAllAsync(cancel))
+            {
+                // Flushed one event at a time. Buffering them into one write would still leave a
+                // valid stream, and would quietly cost the suite the only thing it is here to
+                // prove: that the browser sees an event when it happens.
+                await context.Response.WriteAsync($"event: next\ndata: {serializer.Serialize(result)}\n\n", cancel);
+                await context.Response.Body.FlushAsync(cancel);
+            }
+
+            await context.Response.WriteAsync("event: complete\ndata:\n\n", cancel);
+            await context.Response.Body.FlushAsync(cancel);
+        }
+        catch (OperationCanceledException)
+        {
+            // The client stopped the subscription by closing the connection, which is how the
+            // protocol says one ends.
+        }
+    }
+
+    /// <summary>Hands the schema's observable to the response writer, one result at a time.</summary>
+    sealed class ChannelObserver(ChannelWriter<ExecutionResult> writer) :
+        IObserver<ExecutionResult>
+    {
+        public void OnNext(ExecutionResult value) =>
+            writer.TryWrite(value);
+
+        public void OnError(Exception error) =>
+            writer.TryComplete(error);
+
+        public void OnCompleted() =>
+            writer.TryComplete();
     }
 }

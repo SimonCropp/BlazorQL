@@ -1,7 +1,8 @@
 /// <summary>
 /// The HTTP transport over a scripted handler: a plain JSON body yields one document, a
-/// multipart/mixed incremental-delivery body yields each part in order, the request carries the
-/// negotiated accept header plus the user's own, and only a non-JSON body is a failure.
+/// multipart/mixed incremental-delivery body yields each part in order, a text/event-stream body
+/// yields each event, the request carries the negotiated accept header plus the user's own, and
+/// only a non-JSON body is a failure.
 /// </summary>
 [TestFixture]
 public class HttpFetcherTests
@@ -56,6 +57,43 @@ public class HttpFetcherTests
         Assert.That(results[2].GetProperty("hasNext").GetBoolean(), Is.False);
     }
 
+    /// <summary>
+    /// A subscription over the same endpoint the queries go to: the server answers the negotiated
+    /// text/event-stream, and each next event is one document in the response pane.
+    /// </summary>
+    [Test]
+    public async Task EventStreamYieldsEventsInOrder()
+    {
+        var body =
+            "event: next\n" +
+            "data: {\"data\":{\"message\":\"Hi\"}}\n" +
+            "\n" +
+            ":\n" +
+            "\n" +
+            "event: next\n" +
+            "data: {\"data\":{\"message\":\"Hola\"}}\n" +
+            "\n" +
+            "event: complete\n" +
+            "data:\n" +
+            "\n";
+        var handler = new FakeHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body, Encoding.UTF8, "text/event-stream")
+            };
+            return response;
+        });
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        var results = await Collect(fetcher, new("subscription { message }"));
+
+        Assert.That(results, Has.Count.EqualTo(2));
+        Assert.That(results[0].GetProperty("data").GetProperty("message").GetString(), Is.EqualTo("Hi"));
+        Assert.That(results[1].GetProperty("data").GetProperty("message").GetString(), Is.EqualTo("Hola"));
+        Assert.That(fetcher.LastStatus, Is.EqualTo(new HttpFetchStatus(200, "OK")));
+    }
+
     [Test]
     public async Task SendsAcceptAndCustomHeadersAndCamelCaseBody()
     {
@@ -72,7 +110,7 @@ public class HttpFetcherTests
             });
 
         var request = handler.Request!;
-        Assert.That(request.Headers.NonValidated["Accept"].ToString(), Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8"));
+        Assert.That(request.Headers.NonValidated["Accept"].ToString(), Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8, text/event-stream;q=0.7"));
         Assert.That(request.Headers.GetValues("authorization").Single(), Is.EqualTo("Bearer token"));
         Assert.That(request.Headers.GetValues("x-custom").Single(), Is.EqualTo("value"));
         Assert.That(request.Content!.Headers.ContentType!.MediaType, Is.EqualTo("application/json"));
@@ -199,6 +237,6 @@ public class HttpFetcherTests
 
         Assert.That(
             handler.Request!.Headers.NonValidated["Accept"].ToString(),
-            Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8"));
+            Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8, text/event-stream;q=0.7"));
     }
 }

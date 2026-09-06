@@ -58,6 +58,52 @@ public class BundledIdeTests :
         Assert.That(ConsoleErrors(), Is.Empty);
     }
 
+    /// <summary>
+    /// A subscription over the endpoint the queries already go to: no second transport, no second
+    /// url, just the streaming media type the fetcher offered and the server picked. The timing is
+    /// the assertion — a response the browser buffered to completion would hold the first message
+    /// back until the last one had been sent, which is the failure that makes a subscription that
+    /// never ends show nothing at all.
+    /// </summary>
+    [Test]
+    public async Task StreamsASubscriptionOverSse()
+    {
+        var page = await OpenIdeAsync();
+
+        await page.EvaluateAsync(
+            """
+            () => {
+                const editor = monaco.editor.getEditors()[0];
+                editor.setValue('subscription { message(delay: 1000) }');
+            }
+            """);
+
+        // Five messages a second apart, so the whole stream takes about five seconds and the first
+        // message lands after one.
+        var stopwatch = Stopwatch.StartNew();
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForFunctionAsync(ResponseHolds("Hi"), null, new() {Timeout = 30_000});
+        var first = stopwatch.Elapsed;
+
+        // Each event replaces the last in the response pane, so arriving here at all means the
+        // stream ran to its end.
+        await page.WaitForFunctionAsync(ResponseHolds("Zdravo"), null, new() {Timeout = 30_000});
+
+        Assert.That(
+            first,
+            Is.LessThan(TimeSpan.FromSeconds(3)),
+            "the first event only arrived once the whole stream had, so the response was buffered rather than streamed");
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+
+    static string ResponseHolds(string text) =>
+        $$"""
+          () => monaco.editor
+                  .getModels()
+                  .some(_ => _.uri.path.includes('response') &&
+                             _.getValue().includes('{{text}}'))
+          """;
+
     /// <summary>Introspection reached the server and the doc explorer rendered what came back.</summary>
     [Test]
     public async Task IntrospectsTheServerSchema()

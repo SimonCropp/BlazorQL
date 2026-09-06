@@ -18,7 +18,7 @@ Every object, interface, and union type carries a generate-query button — next
 
 ## Execution
 
-Ctrl-Enter runs the operation containing the caret; with several operations in the document the run button opens a picker. Subscriptions stream events into the response pane until stopped (the run button becomes a stop button, and switching tabs stops too). Incremental delivery (`@defer`/`@stream`) merges patches into the accumulated response live, in both the path-based and pending/completed-id wire formats. Before a run, missing leaf selections are filled in automatically and highlighted amber for a few seconds.
+Ctrl-Enter runs the operation containing the caret; with several operations in the document the run button opens a picker. Subscriptions stream events into the response pane until stopped (the run button becomes a stop button, and switching tabs stops too) — over SSE on the endpoint the queries already go to, or over a websocket, depending on which the [fetcher](fetchers.md) and the server settle on. Incremental delivery (`@defer`/`@stream`) merges patches into the accumulated response live, in both the path-based and pending/completed-id wire formats. Before a run, missing leaf selections are filled in automatically and highlighted amber for a few seconds.
 
 The status line under the response shows the outcome and elapsed time — the HTTP status code when the transport has one.
 
