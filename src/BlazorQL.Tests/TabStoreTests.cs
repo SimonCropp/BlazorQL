@@ -43,6 +43,38 @@ public class TabStoreTests
         Assert.That(TabStore.Title(tab), Is.EqualTo("<untitled>"));
     }
 
+    /// <summary>
+    /// A comment that says "query" is still a comment. This is the shape that costs the most to
+    /// answer — every line tried and rejected — so it is the one most likely to tempt a shortcut.
+    /// </summary>
+    [Test]
+    public void TitleIgnoresAKeywordThatOnlyAppearsInAComment()
+    {
+        var tab = new TabState
+        {
+            Query =
+                """
+                # the query below is anonymous
+                {
+                  id
+                  isTest
+                }
+                """
+        };
+        Assert.That(TabStore.Title(tab), Is.EqualTo("<untitled>"));
+    }
+
+    /// <summary>The keyword is not word-bounded, and the last match on the line is the one taken.</summary>
+    [Test]
+    public void TitleTakesTheLastDeclarationOnALine()
+    {
+        var tab = new TabState
+        {
+            Query = "query First { id } query Second { id }"
+        };
+        Assert.That(TabStore.Title(tab), Is.EqualTo("Second"));
+    }
+
     [Test]
     public void CloseKeepsTheActiveTabSensible()
     {

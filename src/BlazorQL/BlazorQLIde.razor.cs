@@ -513,9 +513,6 @@ public partial class BlazorQLIde :
         }
     }
 
-    static readonly Regex imageToken =
-        new(@"\S+\.(png|svg|jpe?g|gif|webp)$", RegexOptions.IgnoreCase);
-
     async Task<Hover> ProvideResponseImageHover(string modelUri, Position position)
     {
         try
@@ -541,7 +538,7 @@ public partial class BlazorQLIde :
             }
 
             var token = line[start..end];
-            if (!imageToken.IsMatch(token))
+            if (!ImageToken.IsImage(token))
             {
                 return null!;
             }
