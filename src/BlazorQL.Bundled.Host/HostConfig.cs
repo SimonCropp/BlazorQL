@@ -2,7 +2,8 @@ namespace BlazorQL.Bundled.Host;
 
 /// <summary>
 /// What the server side's <c>MapBlazorQL</c> options look like by the time they reach the browser.
-/// The middleware injects this as <c>window.blazorqlConfig</c> when it renders index.html.
+/// The middleware injects this as the <c>blazorql-config</c> json data block when it renders
+/// index.html, and blazorql-host.js parses it back.
 /// </summary>
 /// <remarks>
 /// A settable class rather than a positional record on purpose: the injected object may omit any

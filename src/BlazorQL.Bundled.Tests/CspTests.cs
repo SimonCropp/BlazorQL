@@ -10,7 +10,7 @@ public class CspBundledIdeTests :
 {
     protected override string ContentSecurityPolicy =>
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; " +
+        "script-src 'self' 'wasm-unsafe-eval'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data:; " +
         "font-src 'self' data:; " +
@@ -36,8 +36,9 @@ public class CspBundledIdeTests :
 }
 
 /// <summary>
-/// The same policy with the nonce in place of 'unsafe-inline', which is the shape an app that
-/// already runs a nonce-based policy wants.
+/// The same policy with a nonce added, which is the shape an app that already runs a nonce-based
+/// policy wants. The IDE does not need it - nothing in the page is inline - so what this proves is
+/// that stamping one onto every script element does not break the boot.
 /// </summary>
 [TestFixture]
 [Category("Browser")]
@@ -60,7 +61,7 @@ public class NoncedCspBundledIdeTests :
     }
 
     [Test]
-    public async Task BootsWithoutUnsafeInline()
+    public async Task BootsUnderANoncePolicy()
     {
         var page = await OpenIdeAsync();
 
@@ -100,8 +101,8 @@ public class NonceTests :
     }
 
     /// <summary>
-    /// Every script, not only the two inline ones: a policy naming a nonce and no host source has
-    /// to carry it on the src-based scripts too.
+    /// Every script element, none of which is inline: a policy naming a nonce and no host source
+    /// has to carry it on the src-based scripts too.
     /// </summary>
     [Test]
     public async Task EveryScriptCarriesTheNonceFromTheHeader()
@@ -226,25 +227,25 @@ public class WrittenCspTests :
         Assert.That(csp, Does.Contain("style-src 'self' 'unsafe-inline'"));
     }
 
-    /// <summary>A nonce nobody has to mint, matching the page it was written for.</summary>
+    /// <summary>
+    /// Nothing in the page is inline, so there is no nonce to mint and nothing to keep in step: the
+    /// header is the same bytes on every request, and the page carries no attributes at all.
+    /// </summary>
     [Test]
-    public async Task ThePageCarriesTheNonceFromTheHeader()
+    public async Task ThePolicyNeedsNoNonce()
     {
-        using var response = await GetIndex();
-        var csp = response.Headers.GetValues("Content-Security-Policy")
+        using var first = await GetIndex();
+        using var second = await GetIndex();
+        var csp = first.Headers.GetValues("Content-Security-Policy")
             .Single();
-        var html = await response.Content.ReadAsStringAsync();
-        var nonce = Regex.Match(csp, "'nonce-([A-F0-9]+)'")
-            .Groups[1]
-            .Value;
+        var html = await first.Content.ReadAsStringAsync();
 
-        Assert.That(nonce, Is.Not.Empty);
-        Assert.That(csp, Does.Not.Contain("'unsafe-inline' 'wasm-unsafe-eval'"));
-        var scripts = Regex.Matches(html, "<script[^>]*>");
-        Assert.That(scripts, Is.Not.Empty);
+        Assert.That(csp, Does.Contain("script-src 'self' 'wasm-unsafe-eval'"));
+        Assert.That(csp, Does.Not.Contain("nonce-"));
+        Assert.That(html, Does.Not.Contain("nonce"));
         Assert.That(
-            scripts.Select(_ => _.Value).Where(_ => !_.Contains($"nonce=\"{nonce}\"")),
-            Is.Empty);
+            second.Headers.GetValues("Content-Security-Policy").Single(),
+            Is.EqualTo(csp));
     }
 
     [Test]
@@ -269,6 +270,85 @@ public class WrittenCspTests :
         using var response = await client.GetAsync(IdeUrl + "/_framework/blazor.webassembly.js");
 
         Assert.That(response.Headers.Contains("Content-Security-Policy"), Is.False);
+    }
+}
+
+/// <summary>
+/// The option and the nonce provider together, for an app that mints one for every response and
+/// wants the mount's policy to name it.
+/// </summary>
+[TestFixture]
+public class WrittenCspWithNonceTests :
+    BundledFixture
+{
+    protected override void Configure(BlazorQLIdeOptions options)
+    {
+        options.Endpoint = "/graphql";
+        options.WriteContentSecurityPolicy = true;
+        // Constant rather than per request: what is under test is that the two sides agree, and a
+        // fixed value makes the disagreement readable when they do not.
+        options.Nonce = _ => "DEADBEEF";
+    }
+
+    [Test]
+    public async Task ThePolicyNamesTheNonceThePageCarries()
+    {
+        using var client = new HttpClient();
+
+        using var response = await client.GetAsync(IdeUrl + "/");
+        var csp = response.Headers.GetValues("Content-Security-Policy")
+            .Single();
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.That(csp, Does.Contain("'nonce-DEADBEEF'"));
+        var scripts = Regex.Matches(html, "<script[^>]*>");
+        Assert.That(scripts, Is.Not.Empty);
+        Assert.That(
+            scripts.Select(_ => _.Value).Where(_ => !_.Contains("nonce=\"DEADBEEF\"")),
+            Is.Empty);
+    }
+}
+
+/// <summary>
+/// The property the whole policy rests on: the page has no executable inline script. The bootstrap
+/// is a file and the configuration is a data block of a type no browser executes, which is why
+/// <c>script-src 'self'</c> runs the IDE with neither 'unsafe-inline' nor a nonce. A stray inline
+/// block would boot fine here and break every consumer running a policy.
+/// </summary>
+[TestFixture]
+public class NoInlineScriptTests :
+    BundledFixture
+{
+    protected override void Configure(BlazorQLIdeOptions options)
+    {
+        options.Endpoint = "/graphql";
+        options.DefaultQuery = "{ id }";
+    }
+
+    [Test]
+    public async Task EveryScriptElementIsAFileOrADataBlock()
+    {
+        using var client = new HttpClient();
+
+        var html = await client.GetStringAsync(IdeUrl + "/");
+        var tags = Regex.Matches(html, "<script[^>]*>")
+            .Select(_ => _.Value);
+
+        Assert.That(
+            tags.Where(_ => !_.Contains("src=") && !_.Contains("""type="application/json""")),
+            Is.Empty);
+    }
+
+    /// <summary>The data block is still where the configuration travels, and it is still read.</summary>
+    [Test]
+    public async Task TheConfigurationIsInTheDataBlock()
+    {
+        using var client = new HttpClient();
+
+        var html = await client.GetStringAsync(IdeUrl + "/");
+
+        Assert.That(html, Does.Contain("""<script type="application/json" id="blazorql-config">"""));
+        Assert.That(html, Does.Contain("{ id }"));
     }
 }
 

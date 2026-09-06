@@ -115,7 +115,6 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
             // second replacing the first.
             if (StringValues.IsNullOrEmpty(response.Headers.ContentSecurityPolicy))
             {
-                nonce ??= ContentSecurityPolicy.NewNonce();
                 response.Headers.ContentSecurityPolicy =
                     ContentSecurityPolicy.Build(nonce, options.ConfigureContentSecurityPolicy);
             }
@@ -176,28 +175,32 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
             options.ForcedTheme?.ToString());
 
         // The default encoder escapes <, > and &, so a DefaultQuery containing "</script>" cannot
-        // break out of the script element it is written into.
+        // break out of the element it is written into. That element is a data block rather than a
+        // script: a type the browser does not execute is never checked against script-src, so the
+        // configuration costs the page neither 'unsafe-inline' nor a nonce. blazorql-host.js reads
+        // it back by id.
         var json = JsonSerializer.Serialize(config, IdeJson.Default.ClientConfig);
 
         var html = IdeAssets.IndexHtml
             .Replace(
                 """<base href="/" />""",
-                $"""<base href="{HtmlEncoder.Default.Encode(baseHref)}" /><script>window.blazorqlConfig = {json};</script>""",
+                $"""<base href="{HtmlEncoder.Default.Encode(baseHref)}" /><script type="application/json" id="blazorql-config">{json}</script>""",
                 StringComparison.Ordinal)
             .Replace(
                 "<title>GraphQL IDE</title>",
                 $"<title>{HtmlEncoder.Default.Encode(options.DocumentTitle)}</title>",
                 StringComparison.Ordinal);
 
-        // Either source of a nonce means the page has to leave the slot for one, and neither is
-        // known at render time - the render is cached per base path, a nonce is per request.
-        if (options.Nonce is null &&
-            !options.WriteContentSecurityPolicy)
+        // A nonce is only ever the consumer's, and it is per request, while this render is cached
+        // per base path - so a mount that has one leaves the slot rather than the value. Nothing in
+        // the page needs a nonce to run; this is for an app whose own policy names one and no host
+        // source.
+        if (options.Nonce is null)
         {
             return new(html, carriesNonce: false);
         }
 
-        // Every script element, not only the two inline ones. A policy that names a nonce and no
+        // Every script element, though none of them is inline. A policy that names a nonce and no
         // host source has to carry it on the src-based scripts too, and an ignored nonce on those
         // costs nothing. The closing tags start "</", so they are not matched.
         html = html.Replace("<script", $"<script{noncePlaceholder}", StringComparison.Ordinal);
