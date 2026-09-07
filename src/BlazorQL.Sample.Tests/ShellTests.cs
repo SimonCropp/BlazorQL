@@ -37,6 +37,26 @@ public class ShellTests :
         Assert.That(await page.Locator("[aria-label='Close Tab']").CountAsync(), Is.Zero);
     }
 
+    /// <summary>
+    /// The version sits beside the logo in the session header, so a consumer looking at a deployed
+    /// IDE can say which BlazorQL it is without opening the package manifest.
+    /// </summary>
+    [Test]
+    public async Task TheHeaderShowsTheVersionBesideTheLogo()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        var version = page.Locator("[data-testid='blazorql-version']");
+        var text = await version.InnerTextAsync();
+
+        Assert.That(text, Does.Match(@"^v\d+\.\d+\.\d+"));
+        // Beside the logo, not somewhere else in the header.
+        Assert.That(
+            await page.Locator(".blazorql-logo [data-testid='blazorql-version']").CountAsync(),
+            Is.EqualTo(1));
+    }
+
     /// <summary>Waits until the operation model (bound as <c>_</c>) satisfies the condition.</summary>
     static Task WaitForOperationTextAsync(IPage page, string condition) =>
         page.WaitForFunctionAsync(

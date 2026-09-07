@@ -37,6 +37,10 @@
                 @if (Logo is null)
                 {
                     <a href="https://github.com/SimonCropp/BlazorQL" target="_blank" rel="noreferrer">Blazor<em>QL</em></a>
+                    @if (IdeVersion.Current.Length > 0)
+                    {
+                        <span class="blazorql-version" data-testid="blazorql-version" title="BlazorQL version">v@(IdeVersion.Current)</span>
+                    }
                 }
                 else
                 {

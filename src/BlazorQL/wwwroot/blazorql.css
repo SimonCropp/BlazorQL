@@ -468,6 +468,13 @@ html[data-theme='dark'] .blazorql {
     color: var(--blazorql-accent);
 }
 
+.blazorql-version {
+    margin-left: 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 400;
+    color: var(--blazorql-muted);
+}
+
 /* ---- Tabs ---- */
 
 .blazorql-tabs {
