@@ -48,10 +48,17 @@ sealed class Debouncer(int delayMs = 500) :
         }
     }
 
-    public void Dispose()
+    /// <summary>
+    /// Drops whatever is waiting, without ending the debouncer. For a caller that is about to do
+    /// the pending action's work itself and would otherwise have it run again a moment later.
+    /// </summary>
+    public void Cancel()
     {
         pending?.Cancel();
         pending?.Dispose();
         pending = null;
     }
+
+    public void Dispose() =>
+        Cancel();
 }

@@ -47,6 +47,43 @@ public class DebouncerTests
     }
 
     [Test]
+    public async Task CancelDropsAPendingAction()
+    {
+        var ran = false;
+        using var debouncer = new Debouncer(20);
+
+        debouncer.Run(() =>
+        {
+            ran = true;
+            return Task.CompletedTask;
+        });
+        debouncer.Cancel();
+        await Task.Delay(200);
+
+        Assert.That(ran, Is.False);
+    }
+
+    /// <summary>Cancel closes a window rather than the debouncer, unlike Dispose.</summary>
+    [Test]
+    public async Task ARunAfterCancelStillHappens()
+    {
+        var ran = false;
+        using var debouncer = new Debouncer(20);
+
+        debouncer.Run(() => Task.CompletedTask);
+        debouncer.Cancel();
+        debouncer.Run(() =>
+        {
+            ran = true;
+            return Task.CompletedTask;
+        });
+
+        await WaitFor(() => ran);
+
+        Assert.That(ran, Is.True);
+    }
+
+    [Test]
     public async Task AFailingActionIsReportedRatherThanLost()
     {
         var written = new StringWriter();

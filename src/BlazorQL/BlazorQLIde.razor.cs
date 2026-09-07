@@ -151,7 +151,6 @@ public partial class BlazorQLIde :
     // shortcut leaves for the render that opens the docs pane.
     string? statusLine;
     bool docSearchFocusPending;
-    Debouncer stateDebounce = new();
     Debouncer paneDebounce = new();
 
     // Content-change fan-out: each editor coalesces its change bursts, and diagnostics get their
@@ -617,7 +616,7 @@ public partial class BlazorQLIde :
 
                 // Also keeps the derived tab title live while the user types.
                 tabs.Active.Query = await operationEditor.GetValue();
-                SchedulePersist();
+                statePersist.Now();
                 StateHasChanged();
             }));
         ScheduleDiagnostics();
@@ -635,7 +634,7 @@ public partial class BlazorQLIde :
                 }
 
                 tabs.Active.Variables = await editor.GetValue();
-                SchedulePersist();
+                statePersist.Now();
                 StateHasChanged();
             }));
         ScheduleDiagnostics();
@@ -653,7 +652,7 @@ public partial class BlazorQLIde :
                 }
 
                 tabs.Active.Headers = await editor.GetValue();
-                SchedulePersist();
+                statePersist.Now();
                 StateHasChanged();
             }));
         return Task.CompletedTask;
@@ -852,12 +851,14 @@ public partial class BlazorQLIde :
     static bool QueryParses(string query) =>
         DocumentInfo.Parse(query).Parses;
 
+    readonly StatePersister statePersist;
+
+    // Here rather than at the field, which cannot reach a method of this instance.
+    public BlazorQLIde() =>
+        statePersist = new(PersistState);
+
     void SchedulePersist() =>
-        stateDebounce.Run(() =>
-        {
-            PersistState();
-            return Task.CompletedTask;
-        });
+        statePersist.Soon();
 
     /// <summary>Writes the tab state plus GraphiQL's flat mirrors of the active tab.</summary>
     void PersistState()
@@ -2099,7 +2100,7 @@ public partial class BlazorQLIde :
         callbacks.PaneResize -= OnPaneResize;
         callbacks.GlobalShortcut -= OnGlobalShortcut;
         execution?.Cancel();
-        stateDebounce.Dispose();
+        statePersist.Dispose();
         paneDebounce.Dispose();
         operationChangeDebounce.Dispose();
         variablesChangeDebounce.Dispose();
