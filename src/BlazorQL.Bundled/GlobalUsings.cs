@@ -8,6 +8,8 @@ global using System.Text.Json.Serialization;
 global using Microsoft.AspNetCore.Builder;
 global using Microsoft.AspNetCore.Http;
 global using Microsoft.AspNetCore.Routing;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Primitives;
 global using Microsoft.Net.Http.Headers;
 global using BlazorQL;

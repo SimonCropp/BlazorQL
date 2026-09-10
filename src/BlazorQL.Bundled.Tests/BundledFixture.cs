@@ -31,6 +31,13 @@ public abstract class BundledFixture
     /// <summary>Where the IDE is mounted, no trailing slash. Empty mounts it at the root.</summary>
     protected string IdeUrl => BaseUrl + Mount.TrimEnd('/');
 
+    /// <summary>
+    /// What the mount names the app when it derives a storage namespace. Read from the host rather
+    /// than assumed, because the entry assembly under a test runner is the runner's.
+    /// </summary>
+    protected string ApplicationName =>
+        host.Services.GetRequiredService<IHostEnvironment>().ApplicationName;
+
     /// <summary>Sub-path the whole app is mounted under, as a reverse proxy would.</summary>
     protected virtual string PathBase => "";
 

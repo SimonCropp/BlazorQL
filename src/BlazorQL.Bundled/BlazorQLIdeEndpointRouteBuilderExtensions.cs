@@ -54,7 +54,14 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
             prefix = '/' + prefix;
         }
 
-        var endpoint = new IdeEndpoint(options, prefix);
+        // Names the app the mount belongs to, which is what keeps its storage apart from another
+        // app's on the same origin. Defaults to the entry assembly's name, and an app that renames
+        // its assembly can pin it back through the "applicationName" configuration key.
+        var application = endpoints.ServiceProvider
+            .GetService<IHostEnvironment>()
+            ?.ApplicationName ?? "";
+
+        var endpoint = new IdeEndpoint(options, prefix, application);
 
         var root = endpoints.MapMethods(
             prefix.Length == 0 ? "/" : prefix,
