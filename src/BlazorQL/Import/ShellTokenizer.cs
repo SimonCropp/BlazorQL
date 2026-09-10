@@ -340,8 +340,7 @@ static class ShellTokenizer
 
         // A lone surrogate is not a scalar value, so it cannot go through ConvertFromUtf32 — but it
         // is still exactly the char that was asked for.
-        if (value is >= 0xD800 and <= 0xDFFF ||
-            value > 0x10FFFF)
+        if (value is >= 0xD800 and <= 0xDFFF or > 0x10FFFF)
         {
             current.Append((char) value);
             return index;
