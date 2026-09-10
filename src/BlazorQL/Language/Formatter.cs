@@ -32,9 +32,7 @@ public static class Formatter
             return text;
         }
 
-        var writer = new StringWriter();
-        printer.PrintAsync(document.Document, writer).AsTask().GetAwaiter().GetResult();
-        var formatted = writer.ToString();
+        var formatted = printer.Print(document.Document);
         return formatted.EndsWith('\n') ? formatted : formatted + '\n';
     }
 

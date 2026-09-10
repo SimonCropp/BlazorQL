@@ -187,12 +187,8 @@ public static class FragmentMerger
         }
     }
 
-    static string Print(GraphQLDocument document)
-    {
-        var writer = new StringWriter();
-        new SDLPrinter().PrintAsync(document, writer).AsTask().GetAwaiter().GetResult();
-        return writer.ToString();
-    }
+    static string Print(GraphQLDocument document) =>
+        new SDLPrinter().Print(document);
 
     static GraphQLSelectionSet Flatten(GraphQLSelectionSet selections, Dictionary<string, GraphQLFragmentDefinition> fragments)
     {
