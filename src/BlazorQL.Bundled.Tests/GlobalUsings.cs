@@ -4,6 +4,8 @@ global using System.Text;
 global using System.Text.Json;
 global using System.Text.RegularExpressions;
 global using Microsoft.AspNetCore.Builder;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Hosting;
 global using Microsoft.Playwright;
 global using NUnit.Framework;
 global using VerifyTests.DiffPlex;

@@ -49,7 +49,7 @@ Everything is configured through `MapBlazorQL`:
 | `IsHeadersEditorEnabled` | true | |
 | `ShouldPersistHeaders` | false | Whether headers survive a reload. Off by default, because headers usually hold credentials. |
 | `MaxHistoryLength` | 20 | |
-| `StorageNamespace` | `blazorql` | Namespaces the local-storage keys. Changing it isolates two mounts from each other. |
+| `StorageNamespace` | the app and mount | Namespaces the local-storage keys — `blazorql/Orders/blazorql` for an app named `Orders` at the default mount. localStorage is per origin rather than per path, so this is what keeps two IDEs a host has served from sharing tabs. The app is `IHostEnvironment.ApplicationName`; name one here to keep storage across an assembly rename. See [Storage](storage.md). |
 | `DefaultTheme` / `ForcedTheme` | System / null | `System`, `Light` or `Dark`. A forced theme hides the setting. |
 | `DocumentTitle` | `GraphQL IDE` | The browser tab title. |
 | `BasePathOverride` | null | Overrides the base path baked into the page. See *Behind a proxy*. |

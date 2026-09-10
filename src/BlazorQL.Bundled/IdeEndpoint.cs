@@ -2,7 +2,7 @@
 /// Serves one mount of the IDE. Everything except index.html is written straight out of the
 /// assembly as brotli; index.html is rendered per base path and cached.
 /// </summary>
-sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
+sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string application)
 {
     /// <summary>
     /// Rendered pages, keyed by resolved base href. PathBase can legitimately vary per request
@@ -12,6 +12,44 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
     /// instead of cached, which costs time and never correctness.
     /// </summary>
     ConcurrentDictionary<string, RenderedIndex> pages = new(StringComparer.Ordinal);
+
+    /// <summary>What the consumer named, or the app and mount. See <see cref="ForMount"/>.</summary>
+    string storageNamespace = options.StorageNamespace ?? ForMount(application, prefix);
+
+    /// <summary>
+    /// The storage namespace a mount takes when the consumer does not name one:
+    /// <c>blazorql/{application}/{mount}</c>, e.g. <c>blazorql/Orders/blazorql</c>.
+    /// </summary>
+    /// <remarks>
+    /// localStorage is keyed by origin and not by path, so every IDE ever served from a host shares
+    /// one store. The mount alone does not separate them — two apps that each take the default
+    /// mount on the default port, which is the ordinary way to run two services locally, would
+    /// derive the same thing — so the app's own identity is what carries it, and the mount then
+    /// separates two mounts within that app.
+    /// <para>
+    /// The mount rather than the request path, because
+    /// <see cref="BlazorQLIdeOptions.MapUnknownPathsToIde"/> serves the same IDE from every
+    /// extensionless path beneath it — deriving from the request would give one mount a different
+    /// namespace per url the user happened to type. PathBase is out for the same reason: behind a
+    /// proxy it varies per request.
+    /// </para>
+    /// </remarks>
+    internal static string ForMount(string application, string prefix)
+    {
+        var builder = new StringBuilder("blazorql");
+
+        // Empty only where there is no entry assembly to name the app after — a host started from
+        // unmanaged code. The mount still separates what it can.
+        if (application.Length > 0)
+        {
+            builder.Append('/');
+            builder.Append(application);
+        }
+
+        builder.Append(prefix);
+
+        return builder.ToString();
+    }
 
     /// <summary>
     /// How many distinct base hrefs are worth holding renders for. Far above what any real
@@ -170,7 +208,7 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix)
             options.IsHeadersEditorEnabled,
             options.ShouldPersistHeaders,
             options.MaxHistoryLength,
-            options.StorageNamespace,
+            storageNamespace,
             options.DefaultTheme.ToString(),
             options.ForcedTheme?.ToString());
 

@@ -34,8 +34,20 @@ public sealed class BlazorQLIdeOptions
 
     public int MaxHistoryLength { get; set; } = 20;
 
-    /// <summary>Namespaces the IDE's local-storage keys. Change it to isolate two mounts.</summary>
-    public string StorageNamespace { get; set; } = "blazorql";
+    /// <summary>
+    /// Namespaces the IDE's local-storage keys. Null, the default, derives it from the app and the
+    /// mount — <c>blazorql/Orders/blazorql</c> for an app named Orders at
+    /// <see cref="BlazorQLIdeEndpointRouteBuilderExtensions.DefaultPattern"/>. localStorage is
+    /// scoped to an origin rather than to a path, so a constant default would hand every IDE ever
+    /// served from a host the same keys — which is how a mount here ends up opening the tabs of an
+    /// unrelated app that once ran on the same port.
+    /// </summary>
+    /// <remarks>
+    /// The app is <see cref="IHostEnvironment.ApplicationName"/>, which is the entry assembly's
+    /// name unless the app sets the <c>applicationName</c> configuration key. Name a namespace here
+    /// to keep storage across an assembly rename, or to share one deliberately between two mounts.
+    /// </remarks>
+    public string? StorageNamespace { get; set; }
 
     public IdeTheme DefaultTheme { get; set; } = IdeTheme.System;
 

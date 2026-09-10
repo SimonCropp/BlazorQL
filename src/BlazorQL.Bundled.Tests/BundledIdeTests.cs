@@ -105,6 +105,38 @@ public class BundledIdeTests :
 
         Assert.That(suggestions, Does.Contain("test").And.Contain("person"));
     }
+
+    /// <summary>
+    /// The whole chain the derived namespace travels: the mount, into the page's config block,
+    /// through the host shell to the component, and out to the keys the browser actually writes.
+    /// </summary>
+    /// <remarks>
+    /// The bare <c>blazorql:</c> assertion is the regression: localStorage is scoped to an origin
+    /// and not to a path, so while every IDE took that prefix, a mount here opened the tabs of any
+    /// other IDE that had been served on the same host and port — a Blazor app's own explorer page
+    /// during development being the way it usually shows up.
+    /// </remarks>
+    [Test]
+    public async Task StorageKeysCarryTheAppAndMountNamespace()
+    {
+        var page = await OpenIdeAsync();
+        var key = $"blazorql/{ApplicationName}/blazorql:tabState";
+
+        await page.EvaluateAsync(
+            "() => monaco.editor.getEditors()[0].setValue('{ id } # marker-b7f2')");
+
+        // Writes are debounced, so the key arrives a moment after the edit.
+        await page.WaitForFunctionAsync(
+            "key => (localStorage.getItem(key) ?? '').includes('marker-b7f2')",
+            key,
+            new() {Timeout = 30_000});
+
+        var strayKeys = await page.EvaluateAsync<string[]>(
+            "() => Object.keys(localStorage).filter(_ => _.startsWith('blazorql:'))");
+
+        Assert.That(strayKeys, Is.Empty);
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
 }
 
 /// <summary>
