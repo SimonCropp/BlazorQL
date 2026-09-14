@@ -86,7 +86,8 @@ app.MapBlazorQL(_ => _.WriteContentSecurityPolicy = true);
 
 Nothing in the page is inline — the bootstrap is a file and the configuration is a json data block
 the browser never executes — so `script-src 'self'` runs it, with no `'unsafe-inline'` and no nonce
-to mint. A response that already carries a policy keeps it.
+to mint. It replaces any policy the response already carries, such as an app-wide one set by
+middleware.
 
 [The whole policy, what each directive is for, and how to fold it into a header the app writes
 itself](csp.md).

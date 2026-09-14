@@ -35,8 +35,10 @@ app.MapBlazorQL(
     });
 ```
 
-A response that already carries a policy keeps it: an app that writes its own for the mount means
-it, and two policies intersect rather than the second replacing the first.
+The mount's policy replaces any the response already carries. Security-header middleware usually
+assigns an app-wide policy on the way in, and one built for the app's own pages — `'strict-dynamic'`
+with the hashes of its shell, say — blocks every script the IDE loads. An app that wants its own
+policy for the mount leaves the option off and writes it (see below).
 
 
 ## The policy

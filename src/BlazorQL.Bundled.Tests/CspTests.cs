@@ -352,12 +352,15 @@ public class NoInlineScriptTests :
     }
 }
 
-/// <summary>An app that writes its own policy for the mount keeps it.</summary>
+/// <summary>
+/// An app-wide policy assigned by middleware before the mount runs - the shape of most
+/// security-header middleware - is replaced on the page, not left to block the IDE's scripts.
+/// </summary>
 [TestFixture]
-public class WrittenCspDefersToTheAppTests :
+public class WrittenCspReplacesTheAppsTests :
     BundledFixture
 {
-    protected override string ContentSecurityPolicy => "default-src 'self'; script-src 'self'";
+    protected override string ContentSecurityPolicy => "script-src 'strict-dynamic' 'nonce-{nonce}'";
 
     protected override void Configure(BlazorQLIdeOptions options)
     {
@@ -366,7 +369,7 @@ public class WrittenCspDefersToTheAppTests :
     }
 
     [Test]
-    public async Task TheAppsOwnPolicySurvives()
+    public async Task TheMountsPolicyReplacesIt()
     {
         using var client = new HttpClient();
 
@@ -374,7 +377,7 @@ public class WrittenCspDefersToTheAppTests :
         var csp = response.Headers.GetValues("Content-Security-Policy")
             .Single();
 
-        Assert.That(csp, Is.EqualTo("default-src 'self'; script-src 'self'"));
+        Assert.That(csp, Is.EqualTo(BlazorQL.ContentSecurityPolicy.Build()));
     }
 }
 
