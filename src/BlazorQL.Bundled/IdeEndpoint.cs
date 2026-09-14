@@ -148,14 +148,12 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
 
         if (options.WriteContentSecurityPolicy)
         {
-            // Only when the app has not already spoken for this response: a consumer that writes
-            // its own policy for the mount means it, and two policies intersect rather than the
-            // second replacing the first.
-            if (StringValues.IsNullOrEmpty(response.Headers.ContentSecurityPolicy))
-            {
-                response.Headers.ContentSecurityPolicy =
-                    ContentSecurityPolicy.Build(nonce, options.ConfigureContentSecurityPolicy);
-            }
+            // Replaces rather than fills in. Security-header middleware commonly assigns an app-wide
+            // policy on the way in, and that policy - strict-dynamic with the hashes of the app's
+            // own shell, say - blocks every script the IDE loads. Opting in is the app speaking for
+            // this page; one that wants its own policy here leaves the option off.
+            response.Headers.ContentSecurityPolicy =
+                ContentSecurityPolicy.Build(nonce, options.ConfigureContentSecurityPolicy);
         }
 
         var baseHref = BaseHref(context);

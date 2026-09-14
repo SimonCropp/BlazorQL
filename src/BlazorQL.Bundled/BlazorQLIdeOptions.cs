@@ -94,8 +94,9 @@ public sealed class BlazorQLIdeOptions
     /// needs is not, so this is the one line that gets them right.
     /// </summary>
     /// <remarks>
-    /// The header is written on the page only, not on the assets, and only when the response does
-    /// not already carry one - an app that sets its own policy for the mount keeps it. The policy
+    /// The header is written on the page only, not on the assets, and replaces any policy the
+    /// response already carries - an app-wide one assigned by middleware would otherwise block the
+    /// IDE's scripts. An app that wants its own policy for the mount leaves this off. The policy
     /// is the same bytes on every request, because the page has nothing in it that a nonce would
     /// cover; setting <see cref="Nonce"/> as well adds that nonce to the header and the page both.
     /// <para>
