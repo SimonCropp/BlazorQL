@@ -1,8 +1,8 @@
 namespace BlazorQL;
 
 /// <summary>
-/// The operation tab strip: activate, close, add, and an inline rename started by double-clicking
-/// a tab's title. Escape cancels a rename without committing.
+/// The operation tab strip: activate, close, add, duplicate, import, and an inline rename started
+/// by double-clicking a tab's title. Escape cancels a rename without committing.
 /// </summary>
 public partial class TabBar
 {
@@ -18,6 +18,10 @@ public partial class TabBar
 
     [Parameter]
     public EventCallback OnAdd { get; set; }
+
+    /// <summary>Raised by the duplicate button; the IDE opens a copy of the active tab beside it.</summary>
+    [Parameter]
+    public EventCallback OnDuplicate { get; set; }
 
     /// <summary>Raised by the import button; the IDE opens the import dialog.</summary>
     [Parameter]

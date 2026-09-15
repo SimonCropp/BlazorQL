@@ -133,4 +133,73 @@ public class TabStoreTests
         Assert.That(store.Close(0), Is.False);
         Assert.That(store.Active.Query, Is.EqualTo("one"));
     }
+
+    [Test]
+    public void DuplicateInsertsACopyBesideTheSourceAndActivatesIt()
+    {
+        var store = new TabStore();
+        var source = store.Add("query One($x: Int) { id }", """{"Authorization": "token"}""");
+        source.Variables = """{"x": 1}""";
+        source.OperationName = "One";
+        source.Response = """{"data": {"id": "abc123"}}""";
+        source.RenameOverride = "Renamed";
+        store.Add("two");
+
+        var copy = store.Duplicate(0);
+
+        Assert.That(store.Tabs, Has.Count.EqualTo(3));
+        Assert.That(store.ActiveIndex, Is.EqualTo(1));
+        Assert.That(store.Tabs[1], Is.SameAs(copy));
+        // Beside its source rather than at the end, pushing the tab that followed it along.
+        Assert.That(store.Tabs[2].Query, Is.EqualTo("two"));
+        Assert.That(copy.Id, Is.Not.EqualTo(source.Id));
+        // Everything but the id. Compared as records, so a member TabState gains later is covered too.
+        Assert.That(copy with {Id = source.Id}, Is.EqualTo(source));
+    }
+
+    [Test]
+    public void EditingADuplicateLeavesTheSourceAlone()
+    {
+        var store = new TabStore();
+        var source = store.Add("query One { id }");
+
+        var copy = store.Duplicate(0);
+        copy.Query = "query Changed { id }";
+        copy.Variables = """{"x": 2}""";
+
+        Assert.That(source.Query, Is.EqualTo("query One { id }"));
+        Assert.That(source.Variables, Is.Empty);
+    }
+
+    [Test]
+    public void DuplicatingTheLastTabAppendsIt()
+    {
+        var store = new TabStore();
+        store.Add("one");
+        store.Add("two");
+
+        store.Duplicate(1);
+
+        Assert.That(store.Tabs, Has.Count.EqualTo(3));
+        Assert.That(store.ActiveIndex, Is.EqualTo(2));
+        Assert.That(store.Active.Query, Is.EqualTo("two"));
+    }
+
+    /// <summary>
+    /// What closing a tab leans on while a host's confirmation is outstanding: the index the host was
+    /// asked about can have moved by the time the answer arrives.
+    /// </summary>
+    [Test]
+    public void IndexOfFollowsATabThatMoved()
+    {
+        var store = new TabStore();
+        store.Add("one");
+        var two = store.Add("two");
+
+        store.Duplicate(0);
+        Assert.That(store.IndexOf(two.Id), Is.EqualTo(2));
+
+        store.Close(2);
+        Assert.That(store.IndexOf(two.Id), Is.EqualTo(-1));
+    }
 }

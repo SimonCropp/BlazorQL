@@ -1272,11 +1272,44 @@ public partial class BlazorQLIde :
         SchedulePersist();
     }
 
-    async Task CloseTab(int index)
+    async Task DuplicateTab()
     {
-        if (ConfirmCloseTab is not null && !await ConfirmCloseTab(index))
+        // The strip is rendered before the store is hydrated, while there is still no tab to copy;
+        // the editors exist only after hydration, so their absence is the sign.
+        if (operationEditor is null)
         {
             return;
+        }
+
+        AbandonRun();
+        pickerOpen = false;
+        // From the editors rather than the tab: an edit reaches the tab only once its debounce
+        // window has passed, and the copy should not lose the last few keystrokes.
+        await SaveActiveTab();
+        tabs.Duplicate(tabs.ActiveIndex);
+        await LoadActiveTab();
+        SchedulePersist();
+    }
+
+    async Task CloseTab(int index)
+    {
+        if (ConfirmCloseTab is not null)
+        {
+            var id = tabs.Tabs[index].Id;
+            if (!await ConfirmCloseTab(index))
+            {
+                return;
+            }
+
+            // The host answers in its own time, and the strip can change while it does — a
+            // duplicate inserts a tab ahead of every tab after its source — so the tab is found
+            // again rather than trusted to still be at the index it was asked about. One closed
+            // meanwhile leaves nothing to close.
+            index = tabs.IndexOf(id);
+            if (index < 0)
+            {
+                return;
+            }
         }
 
         var closingActive = index == tabs.ActiveIndex;

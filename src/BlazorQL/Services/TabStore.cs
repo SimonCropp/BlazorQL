@@ -27,6 +27,28 @@ public sealed partial class TabStore
         return tab;
     }
 
+    /// <summary>
+    /// Copies the tab at <paramref name="index"/> into a new tab directly after it, and makes the
+    /// copy active. Everything the tab holds comes across, response included, except its id: a
+    /// record's <c>with</c> copies <see cref="TabState.Id"/> along with the rest, and two tabs sharing
+    /// one would collide as the tab bar's render key — and go on colliding after every reload, since
+    /// ids are persisted. A shallow copy is a complete one while every member is immutable.
+    /// </summary>
+    public TabState Duplicate(int index)
+    {
+        var copy = tabs[index] with
+        {
+            Id = Guid.NewGuid()
+        };
+        tabs.Insert(index + 1, copy);
+        ActiveIndex = index + 1;
+        return copy;
+    }
+
+    /// <summary>Where the tab with <paramref name="id"/> is now, or -1 once it has been closed.</summary>
+    public int IndexOf(Guid id) =>
+        tabs.FindIndex(_ => _.Id == id);
+
     public void Activate(int index) =>
         ActiveIndex = index;
 

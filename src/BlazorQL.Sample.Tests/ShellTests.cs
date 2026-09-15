@@ -68,6 +68,128 @@ public class ShellTests :
             null,
             new() {Timeout = 30_000});
 
+    /// <summary>
+    /// Waits until the editor models satisfy the condition, in which <c>text('variables')</c> reads the
+    /// model whose uri contains that part. LoadActiveTab writes the editors one at a time, so a wait on
+    /// a tab's content names every model it depends on.
+    /// </summary>
+    static Task WaitForModelsAsync(IPage page, string condition) =>
+        page.WaitForFunctionAsync(
+            $$"""
+            () => {
+                const text = part => monaco.editor
+                        .getModels()
+                        .find(_ => _.uri.path.includes(part))
+                        .getValue();
+                return {{condition}};
+            }
+            """,
+            null,
+            new() {Timeout = 30_000});
+
+    /// <summary>
+    /// Waits until the persisted tab state satisfies the condition, in which <c>tabs</c> is the stored
+    /// array. An editor's debounced write persists as it lands, so this is also how a test knows an
+    /// edit has reached its tab.
+    /// </summary>
+    static Task WaitForStoredTabsAsync(IPage page, string condition) =>
+        page.WaitForFunctionAsync(
+            $$"""
+            () => {
+                const tabs = JSON.parse(localStorage.getItem('blazorql:tabState') ?? '{}').tabs ?? [];
+                return {{condition}};
+            }
+            """,
+            null,
+            new() {Timeout = 30_000});
+
+    /// <summary>
+    /// Duplicating copies the active tab into a new tab directly to its right — not at the end of the
+    /// strip — and makes the copy active. The copy carries the query, the variables and the response,
+    /// and is a tab of its own from then on: editing it leaves the source alone.
+    /// </summary>
+    [Test]
+    public async Task DuplicatingATabInsertsAnIndependentCopyBesideIt()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync("query Source($x: Int) { id hasArgs(int: $x) }");
+
+        // A second tab, so a copy appended to the end of the strip would be in the wrong place. It
+        // runs, to leave a status line for the switch back to clear.
+        await page.ClickAsync("[data-testid='tab-add']");
+        await WaitForOperationTextAsync(page, "_.getValue() === ''");
+        await page.SetEditorValueAsync("query Other { isTest }");
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForSelectorAsync("[data-testid='status-line']", 10);
+
+        // LoadActiveTab clears the status line after its last editor write, so the line going is the
+        // sign the tab has loaded.
+        await page.ClickAsync(".blazorql-tab-button:has-text('Source')");
+        await page.WaitForSelectorAsync("[data-testid='status-line']", new() {State = WaitForSelectorState.Detached});
+
+        // The variables editor exists while the tools strip is collapsed.
+        await page.SetModelValueAsync("variables", """{"x": 1}""");
+        await page.ClickAsync("[data-testid='execute']");
+        await WaitForModelsAsync(page, "text('response').includes('abc123')");
+        // Seen in storage before the duplicate, so the stored-state check after it starts from
+        // settled state rather than state still catching up.
+        await WaitForStoredTabsAsync(page, """tabs.length === 2 && tabs[0].variables === '{"x": 1}'""");
+        await page.WaitForSelectorAsync("[data-testid='status-line']", 10);
+
+        await page.ClickAsync("[data-testid='tab-duplicate']");
+        await page.WaitForSelectorAsync("[data-testid='status-line']", new() {State = WaitForSelectorState.Detached});
+
+        var titles = await page.Locator(".blazorql-tab-button").AllInnerTextsAsync();
+        var selected = await page.Locator(".blazorql-tab").Nth(1).GetAttributeAsync("aria-selected");
+        var operation = await page.GetModelValueAsync("blazorql-operation");
+        var variables = await page.GetModelValueAsync("blazorql-variables");
+        var response = await page.GetModelValueAsync("blazorql-response");
+        Assert.Multiple(() =>
+        {
+            // Beside its source rather than after Other, under the same title, and active.
+            Assert.That(string.Join(", ", titles), Is.EqualTo("Source, Source, Other"));
+            Assert.That(selected, Is.EqualTo("true"));
+            // LoadActiveTab has just written all three from the copy, so a response that did not come
+            // across would read empty.
+            Assert.That(operation, Does.Contain("query Source"));
+            Assert.That(variables, Is.EqualTo("""{"x": 1}"""));
+            Assert.That(response, Does.Contain("abc123"));
+        });
+
+        await page.SetEditorValueAsync("query Copy($x: Int) { id hasArgs(int: $x) }");
+        await page.SetModelValueAsync("variables", """{"x": 2}""");
+
+        // The edits land in the copy alone, and the copy persists under an id of its own — a shared
+        // one would collide as the strip's render key on the next boot.
+        await WaitForStoredTabsAsync(
+            page,
+            """
+            tabs.length === 3 &&
+            new Set(tabs.map(_ => _.id)).size === 3 &&
+            tabs[0].query.includes('query Source') &&
+            tabs[0].variables === '{"x": 1}' &&
+            tabs[1].query.includes('query Copy') &&
+            tabs[1].variables === '{"x": 2}'
+            """);
+
+        await page.ClickAsync(".blazorql-tab-button:has-text('Source')");
+        await WaitForModelsAsync(
+            page,
+            """
+            text('operation').includes('query Source') &&
+            text('variables') === '{"x": 1}'
+            """);
+
+        // The copy's title followed its own query rather than being frozen into a rename.
+        Assert.That(
+            string.Join(", ", await page.Locator(".blazorql-tab-button").AllInnerTextsAsync()),
+            Is.EqualTo("Source, Copy, Other"));
+        // A copied id would surface as Blazor's duplicate @key error.
+        Assert.That(ConsoleErrors(), Is.Empty);
+    }
+
     [Test]
     public async Task TabTitleDerivesFromNamedOperation()
     {

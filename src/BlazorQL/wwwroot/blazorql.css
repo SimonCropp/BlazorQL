@@ -510,6 +510,7 @@ html[data-theme='dark'] .blazorql {
 
 .blazorql-tab-close,
 .blazorql-tab-add,
+.blazorql-tab-duplicate,
 .blazorql-tab-import {
     display: grid;
     place-items: center;
@@ -524,6 +525,7 @@ html[data-theme='dark'] .blazorql {
 
 .blazorql-tab-close svg,
 .blazorql-tab-add svg,
+.blazorql-tab-duplicate svg,
 .blazorql-tab-import svg {
     width: 0.85rem;
     height: 0.85rem;
@@ -531,6 +533,7 @@ html[data-theme='dark'] .blazorql {
 
 .blazorql-tab-close:hover,
 .blazorql-tab-add:hover,
+.blazorql-tab-duplicate:hover,
 .blazorql-tab-import:hover {
     background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
     color: var(--blazorql-text);

@@ -27,7 +27,7 @@ An error that names a field gets a row of its own under the response, with the f
 
 ## Tabs, history, persistence
 
-Tabs hold query, variables, headers, and response each; titles derive from the operation name (double-click to rename). Tabs, theme, pane sizes, and the open plugin persist across reloads — responses never do, and headers only behind the persist-headers opt-in. History records every execution (20-item cap, unlimited favorites) with labels and a search box; clicking an entry restores query, variables, and headers.
+Tabs hold query, variables, headers, and response each; titles derive from the operation name (double-click to rename). The duplicate button beside the tab strip copies the active tab (query, variables, headers, response, and any rename) into a new tab directly to its right. Tabs, theme, pane sizes, and the open plugin persist across reloads — responses never do, and headers only behind the persist-headers opt-in. History records every execution (20-item cap, unlimited favorites) with labels and a search box; clicking an entry restores query, variables, and headers.
 
 
 ## Importing a request
