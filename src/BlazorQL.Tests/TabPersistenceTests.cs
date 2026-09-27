@@ -1,4 +1,4 @@
-[TestFixture]
+
 public class TabPersistenceTests
 {
     static TabStore BuildStore()
@@ -15,45 +15,45 @@ public class TabPersistenceTests
     }
 
     [Test]
-    public void SerializeNeverIncludesTheResponse()
+    public async Task SerializeNeverIncludesTheResponse()
     {
         var store = BuildStore();
         var json = store.Serialize(includeHeaders: true);
 
-        Assert.That(json, Does.Not.Contain("response"));
-        Assert.That(json, Does.Not.Contain("""{"data": {}}"""));
+        await Assert.That(json).DoesNotContain("response");
+        await Assert.That(json).DoesNotContain("""{"data": {}}""");
     }
 
     [Test]
-    public void HeadersAreGatedOnThePersistFlag()
+    public async Task HeadersAreGatedOnThePersistFlag()
     {
         var store = BuildStore();
 
-        Assert.That(store.Serialize(includeHeaders: true), Does.Contain("secret"));
-        Assert.That(store.Serialize(includeHeaders: false), Does.Not.Contain("secret"));
+        await Assert.That(store.Serialize(includeHeaders: true)).Contains("secret");
+        await Assert.That(store.Serialize(includeHeaders: false)).DoesNotContain("secret");
     }
 
     [Test]
-    public void RoundTripsTabsAndActiveIndex()
+    public async Task RoundTripsTabsAndActiveIndex()
     {
         var store = BuildStore();
         store.Activate(1);
 
         var restored = new TabStore();
-        Assert.That(restored.TryRestore(store.Serialize(includeHeaders: true)), Is.True);
+        await Assert.That(restored.TryRestore(store.Serialize(includeHeaders: true))).IsTrue();
 
-        Assert.That(restored.Tabs, Has.Count.EqualTo(2));
-        Assert.That(restored.ActiveIndex, Is.EqualTo(1));
-        Assert.That(restored.Tabs[0].Query, Is.EqualTo("query One { id }"));
-        Assert.That(restored.Tabs[0].Variables, Is.EqualTo("""{"a": 1}"""));
-        Assert.That(restored.Tabs[0].Headers, Is.EqualTo("""{"authorization": "secret"}"""));
-        Assert.That(restored.Tabs[0].Response, Is.Empty);
-        Assert.That(restored.Tabs[1].OperationName, Is.EqualTo("Two"));
-        Assert.That(restored.Tabs[1].RenameOverride, Is.EqualTo("Renamed"));
+        await Assert.That(restored.Tabs).Count().IsEqualTo(2);
+        await Assert.That(restored.ActiveIndex).IsEqualTo(1);
+        await Assert.That(restored.Tabs[0].Query).IsEqualTo("query One { id }");
+        await Assert.That(restored.Tabs[0].Variables).IsEqualTo("""{"a": 1}""");
+        await Assert.That(restored.Tabs[0].Headers).IsEqualTo("""{"authorization": "secret"}""");
+        await Assert.That(restored.Tabs[0].Response).IsEmpty();
+        await Assert.That(restored.Tabs[1].OperationName).IsEqualTo("Two");
+        await Assert.That(restored.Tabs[1].RenameOverride).IsEqualTo("Renamed");
     }
 
     [Test]
-    public void RestoreClampsAnOutOfRangeActiveIndex()
+    public async Task RestoreClampsAnOutOfRangeActiveIndex()
     {
         var json =
             """
@@ -61,18 +61,18 @@ public class TabPersistenceTests
             """;
 
         var store = new TabStore();
-        Assert.That(store.TryRestore(json), Is.True);
-        Assert.That(store.ActiveIndex, Is.Zero);
+        await Assert.That(store.TryRestore(json)).IsTrue();
+        await Assert.That(store.ActiveIndex).IsZero();
     }
 
     [Test]
-    public void InvalidJsonLeavesTheStoreUntouched()
+    public async Task InvalidJsonLeavesTheStoreUntouched()
     {
         var store = new TabStore();
-        Assert.That(store.TryRestore("{oops"), Is.False);
-        Assert.That(store.TryRestore(null), Is.False);
-        Assert.That(store.TryRestore(""), Is.False);
-        Assert.That(store.TryRestore("""{"activeTabIndex": 0, "tabs": []}"""), Is.False);
-        Assert.That(store.Tabs, Is.Empty);
+        await Assert.That(store.TryRestore("{oops")).IsFalse();
+        await Assert.That(store.TryRestore(null)).IsFalse();
+        await Assert.That(store.TryRestore("")).IsFalse();
+        await Assert.That(store.TryRestore("""{"activeTabIndex": 0, "tabs": []}""")).IsFalse();
+        await Assert.That(store.Tabs).IsEmpty();
     }
 }

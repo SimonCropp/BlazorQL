@@ -5,13 +5,12 @@
 /// over enums, lists, directive arguments and the remaining built-in scalars — carry their own
 /// schemas below.
 /// </summary>
-[TestFixture]
 public class SchemaValidatorTests
 {
     static SchemaValidator Validator()
     {
         var json = File.ReadAllText(
-            Path.Combine(TestContext.CurrentContext.TestDirectory, "DocExplorerTests.schema.json"));
+            Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
         using var document = JsonDocument.Parse(json);
         return new(SchemaIndex.Parse(document.RootElement)!);
     }
@@ -125,209 +124,198 @@ public class SchemaValidatorTests
             .ToList();
 
     [Test]
-    public void AcceptsAValidOperation() =>
-        Assert.That(Errors("{ person { name friends { name } } }"), Is.Empty);
+    public async Task AcceptsAValidOperation() =>
+        await Assert.That(Errors("{ person { name friends { name } } }")).IsEmpty();
 
     [Test]
-    public void ReportsASyntaxError() =>
-        Assert.That(Errors("{ person {"), Has.Some.Contains("Syntax Error"));
+    public async Task ReportsASyntaxError() =>
+        await Assert.That(Errors("{ person {")).Contains(_ => _.Contains("Syntax Error"));
 
     // FieldsOnCorrectType
 
     [Test]
-    public void FlagsAnUnknownField() =>
-        Assert.That(Errors("{ nope }"), Has.Some.Contains("Cannot query field \"nope\" on type \"Query\"."));
+    public async Task FlagsAnUnknownField() =>
+        await Assert.That(Errors("{ nope }")).Contains(_ => _.Contains("Cannot query field \"nope\" on type \"Query\"."));
 
     [Test]
-    public void FlagsAnUnknownFieldOnANestedType() =>
-        Assert.That(Errors("{ person { nope } }"), Has.Some.Contains("Cannot query field \"nope\" on type \"Person\"."));
+    public async Task FlagsAnUnknownFieldOnANestedType() =>
+        await Assert.That(Errors("{ person { nope } }")).Contains(_ => _.Contains("Cannot query field \"nope\" on type \"Person\"."));
 
     /// <summary>A union has no fields of its own, so the useful advice is to narrow first.</summary>
     [Test]
-    public void SuggestsAnInlineFragmentOnAUnion() =>
-        Assert.That(Errors("{ search(term: \"x\") { title } }"), Has.Some.Contains("inline fragment"));
+    public async Task SuggestsAnInlineFragmentOnAUnion() =>
+        await Assert.That(Errors("{ search(term: \"x\") { title } }")).Contains(_ => _.Contains("inline fragment"));
 
     [Test]
-    public void AllowsTypenameAnywhere() =>
-        Assert.That(Errors("{ __typename person { __typename } }"), Is.Empty);
+    public async Task AllowsTypenameAnywhere() =>
+        await Assert.That(Errors("{ __typename person { __typename } }")).IsEmpty();
 
     [Test]
-    public void AllowsSchemaIntrospectionOnTheRoot() =>
-        Assert.That(Errors("{ __schema { queryType { name } } }"), Is.Empty);
+    public async Task AllowsSchemaIntrospectionOnTheRoot() =>
+        await Assert.That(Errors("{ __schema { queryType { name } } }")).IsEmpty();
 
     // ScalarLeafs
 
     [Test]
-    public void FlagsASelectionOnAScalar() =>
-        Assert.That(
-            Errors("{ person { name { nope } } }"),
-            Has.Some.Contains("must not have a selection since type \"String\" has no subfields"));
+    public async Task FlagsASelectionOnAScalar() =>
+        await Assert.That(Errors("{ person { name { nope } } }"))
+            .Contains(_ => _.Contains("must not have a selection since type \"String\" has no subfields"));
 
     [Test]
-    public void FlagsAMissingSelectionOnAComposite() =>
-        Assert.That(Errors("{ person }"), Has.Some.Contains("must have a selection of subfields"));
+    public async Task FlagsAMissingSelectionOnAComposite() =>
+        await Assert.That(Errors("{ person }")).Contains(_ => _.Contains("must have a selection of subfields"));
 
     /// <summary>__typename is a String, so it cannot be selected into either.</summary>
     [Test]
-    public void FlagsASelectionOnTypename() =>
-        Assert.That(
-            Errors("{ __typename { nope } }"),
-            Has.Some.Contains("must not have a selection since type \"String\" has no subfields"));
+    public async Task FlagsASelectionOnTypename() =>
+        await Assert.That(Errors("{ __typename { nope } }"))
+            .Contains(_ => _.Contains("must not have a selection since type \"String\" has no subfields"));
 
     // KnownArgumentNames and ProvidedRequiredArguments
 
     [Test]
-    public void FlagsAnUnknownArgument() =>
-        Assert.That(
-            Errors("{ hasArgs(nope: 1) }"),
-            Has.Some.Contains("Unknown argument \"nope\" on field \"Query.hasArgs\"."));
+    public async Task FlagsAnUnknownArgument() =>
+        await Assert.That(Errors("{ hasArgs(nope: 1) }"))
+            .Contains(_ => _.Contains("Unknown argument \"nope\" on field \"Query.hasArgs\"."));
 
     /// <summary>
     /// The fixture's term argument is non-null but carries a default, which per spec makes it
     /// optional. Getting this backwards would put an error on most well-formed queries.
     /// </summary>
     [Test]
-    public void AcceptsAnOmittedNonNullArgumentThatHasADefault() =>
-        Assert.That(Errors("{ search { __typename } }"), Is.Empty);
+    public async Task AcceptsAnOmittedNonNullArgumentThatHasADefault() =>
+        await Assert.That(Errors("{ search { __typename } }")).IsEmpty();
 
     [Test]
-    public void AcceptsAProvidedRequiredArgument() =>
-        Assert.That(Errors("{ search(term: \"x\") { __typename } }"), Is.Empty);
+    public async Task AcceptsAProvidedRequiredArgument() =>
+        await Assert.That(Errors("{ search(term: \"x\") { __typename } }")).IsEmpty();
 
     [Test]
-    public void FlagsAMissingRequiredArgument() =>
-        Assert.That(
-            RequiredSchemaErrors("{ need }"),
-            Has.Some.Contains("argument \"arg\" of type \"String!\" is required"));
+    public async Task FlagsAMissingRequiredArgument() =>
+        await Assert.That(RequiredSchemaErrors("{ need }"))
+            .Contains(_ => _.Contains("argument \"arg\" of type \"String!\" is required"));
 
     [Test]
-    public void AcceptsARequiredArgumentWhenProvided() =>
-        Assert.That(RequiredSchemaErrors("{ need(arg: \"x\") }"), Is.Empty);
+    public async Task AcceptsARequiredArgumentWhenProvided() =>
+        await Assert.That(RequiredSchemaErrors("{ need(arg: \"x\") }")).IsEmpty();
 
     // ValuesOfCorrectType
 
     [Test]
-    public void FlagsAStringWhereAnIntIsExpected() =>
-        Assert.That(Errors("{ hasArgs(count: \"nope\") }"), Has.Some.Contains("Int cannot represent"));
+    public async Task FlagsAStringWhereAnIntIsExpected() =>
+        await Assert.That(Errors("{ hasArgs(count: \"nope\") }")).Contains(_ => _.Contains("Int cannot represent"));
 
     [Test]
-    public void FlagsAnIntWhereAStringIsExpected() =>
-        Assert.That(Errors("{ hasArgs(string: 1) }"), Has.Some.Contains("String cannot represent"));
+    public async Task FlagsAnIntWhereAStringIsExpected() =>
+        await Assert.That(Errors("{ hasArgs(string: 1) }")).Contains(_ => _.Contains("String cannot represent"));
 
     [Test]
-    public void FlagsNullForANonNullArgument() =>
-        Assert.That(Errors("{ search(term: null) { __typename } }"), Has.Some.Contains("found null"));
+    public async Task FlagsNullForANonNullArgument() =>
+        await Assert.That(Errors("{ search(term: null) { __typename } }")).Contains(_ => _.Contains("found null"));
 
     [Test]
-    public void FlagsAnUnknownInputObjectField() =>
-        Assert.That(
-            Errors("{ hasArgs(input: {name: \"a\", nope: 1}) }"),
-            Has.Some.Contains("Field \"nope\" is not defined by type \"PetInput\"."));
+    public async Task FlagsAnUnknownInputObjectField() =>
+        await Assert.That(Errors("{ hasArgs(input: {name: \"a\", nope: 1}) }"))
+            .Contains(_ => _.Contains("Field \"nope\" is not defined by type \"PetInput\"."));
 
     /// <summary>PetInput.name is non-null with a default, so omitting it is legal.</summary>
     [Test]
-    public void AcceptsAnOmittedInputFieldThatHasADefault() =>
-        Assert.That(Errors("{ hasArgs(input: {age: 1}) }"), Is.Empty);
+    public async Task AcceptsAnOmittedInputFieldThatHasADefault() =>
+        await Assert.That(Errors("{ hasArgs(input: {age: 1}) }")).IsEmpty();
 
     [Test]
-    public void FlagsAMissingRequiredInputObjectField() =>
-        Assert.That(
-            RequiredSchemaErrors("{ obj(in: {}) }"),
-            Has.Some.Contains("of required type \"String!\" was not provided"));
+    public async Task FlagsAMissingRequiredInputObjectField() =>
+        await Assert.That(RequiredSchemaErrors("{ obj(in: {}) }"))
+            .Contains(_ => _.Contains("of required type \"String!\" was not provided"));
 
     [Test]
-    public void AcceptsAWellFormedInputObject() =>
-        Assert.That(Errors("{ hasArgs(input: {name: \"a\", age: 1}) }"), Is.Empty);
+    public async Task AcceptsAWellFormedInputObject() =>
+        await Assert.That(Errors("{ hasArgs(input: {name: \"a\", age: 1}) }")).IsEmpty();
 
     [Test]
-    public void AcceptsNullForANullableArgument() =>
-        Assert.That(Errors("{ hasArgs(string: null) }"), Is.Empty);
+    public async Task AcceptsNullForANullableArgument() =>
+        await Assert.That(Errors("{ hasArgs(string: null) }")).IsEmpty();
 
     [Test]
-    public void FlagsANonObjectValueForAnInputObject() =>
-        Assert.That(
-            Errors("{ hasArgs(input: 1) }"),
-            Has.Some.Contains("Expected value of type \"PetInput\", found a non-object value."));
+    public async Task FlagsANonObjectValueForAnInputObject() =>
+        await Assert.That(Errors("{ hasArgs(input: 1) }"))
+            .Contains(_ => _.Contains("Expected value of type \"PetInput\", found a non-object value."));
 
     /// <summary>
     /// An empty object literal satisfies the required-field check vacuously, so the miss has to be
     /// provoked with a sibling field present.
     /// </summary>
     [Test]
-    public void FlagsAMissingRequiredInputObjectFieldBesideAProvidedOne() =>
-        Assert.That(
-            RequiredSchemaErrors("{ obj(in: {opt: \"x\"}) }"),
-            Has.Some.Contains("Field \"In.req\" of required type \"String!\" was not provided."));
+    public async Task FlagsAMissingRequiredInputObjectFieldBesideAProvidedOne() =>
+        await Assert.That(RequiredSchemaErrors("{ obj(in: {opt: \"x\"}) }"))
+            .Contains(_ => _.Contains("Field \"In.req\" of required type \"String!\" was not provided."));
 
     // Enums
 
     [Test]
-    public void AcceptsAKnownEnumValue() =>
-        Assert.That(ValuesSchemaErrors("{ paint(color: RED) }"), Is.Empty);
+    public async Task AcceptsAKnownEnumValue() =>
+        await Assert.That(ValuesSchemaErrors("{ paint(color: RED) }")).IsEmpty();
 
     [Test]
-    public void FlagsANonEnumValueForAnEnum() =>
-        Assert.That(
-            ValuesSchemaErrors("{ paint(color: \"RED\") }"),
-            Has.Some.Contains("Enum \"Color\" cannot represent non-enum value."));
+    public async Task FlagsANonEnumValueForAnEnum() =>
+        await Assert.That(ValuesSchemaErrors("{ paint(color: \"RED\") }"))
+            .Contains(_ => _.Contains("Enum \"Color\" cannot represent non-enum value."));
 
     [Test]
-    public void FlagsAnUnknownEnumValue() =>
-        Assert.That(
-            ValuesSchemaErrors("{ paint(color: BLUE) }"),
-            Has.Some.Contains("Value \"BLUE\" does not exist in \"Color\" enum."));
+    public async Task FlagsAnUnknownEnumValue() =>
+        await Assert.That(ValuesSchemaErrors("{ paint(color: BLUE) }"))
+            .Contains(_ => _.Contains("Value \"BLUE\" does not exist in \"Color\" enum."));
 
     // Lists
 
     [Test]
-    public void AcceptsAWellFormedListLiteral() =>
-        Assert.That(ValuesSchemaErrors("{ pick(ids: [1, 2]) }"), Is.Empty);
+    public async Task AcceptsAWellFormedListLiteral() =>
+        await Assert.That(ValuesSchemaErrors("{ pick(ids: [1, 2]) }")).IsEmpty();
 
     [Test]
-    public void ChecksEveryElementOfAListLiteral() =>
-        Assert.That(
-            ValuesSchemaErrors("{ pick(ids: [1, \"nope\"]) }"),
-            Has.Some.Contains("Int cannot represent"));
+    public async Task ChecksEveryElementOfAListLiteral() =>
+        await Assert.That(ValuesSchemaErrors("{ pick(ids: [1, \"nope\"]) }"))
+            .Contains(_ => _.Contains("Int cannot represent"));
 
     /// <summary>A single value coerces to a one-element list, per spec.</summary>
     [Test]
-    public void AcceptsASingleValueWhereAListIsExpected() =>
-        Assert.That(ValuesSchemaErrors("{ pick(ids: 1) }"), Is.Empty);
+    public async Task AcceptsASingleValueWhereAListIsExpected() =>
+        await Assert.That(ValuesSchemaErrors("{ pick(ids: 1) }")).IsEmpty();
 
     /// <summary>Coercing does not excuse it from the element check.</summary>
     [Test]
-    public void ChecksASingleValueCoercedToAList() =>
-        Assert.That(ValuesSchemaErrors("{ pick(ids: \"nope\") }"), Has.Some.Contains("Int cannot represent"));
+    public async Task ChecksASingleValueCoercedToAList() =>
+        await Assert.That(ValuesSchemaErrors("{ pick(ids: \"nope\") }")).Contains(_ => _.Contains("Int cannot represent"));
 
     // Scalars
 
     [Test]
-    public void FlagsAStringWhereAFloatIsExpected() =>
-        Assert.That(ValuesSchemaErrors("{ scalars(float: \"nope\") }"), Has.Some.Contains("Float cannot represent"));
+    public async Task FlagsAStringWhereAFloatIsExpected() =>
+        await Assert.That(ValuesSchemaErrors("{ scalars(float: \"nope\") }")).Contains(_ => _.Contains("Float cannot represent"));
 
     /// <summary>An integer literal is a legal Float.</summary>
     [Test]
-    public void AcceptsAnIntWhereAFloatIsExpected() =>
-        Assert.That(ValuesSchemaErrors("{ scalars(float: 1) }"), Is.Empty);
+    public async Task AcceptsAnIntWhereAFloatIsExpected() =>
+        await Assert.That(ValuesSchemaErrors("{ scalars(float: 1) }")).IsEmpty();
 
     [Test]
-    public void FlagsAnIntWhereABooleanIsExpected() =>
-        Assert.That(ValuesSchemaErrors("{ scalars(flag: 1) }"), Has.Some.Contains("Boolean cannot represent"));
+    public async Task FlagsAnIntWhereABooleanIsExpected() =>
+        await Assert.That(ValuesSchemaErrors("{ scalars(flag: 1) }")).Contains(_ => _.Contains("Boolean cannot represent"));
 
     [Test]
-    public void AcceptsABoolean() =>
-        Assert.That(ValuesSchemaErrors("{ scalars(flag: true) }"), Is.Empty);
+    public async Task AcceptsABoolean() =>
+        await Assert.That(ValuesSchemaErrors("{ scalars(flag: true) }")).IsEmpty();
 
     [Test]
-    public void FlagsABooleanWhereAnIdIsExpected() =>
-        Assert.That(ValuesSchemaErrors("{ scalars(id: true) }"), Has.Some.Contains("ID cannot represent"));
+    public async Task FlagsABooleanWhereAnIdIsExpected() =>
+        await Assert.That(ValuesSchemaErrors("{ scalars(id: true) }")).Contains(_ => _.Contains("ID cannot represent"));
 
     /// <summary>An ID accepts either spelling.</summary>
     [Test]
-    public void AcceptsAStringOrAnIntForAnId()
+    public async Task AcceptsAStringOrAnIntForAnId()
     {
-        Assert.That(ValuesSchemaErrors("{ scalars(id: \"a\") }"), Is.Empty);
-        Assert.That(ValuesSchemaErrors("{ scalars(id: 1) }"), Is.Empty);
+        await Assert.That(ValuesSchemaErrors("{ scalars(id: \"a\") }")).IsEmpty();
+        await Assert.That(ValuesSchemaErrors("{ scalars(id: 1) }")).IsEmpty();
     }
 
     /// <summary>
@@ -335,26 +323,24 @@ public class SchemaValidatorTests
     /// rather than producing a false error.
     /// </summary>
     [Test]
-    public void AcceptsAnyLiteralForACustomScalar() =>
-        Assert.That(ValuesSchemaErrors("{ scalars(json: true) }"), Is.Empty);
+    public async Task AcceptsAnyLiteralForACustomScalar() =>
+        await Assert.That(ValuesSchemaErrors("{ scalars(json: true) }")).IsEmpty();
 
     // Variables
 
     [Test]
-    public void AcceptsAVariableInAMatchingPosition() =>
-        Assert.That(Errors("query Q($t: String!) { search(term: $t) { __typename } }"), Is.Empty);
+    public async Task AcceptsAVariableInAMatchingPosition() =>
+        await Assert.That(Errors("query Q($t: String!) { search(term: $t) { __typename } }")).IsEmpty();
 
     [Test]
-    public void FlagsAnUndefinedVariable() =>
-        Assert.That(
-            Errors("{ search(term: $t) { __typename } }"),
-            Has.Some.Contains("Variable \"$t\" is not defined."));
+    public async Task FlagsAnUndefinedVariable() =>
+        await Assert.That(Errors("{ search(term: $t) { __typename } }"))
+            .Contains(_ => _.Contains("Variable \"$t\" is not defined."));
 
     [Test]
-    public void FlagsAnUnusedVariable() =>
-        Assert.That(
-            Errors("query Q($t: String!) { person { name } }"),
-            Has.Some.Contains("Variable \"$t\" is never used."));
+    public async Task FlagsAnUnusedVariable() =>
+        await Assert.That(Errors("query Q($t: String!) { person { name } }"))
+            .Contains(_ => _.Contains("Variable \"$t\" is never used."));
 
     /// <summary>
     /// A nullable variable cannot fill a non-null position; the reverse is fine. Spec 5.8.5 makes
@@ -363,10 +349,9 @@ public class SchemaValidatorTests
     /// there carries a default, which is itself an escape from the rule.
     /// </summary>
     [Test]
-    public void FlagsAVariableOfTheWrongNullability() =>
-        Assert.That(
-            RequiredSchemaErrors("query Q($t: String) { need(arg: $t) }"),
-            Has.Some.Contains("used in position expecting type \"String!\""));
+    public async Task FlagsAVariableOfTheWrongNullability() =>
+        await Assert.That(RequiredSchemaErrors("query Q($t: String) { need(arg: $t) }"))
+            .Contains(_ => _.Contains("used in position expecting type \"String!\""));
 
     /// <summary>
     /// Spec 5.8.5: a nullable variable does fill a non-null position when the variable declares a
@@ -374,210 +359,186 @@ public class SchemaValidatorTests
     /// everyday shape of this, and rejecting it marked correct documents.
     /// </summary>
     [Test]
-    public void AcceptsANullableVariableWithADefaultInANonNullPosition() =>
-        Assert.That(
-            RequiredSchemaErrors("""query Q($t: String = "x") { need(arg: $t) }"""),
-            Is.Empty);
+    public async Task AcceptsANullableVariableWithADefaultInANonNullPosition() =>
+        await Assert.That(RequiredSchemaErrors("""query Q($t: String = "x") { need(arg: $t) }""")).IsEmpty();
 
     /// <summary>A default of the null literal guarantees nothing, so it is no escape.</summary>
     [Test]
-    public void FlagsANullableVariableDefaultingToNullInANonNullPosition() =>
-        Assert.That(
-            RequiredSchemaErrors("query Q($t: String = null) { need(arg: $t) }"),
-            Has.Some.Contains("used in position expecting type \"String!\""));
+    public async Task FlagsANullableVariableDefaultingToNullInANonNullPosition() =>
+        await Assert.That(RequiredSchemaErrors("query Q($t: String = null) { need(arg: $t) }"))
+            .Contains(_ => _.Contains("used in position expecting type \"String!\""));
 
     /// <summary>
     /// Spec 5.8.5's other escape: the argument itself declares a default, so omitting the variable
     /// falls back to it. <c>search(term:)</c> defaults to "all".
     /// </summary>
     [Test]
-    public void AcceptsANullableVariableWhereTheArgumentHasADefault() =>
-        Assert.That(
-            Errors("query Q($t: String) { search(term: $t) { __typename } }"),
-            Is.Empty);
+    public async Task AcceptsANullableVariableWhereTheArgumentHasADefault() =>
+        await Assert.That(Errors("query Q($t: String) { search(term: $t) { __typename } }")).IsEmpty();
 
     [Test]
-    public void AcceptsANonNullVariableInANullablePosition() =>
-        Assert.That(Errors("query Q($s: String!) { hasArgs(string: $s) }"), Is.Empty);
+    public async Task AcceptsANonNullVariableInANullablePosition() =>
+        await Assert.That(Errors("query Q($s: String!) { hasArgs(string: $s) }")).IsEmpty();
 
     [Test]
-    public void FlagsAVariableOfTheWrongType() =>
-        Assert.That(
-            Errors("query Q($t: Int!) { search(term: $t) { __typename } }"),
-            Has.Some.Contains("used in position expecting type \"String!\""));
+    public async Task FlagsAVariableOfTheWrongType() =>
+        await Assert.That(Errors("query Q($t: Int!) { search(term: $t) { __typename } }"))
+            .Contains(_ => _.Contains("used in position expecting type \"String!\""));
 
     [Test]
-    public void FlagsAVariableDeclaredAsANonInputType() =>
-        Assert.That(
-            Errors("query Q($p: Person) { person { name } }"),
-            Has.Some.Contains("cannot be non-input type"));
+    public async Task FlagsAVariableDeclaredAsANonInputType() =>
+        await Assert.That(Errors("query Q($p: Person) { person { name } }"))
+            .Contains(_ => _.Contains("cannot be non-input type"));
 
     [Test]
-    public void FlagsAVariableDeclaredAsAnUnknownType() =>
-        Assert.That(Errors("query Q($p: Nope) { person { name } }"), Has.Some.Contains("Unknown type \"Nope\"."));
+    public async Task FlagsAVariableDeclaredAsAnUnknownType() =>
+        await Assert.That(Errors("query Q($p: Nope) { person { name } }")).Contains(_ => _.Contains("Unknown type \"Nope\"."));
 
     [Test]
-    public void AcceptsAListVariableInAListPosition() =>
-        Assert.That(ValuesSchemaErrors("query Q($ids: [Int]) { pick(ids: $ids) }"), Is.Empty);
+    public async Task AcceptsAListVariableInAListPosition() =>
+        await Assert.That(ValuesSchemaErrors("query Q($ids: [Int]) { pick(ids: $ids) }")).IsEmpty();
 
     [Test]
-    public void FlagsANonListVariableInAListPosition() =>
-        Assert.That(
-            ValuesSchemaErrors("query Q($id: Int) { pick(ids: $id) }"),
-            Has.Some.Contains("Variable \"$id\" of type \"Int\" used in position expecting type \"[Int]\"."));
+    public async Task FlagsANonListVariableInAListPosition() =>
+        await Assert.That(ValuesSchemaErrors("query Q($id: Int) { pick(ids: $id) }"))
+            .Contains(_ => _.Contains("Variable \"$id\" of type \"Int\" used in position expecting type \"[Int]\"."));
 
     /// <summary>The declared type is rendered from the AST, so list nesting has to survive it.</summary>
     [Test]
-    public void RendersAListTypeInAVariablePositionError() =>
-        Assert.That(
-            ValuesSchemaErrors("query Q($ids: [String]) { pick(ids: $ids) }"),
-            Has.Some.Contains("Variable \"$ids\" of type \"[String]\" used in position expecting type \"[Int]\"."));
+    public async Task RendersAListTypeInAVariablePositionError() =>
+        await Assert.That(ValuesSchemaErrors("query Q($ids: [String]) { pick(ids: $ids) }"))
+            .Contains(_ => _.Contains("Variable \"$ids\" of type \"[String]\" used in position expecting type \"[Int]\"."));
 
     [Test]
-    public void FlagsAListVariableInAScalarPosition() =>
-        Assert.That(
-            ValuesSchemaErrors("query Q($ids: [Int]) { scalars(id: $ids) }"),
-            Has.Some.Contains("Variable \"$ids\" of type \"[Int]\" used in position expecting type \"ID\"."));
+    public async Task FlagsAListVariableInAScalarPosition() =>
+        await Assert.That(ValuesSchemaErrors("query Q($ids: [Int]) { scalars(id: $ids) }"))
+            .Contains(_ => _.Contains("Variable \"$ids\" of type \"[Int]\" used in position expecting type \"ID\"."));
 
     // Fragments
 
     [Test]
-    public void AcceptsASpreadOfADefinedFragment() =>
-        Assert.That(Errors("{ person { ...F } } fragment F on Person { name }"), Is.Empty);
+    public async Task AcceptsASpreadOfADefinedFragment() =>
+        await Assert.That(Errors("{ person { ...F } } fragment F on Person { name }")).IsEmpty();
 
     [Test]
-    public void FlagsAnUnknownFragment() =>
-        Assert.That(Errors("{ person { ...F } }"), Has.Some.Contains("Unknown fragment \"F\"."));
+    public async Task FlagsAnUnknownFragment() =>
+        await Assert.That(Errors("{ person { ...F } }")).Contains(_ => _.Contains("Unknown fragment \"F\"."));
 
     [Test]
-    public void FlagsAnUnusedFragment() =>
-        Assert.That(
-            Errors("{ person { name } } fragment F on Person { name }"),
-            Has.Some.Contains("Fragment \"F\" is never used."));
+    public async Task FlagsAnUnusedFragment() =>
+        await Assert.That(Errors("{ person { name } } fragment F on Person { name }"))
+            .Contains(_ => _.Contains("Fragment \"F\" is never used."));
 
     [Test]
-    public void FlagsAFragmentOnANonCompositeType() =>
-        Assert.That(
-            Errors("{ person { ...F } } fragment F on String { name }"),
-            Has.Some.Contains("cannot condition on non composite type \"String\""));
+    public async Task FlagsAFragmentOnANonCompositeType() =>
+        await Assert.That(Errors("{ person { ...F } } fragment F on String { name }"))
+            .Contains(_ => _.Contains("cannot condition on non composite type \"String\""));
 
     [Test]
-    public void ValidatesInsideAFragment() =>
-        Assert.That(
-            Errors("{ person { ...F } } fragment F on Person { nope }"),
-            Has.Some.Contains("Cannot query field \"nope\" on type \"Person\"."));
+    public async Task ValidatesInsideAFragment() =>
+        await Assert.That(Errors("{ person { ...F } } fragment F on Person { nope }"))
+            .Contains(_ => _.Contains("Cannot query field \"nope\" on type \"Person\"."));
 
     [Test]
-    public void ValidatesInsideAnInlineFragment() =>
-        Assert.That(
-            Errors("{ search(term: \"x\") { ... on Post { nope } } }"),
-            Has.Some.Contains("Cannot query field \"nope\" on type \"Post\"."));
+    public async Task ValidatesInsideAnInlineFragment() =>
+        await Assert.That(Errors("{ search(term: \"x\") { ... on Post { nope } } }"))
+            .Contains(_ => _.Contains("Cannot query field \"nope\" on type \"Post\"."));
 
     [Test]
-    public void AcceptsAnInlineFragmentNarrowingAUnion() =>
-        Assert.That(Errors("{ search(term: \"x\") { ... on Post { title } } }"), Is.Empty);
+    public async Task AcceptsAnInlineFragmentNarrowingAUnion() =>
+        await Assert.That(Errors("{ search(term: \"x\") { ... on Post { title } } }")).IsEmpty();
 
     [Test]
-    public void FlagsAFragmentOnAnUnknownType() =>
-        Assert.That(
-            Errors("{ person { ...F } } fragment F on Nope { name }"),
-            Has.Some.Contains("Unknown type \"Nope\"."));
+    public async Task FlagsAFragmentOnAnUnknownType() =>
+        await Assert.That(Errors("{ person { ...F } } fragment F on Nope { name }"))
+            .Contains(_ => _.Contains("Unknown type \"Nope\"."));
 
     /// <summary>An inline fragment without a type condition keeps the enclosing type.</summary>
     [Test]
-    public void ValidatesAnInlineFragmentWithoutATypeCondition()
+    public async Task ValidatesAnInlineFragmentWithoutATypeCondition()
     {
-        Assert.That(Errors("{ person { ... { name } } }"), Is.Empty);
-        Assert.That(
-            Errors("{ person { ... { nope } } }"),
-            Has.Some.Contains("Cannot query field \"nope\" on type \"Person\"."));
+        await Assert.That(Errors("{ person { ... { name } } }")).IsEmpty();
+        await Assert.That(Errors("{ person { ... { nope } } }"))
+            .Contains(_ => _.Contains("Cannot query field \"nope\" on type \"Person\"."));
     }
 
     [Test]
-    public void FlagsAnInlineFragmentOnAnUnknownType() =>
-        Assert.That(
-            Errors("{ person { ... on Nope { name } } }"),
-            Has.Some.Contains("Unknown type \"Nope\"."));
+    public async Task FlagsAnInlineFragmentOnAnUnknownType() =>
+        await Assert.That(Errors("{ person { ... on Nope { name } } }"))
+            .Contains(_ => _.Contains("Unknown type \"Nope\"."));
 
     /// <summary>The inline wording drops the fragment name that the named form carries.</summary>
     [Test]
-    public void FlagsAnInlineFragmentOnANonCompositeType() =>
-        Assert.That(
-            Errors("{ person { ... on String { name } } }"),
-            Has.Some.Contains("Fragment cannot condition on non composite type \"String\"."));
+    public async Task FlagsAnInlineFragmentOnANonCompositeType() =>
+        await Assert.That(Errors("{ person { ... on String { name } } }"))
+            .Contains(_ => _.Contains("Fragment cannot condition on non composite type \"String\"."));
 
     // Operations
 
     [Test]
-    public void FlagsTwoOperationsWithTheSameName() =>
-        Assert.That(
-            Errors("query Q { person { name } } query Q { person { name } }"),
-            Has.Some.Contains("There can be only one operation named \"Q\"."));
+    public async Task FlagsTwoOperationsWithTheSameName() =>
+        await Assert.That(Errors("query Q { person { name } } query Q { person { name } }"))
+            .Contains(_ => _.Contains("There can be only one operation named \"Q\"."));
 
     [Test]
-    public void FlagsAnAnonymousOperationBesideAnother() =>
-        Assert.That(
-            Errors("{ person { name } } query Q { person { name } }"),
-            Has.Some.Contains("must be the only defined operation"));
+    public async Task FlagsAnAnonymousOperationBesideAnother() =>
+        await Assert.That(Errors("{ person { name } } query Q { person { name } }"))
+            .Contains(_ => _.Contains("must be the only defined operation"));
 
     [Test]
-    public void FlagsAnOperationTypeTheSchemaLacks() =>
-        Assert.That(
-            Errors("mutation { person { name } }"),
-            Has.Some.Contains("Schema is not configured for mutations."));
+    public async Task FlagsAnOperationTypeTheSchemaLacks() =>
+        await Assert.That(Errors("mutation { person { name } }"))
+            .Contains(_ => _.Contains("Schema is not configured for mutations."));
 
     [Test]
-    public void FlagsASubscriptionTheSchemaLacks() =>
-        Assert.That(
-            Errors("subscription { person { name } }"),
-            Has.Some.Contains("Schema is not configured for subscriptions."));
+    public async Task FlagsASubscriptionTheSchemaLacks() =>
+        await Assert.That(Errors("subscription { person { name } }"))
+            .Contains(_ => _.Contains("Schema is not configured for subscriptions."));
 
     // Directives
 
     [Test]
-    public void FlagsAnUnknownDirective() =>
-        Assert.That(Errors("{ person @nope { name } }"), Has.Some.Contains("Unknown directive \"@nope\"."));
+    public async Task FlagsAnUnknownDirective() =>
+        await Assert.That(Errors("{ person @nope { name } }")).Contains(_ => _.Contains("Unknown directive \"@nope\"."));
 
     [Test]
-    public void AcceptsAWellFormedDirectiveArgument() =>
-        Assert.That(ValuesSchemaErrors("{ paint @tag(name: \"x\") }"), Is.Empty);
+    public async Task AcceptsAWellFormedDirectiveArgument() =>
+        await Assert.That(ValuesSchemaErrors("{ paint @tag(name: \"x\") }")).IsEmpty();
 
     [Test]
-    public void FlagsAnUnknownArgumentOnADirective() =>
-        Assert.That(
-            ValuesSchemaErrors("{ paint @tag(nope: \"x\") }"),
-            Has.Some.Contains("Unknown argument \"nope\" on directive \"@tag\"."));
+    public async Task FlagsAnUnknownArgumentOnADirective() =>
+        await Assert.That(ValuesSchemaErrors("{ paint @tag(nope: \"x\") }"))
+            .Contains(_ => _.Contains("Unknown argument \"nope\" on directive \"@tag\"."));
 
     [Test]
-    public void FlagsABadDirectiveArgumentValue() =>
-        Assert.That(ValuesSchemaErrors("{ paint @tag(name: 1) }"), Has.Some.Contains("String cannot represent"));
+    public async Task FlagsABadDirectiveArgumentValue() =>
+        await Assert.That(ValuesSchemaErrors("{ paint @tag(name: 1) }")).Contains(_ => _.Contains("String cannot represent"));
 
     // Deprecation warnings
 
     [Test]
-    public void WarnsOnADeprecatedFieldWithoutErroring()
+    public async Task WarnsOnADeprecatedFieldWithoutErroring()
     {
-        Assert.That(Warnings("{ oldField }"), Has.Some.Contains("deprecated"));
-        Assert.That(Errors("{ oldField }"), Is.Empty);
+        await Assert.That(Warnings("{ oldField }")).Contains(_ => _.Contains("deprecated"));
+        await Assert.That(Errors("{ oldField }")).IsEmpty();
     }
 
     [Test]
-    public void WarnsOnADeprecatedArgument() =>
-        Assert.That(Warnings("{ hasArgs(deprecatedArg: \"x\") }"), Has.Some.Contains("deprecated"));
+    public async Task WarnsOnADeprecatedArgument() =>
+        await Assert.That(Warnings("{ hasArgs(deprecatedArg: \"x\") }")).Contains(_ => _.Contains("deprecated"));
 
     [Test]
-    public void WarnsOnADeprecatedEnumValue() =>
-        Assert.That(
-            ValuesSchemaWarnings("{ paint(color: GRAY) }"),
-            Has.Some.Contains("The enum value Color.GRAY is deprecated. Use RED."));
+    public async Task WarnsOnADeprecatedEnumValue() =>
+        await Assert.That(ValuesSchemaWarnings("{ paint(color: GRAY) }"))
+            .Contains(_ => _.Contains("The enum value Color.GRAY is deprecated. Use RED."));
 
     /// <summary>Diagnostics carry one-based line and column, which is what Monaco marks with.</summary>
     [Test]
-    public void ReportsAOneBasedPosition()
+    public async Task ReportsAOneBasedPosition()
     {
         var diagnostic = Validate("{\n  nope\n}").Single(_ => _.IsError);
 
-        Assert.That(diagnostic.Line, Is.EqualTo(2));
-        Assert.That(diagnostic.Column, Is.EqualTo(3));
+        await Assert.That(diagnostic.Line).IsEqualTo(2);
+        await Assert.That(diagnostic.Column).IsEqualTo(3);
     }
 }

@@ -1,11 +1,9 @@
 ﻿using System.Text.Json;
-
 /// <summary>
 /// The M5 documentation explorer over the published sample: stack navigation from the root page
 /// through type and field pages, deprecated-member toggles, search, the SDL view, and
 /// ctrl-click jump-to-doc from the operation editor.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class DocExplorerUiTests :
     BrowserFixture
@@ -30,7 +28,7 @@ public class DocExplorerUiTests :
         // The type page lists fields, with deprecated ones behind the toggle.
         await page.WaitForSelectorAsync("[data-testid='doc-type']", 10);
         await page.WaitForSelectorAsync(".blazorql-field-link:text-is('hasArgs')", 10);
-        Assert.That(await page.Locator(".blazorql-field-link:text-is('deprecatedField')").CountAsync(), Is.Zero);
+        await Assert.That(await page.Locator(".blazorql-field-link:text-is('deprecatedField')").CountAsync()).IsZero();
 
         await page.ClickAsync("button:has-text('Show Deprecated Fields')");
         await page.WaitForSelectorAsync(".blazorql-field-link:text-is('deprecatedField')", 10);
@@ -45,7 +43,7 @@ public class DocExplorerUiTests :
         await page.ClickAsync("[data-testid='doc-back']");
         await page.WaitForSelectorAsync("[data-testid='doc-type']", 10);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -62,7 +60,7 @@ public class DocExplorerUiTests :
         await page.ClickAsync(".blazorql-doc-search-result:text-is('Test.hasArgs')");
         await page.WaitForSelectorAsync("[data-testid='doc-field']", 10);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -90,7 +88,7 @@ public class DocExplorerUiTests :
         await page.ClickAsync("[data-testid='doc-sdl']");
         await page.WaitForSelectorAsync("[data-testid='doc-root']", 10);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -111,12 +109,12 @@ public class DocExplorerUiTests :
             """,
             null,
             new() {Timeout = 30_000});
-        Assert.That(await page.Locator(".blazorql-tab").CountAsync(), Is.EqualTo(2));
+        await Assert.That(await page.Locator(".blazorql-tab").CountAsync()).IsEqualTo(2);
         await page.WaitForSelectorAsync(".blazorql-tab.blazorql-active .blazorql-tab-button:text-is('Person')", 10);
 
         var query = await page.GetModelValueAsync("blazorql-operation");
-        Assert.That(query, Does.Contain("  person {"));
-        Assert.That(query, Does.Contain("    friends {"));
+        await Assert.That(query).Contains("  person {");
+        await Assert.That(query).Contains("    friends {");
 
         // From the type page, the header button generates the same document into a fresh tab.
         await page.ClickAsync(".blazorql-type-link:text-is('Person')");
@@ -127,7 +125,7 @@ public class DocExplorerUiTests :
             null,
             new() {Timeout = 10_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -160,6 +158,6 @@ public class DocExplorerUiTests :
         await page.WaitForSelectorAsync(".blazorql-doc-title:text-is('person')", 10);
         await page.WaitForSelectorAsync("[data-testid='doc-back'][aria-label='Go back to Test']", 10);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

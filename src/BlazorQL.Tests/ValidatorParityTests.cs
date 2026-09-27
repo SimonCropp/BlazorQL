@@ -2,7 +2,6 @@ using BlazorQL.Sample;
 using GraphQL.Validation.Errors;
 using GraphQLParser;
 using GraphQLParser.AST;
-
 /// <summary>
 /// Differential test: every document runs through both <see cref="SchemaValidator"/> and
 /// GraphQL.NET's <see cref="DocumentValidator"/>, over one schema both sides derive from the same
@@ -19,7 +18,6 @@ using GraphQLParser.AST;
 /// shows). Messages still go into the snapshot, so wording drift is reviewable.
 /// </para>
 /// </remarks>
-[TestFixture]
 public class ValidatorParityTests
 {
     /// <summary>
@@ -85,7 +83,7 @@ public class ValidatorParityTests
     /// validators do that. Add a case whenever a rule changes; the shape of the divergence lands
     /// in the snapshot.
     /// </summary>
-    static IEnumerable<TestCaseData> Corpus()
+    public static IEnumerable<Func<(string name, string query)>> Corpus()
     {
         // Valid, and exercising the shapes the rules key off: a union spread, arguments of every
         // kind, variables, a fragment, a directive.
@@ -157,11 +155,12 @@ public class ValidatorParityTests
         yield return Case("directive-in-wrong-location", "query Q @skip(if: true) { test { isTest } }");
         yield return Case("duplicate-fragment-name", "{ test { ...F } } fragment F on Test { image } fragment F on Test { isTest }");
 
-        static TestCaseData Case(string name, string query) =>
-            new TestCaseData(name, query).SetName($"{{m}}({name})");
+        static Func<(string name, string query)> Case(string name, string query) =>
+            () => (name, query);
     }
 
-    [TestCaseSource(nameof(Corpus))]
+    [Test]
+    [MethodDataSource(nameof(Corpus))]
     public async Task Parity(string name, string query)
     {
         var reference = await Reference(query);
@@ -174,25 +173,16 @@ public class ValidatorParityTests
         {
             if (owned.Count > 0)
             {
-                Assert.That(
-                    mine,
-                    Is.Not.Empty,
-                    $"GraphQL.NET reported {Describe(owned)}, which BlazorQL claims to implement, but BlazorQL reported nothing.");
+                await Assert.That(mine).IsNotEmpty().Because($"GraphQL.NET reported {Describe(owned)}, which BlazorQL claims to implement, but BlazorQL reported nothing.");
             }
             else if (gaps.Count > 0)
             {
-                Assert.That(
-                    mine,
-                    Is.Empty,
-                    $"Every GraphQL.NET error here is a known gap ({string.Join(", ", gaps.Select(_ => $"{_.Rule} — {upstream}/blob/master/{knownGaps[_.Rule]}"))}), " +
+                await Assert.That(mine).IsEmpty().Because($"Every GraphQL.NET error here is a known gap ({string.Join(", ", gaps.Select(_ => $"{_.Rule} — {upstream}/blob/master/{knownGaps[_.Rule]}"))}), " +
                     "so BlazorQL was expected to stay silent. If a gap has been closed, remove it from knownGaps.");
             }
             else
             {
-                Assert.That(
-                    mine,
-                    Is.Empty,
-                    $"GraphQL.NET considers this document valid, but BlazorQL reported: {string.Join("; ", mine)}");
+                await Assert.That(mine).IsEmpty().Because($"GraphQL.NET considers this document valid, but BlazorQL reported: {string.Join("; ", mine)}");
             }
         }
 
@@ -256,8 +246,8 @@ public class ValidatorParityTests
     /// parsed by the same <see cref="SchemaIndex"/> the IDE builds at runtime. The draft additions
     /// are left off because GraphQL.NET does not serve them.
     /// </summary>
-    [OneTimeSetUp]
-    public async Task BuildIndex()
+    [Before(HookType.Class)]
+    public static async Task BuildIndex()
     {
         var result = await new DocumentExecuter().ExecuteAsync(new()
         {
@@ -265,11 +255,11 @@ public class ValidatorParityTests
             Query = BlazorQLIde.IntrospectionQuery(draftAdditions: false)
         });
 
-        Assert.That(result.Errors, Is.Null.Or.Empty);
+        await Assert.That(result.Errors?.Count ?? 0).IsEqualTo(0);
 
         using var document = JsonDocument.Parse(new GraphQLSerializer().Serialize(result));
         index = SchemaIndex.Parse(document.RootElement.GetProperty("data"))!;
-        Assert.That(index, Is.Not.Null);
+        await Assert.That(index).IsNotNull();
     }
 
     static string Describe(IEnumerable<(string Rule, string Number, string Message)> errors) =>

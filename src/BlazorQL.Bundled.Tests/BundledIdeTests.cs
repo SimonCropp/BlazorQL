@@ -2,7 +2,6 @@
 /// The whole product claim, end to end: one PackageReference and one MapBlazorQL call put a working
 /// IDE in front of a real GraphQL endpoint, with nothing deployed alongside the assembly.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class BundledIdeTests :
     BundledFixture
@@ -23,8 +22,8 @@ public class BundledIdeTests :
         var languages = await page.EvaluateAsync<string[]>(
             "() => monaco.languages.getLanguages().map(_ => _.id)");
 
-        Assert.That(languages, Does.Contain("graphql").And.Contain("json"));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(languages).Contains("graphql").And.Contains("json");
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -55,7 +54,7 @@ public class BundledIdeTests :
             null,
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>Introspection reached the server and the doc explorer rendered what came back.</summary>
@@ -72,7 +71,7 @@ public class BundledIdeTests :
             "[data-testid='plugin-pane']:has-text('TestEnum')",
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>Schema-aware completion, which only works if introspection actually round-tripped.</summary>
@@ -103,7 +102,7 @@ public class BundledIdeTests :
                     .map(_ => _.textContent.trim())
             """);
 
-        Assert.That(suggestions, Does.Contain("test").And.Contain("person"));
+        await Assert.That(suggestions).Contains("test").And.Contains("person");
     }
 
     /// <summary>
@@ -134,16 +133,14 @@ public class BundledIdeTests :
         var strayKeys = await page.EvaluateAsync<string[]>(
             "() => Object.keys(localStorage).filter(_ => _.startsWith('blazorql:'))");
 
-        Assert.That(strayKeys, Is.Empty);
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(strayKeys).IsEmpty();
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
-
 /// <summary>
 /// The IDE behind a reverse proxy that mounts the whole app under a prefix. Everything hinges on
 /// the base href the middleware writes into index.html.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class SubPathBundledIdeTests :
     BundledFixture
@@ -158,13 +155,11 @@ public class SubPathBundledIdeTests :
     {
         var page = await OpenIdeAsync();
 
-        Assert.That(page.Url, Does.Contain("/app/blazorql/"));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(page.Url).Contains("/app/blazorql/");
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
-
 /// <summary>The degenerate mount, which breaks naive prefix arithmetic.</summary>
-[TestFixture]
 [Category("Browser")]
 public class RootMountBundledIdeTests :
     BundledFixture
@@ -178,15 +173,13 @@ public class RootMountBundledIdeTests :
     public async Task BootsAtTheRoot()
     {
         await OpenIdeAsync();
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
-
 /// <summary>
 /// A consumer with UseResponseCompression turned on globally. Double-encoding is not subtle - the
 /// runtime fails to boot - so a browser test is the strongest available form of this assertion.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class CompressedBundledIdeTests :
     BundledFixture
@@ -200,16 +193,14 @@ public class CompressedBundledIdeTests :
     public async Task SurvivesTheHostsOwnResponseCompression()
     {
         await OpenIdeAsync();
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
-
 /// <summary>
 /// A mount with a separate subscription endpoint, which is what a real server usually looks like:
 /// queries over http, subscriptions over a websocket. The IDE's fetcher is then a SplitFetcher, and
 /// the status footer has to see through it to the transport a query actually went out on.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class SplitEndpointTests :
     BundledFixture
@@ -243,7 +234,7 @@ public class SplitEndpointTests :
 
         var status = await page.WaitForSelectorAsync("[data-testid='status-line']", new() {Timeout = 10_000});
 
-        Assert.That(await status!.TextContentAsync(), Does.StartWith("200 ·").And.EndWith("ms"));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(await status!.TextContentAsync()).StartsWith("200 ·").And.EndsWith("ms");
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

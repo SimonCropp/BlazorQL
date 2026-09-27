@@ -3,7 +3,6 @@
 /// IDE on the API's own origin. So what markdown is allowed to point at matters as much as what
 /// tags it is allowed to write.
 /// </summary>
-[TestFixture]
 public class MarkdownViewTests
 {
     static string Render(string content, bool preview = false)
@@ -25,32 +24,33 @@ public class MarkdownViewTests
 
     // The angle-bracket forms are the ones that carry a space or a control character through the
     // parser, which is where a browser stripping them before it reads the scheme starts to matter.
-    [TestCase("javascript:alert(document.cookie)")]
-    [TestCase("JavaScript:alert(1)")]
-    [TestCase("vbscript:msgbox(1)")]
-    [TestCase("data:text/html,alert(1)")]
-    [TestCase("<java\tscript:alert(1)>")]
-    [TestCase("<java script:alert(1)>")]
-    [TestCase("<\u0001javascript:alert(1)>")]
-    public void ALinkThatWouldRunCodeLosesItsTarget(string url)
+    [Test]
+    [Arguments("javascript:alert(document.cookie)")]
+    [Arguments("JavaScript:alert(1)")]
+    [Arguments("vbscript:msgbox(1)")]
+    [Arguments("data:text/html,alert(1)")]
+    [Arguments("<java\tscript:alert(1)>")]
+    [Arguments("<java script:alert(1)>")]
+    [Arguments("<\u0001javascript:alert(1)>")]
+    public async Task ALinkThatWouldRunCodeLosesItsTarget(string url)
     {
         var markup = Render($"[click me]({url})");
 
-        Assert.That(markup, Does.Contain("click me"));
-        Assert.That(Targets(markup), Is.Empty);
+        await Assert.That(markup).Contains("click me");
+        await Assert.That(Targets(markup)).IsEmpty();
     }
 
     [Test]
-    public void AnImageThatWouldRunCodeLosesItsTarget()
+    public async Task AnImageThatWouldRunCodeLosesItsTarget()
     {
         var markup = Render("![x](javascript:alert(1))");
 
-        Assert.That(markup, Does.Contain("<img"));
-        Assert.That(Targets(markup), Is.Empty);
+        await Assert.That(markup).Contains("<img");
+        await Assert.That(Targets(markup)).IsEmpty();
     }
 
     [Test]
-    public void AReferenceLinkIsCheckedToo()
+    public async Task AReferenceLinkIsCheckedToo()
     {
         var markup = Render(
             """
@@ -59,58 +59,57 @@ public class MarkdownViewTests
             [ref]: javascript:alert(1)
             """);
 
-        Assert.That(markup, Does.Contain("click me"));
-        Assert.That(Targets(markup), Is.Empty);
+        await Assert.That(markup).Contains("click me");
+        await Assert.That(Targets(markup)).IsEmpty();
     }
 
     [Test]
-    public void APreviewIsCheckedToo()
+    public async Task APreviewIsCheckedToo()
     {
         var markup = Render("[click me](javascript:alert(1))", preview: true);
 
-        Assert.That(markup, Does.Contain("click me"));
-        Assert.That(Targets(markup), Is.Empty);
-    }
-
-    [TestCase("https://example.com/spec")]
-    [TestCase("http://example.com")]
-    [TestCase("mailto:someone@example.com")]
-    [TestCase("../relative/page")]
-    [TestCase("#anchor")]
-    [TestCase("./weird:name")]
-    public void AnOrdinaryTargetSurvives(string url)
-    {
-        var markup = Render($"[text]({url})");
-
-        Assert.That(Targets(markup), Is.EqualTo([url]));
+        await Assert.That(markup).Contains("click me");
+        await Assert.That(Targets(markup)).IsEmpty();
     }
 
     [Test]
-    public void AnAutoLinkSurvives()
+    [Arguments("https://example.com/spec")]
+    [Arguments("http://example.com")]
+    [Arguments("mailto:someone@example.com")]
+    [Arguments("../relative/page")]
+    [Arguments("#anchor")]
+    [Arguments("./weird:name")]
+    public async Task AnOrdinaryTargetSurvives(string url)
+    {
+        var markup = Render($"[text]({url})");
+
+        await Assert.That(Targets(markup)).IsEquivalentTo([url], CollectionOrdering.Matching);
+    }
+
+    [Test]
+    public async Task AnAutoLinkSurvives()
     {
         var markup = Render("See https://example.com for more.");
 
-        Assert.That(Targets(markup), Is.EqualTo(autoLink));
+        await Assert.That(Targets(markup)).IsEquivalentTo(autoLink, CollectionOrdering.Matching);
     }
 
     static readonly string[] autoLink = ["https://example.com"];
 
     /// <summary>Raw html stays off; the target check is the second lock, not a replacement.</summary>
     [Test]
-    public void RawHtmlIsStillNotRendered()
+    public async Task RawHtmlIsStillNotRendered()
     {
         var markup = Render("<img src=x onerror=alert(1)>");
 
-        Assert.That(markup, Does.Contain("&lt;img src=x onerror=alert(1)&gt;"));
-        Assert.That(markup, Does.Not.Contain("<img"));
+        await Assert.That(markup).Contains("&lt;img src=x onerror=alert(1)&gt;");
+        await Assert.That(markup).DoesNotContain("<img");
     }
 }
-
 /// <summary>
 /// The <c>specifiedByURL</c> of a custom scalar goes straight into an href, and it comes from the
 /// endpoint like every other description field.
 /// </summary>
-[TestFixture]
 public class SpecifiedByLinkTests
 {
     static string Render(string? url)
@@ -128,23 +127,25 @@ public class SpecifiedByLinkTests
             .Markup;
     }
 
-    [TestCase("javascript:alert(document.cookie)")]
-    [TestCase("vbscript:msgbox(1)")]
-    [TestCase("data:text/html,alert(1)")]
-    [TestCase("/relative")]
-    [TestCase("not a url")]
-    [TestCase("")]
-    [TestCase(null)]
-    public void AUrlThatIsNotAWebLinkIsNotRenderedAsOne(string? url) =>
-        Assert.That(Render(url), Does.Not.Contain("blazorql-doc-specified-by"));
+    [Test]
+    [Arguments("javascript:alert(document.cookie)")]
+    [Arguments("vbscript:msgbox(1)")]
+    [Arguments("data:text/html,alert(1)")]
+    [Arguments("/relative")]
+    [Arguments("not a url")]
+    [Arguments("")]
+    [Arguments(null)]
+    public async Task AUrlThatIsNotAWebLinkIsNotRenderedAsOne(string? url) =>
+        await Assert.That(Render(url)).DoesNotContain("blazorql-doc-specified-by");
 
-    [TestCase("https://spec.example.com/scalars")]
-    [TestCase("http://spec.example.com/scalars")]
-    public void AWebLinkIsRendered(string url)
+    [Test]
+    [Arguments("https://spec.example.com/scalars")]
+    [Arguments("http://spec.example.com/scalars")]
+    public async Task AWebLinkIsRendered(string url)
     {
         var markup = Render(url);
 
-        Assert.That(markup, Does.Contain("blazorql-doc-specified-by"));
-        Assert.That(markup, Does.Contain($"href=\"{url}\""));
+        await Assert.That(markup).Contains("blazorql-doc-specified-by");
+        await Assert.That(markup).Contains($"href=\"{url}\"");
     }
 }

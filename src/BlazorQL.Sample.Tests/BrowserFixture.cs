@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
-using NUnit.Framework.Interfaces;
 
 /// <summary>
 /// Serves the published sample from an in-process static host and launches a headless Chromium.
@@ -12,9 +11,11 @@ using NUnit.Framework.Interfaces;
 /// </summary>
 public abstract class BrowserFixture
 {
-    WebApplication host = null!;
-    IPlaywright playwright = null!;
-    IBrowser browser = null!;
+    // TUnit builds a fresh instance per test, so what NUnit kept per fixture instance lives here:
+    // one browser for the run, and one host per concrete class, started by its first test.
+    static IPlaywright playwright = null!;
+    static IBrowser browser = null!;
+    static readonly ConcurrentDictionary<Type, Lazy<Task<WebApplication>>> hosts = new();
 
     // What the page logged during the current test. Written from Playwright's own threads, so a
     // concurrent collection rather than a List.
@@ -57,34 +58,50 @@ public abstract class BrowserFixture
     protected IReadOnlyList<string> ConsoleErrors() =>
         [.. console.Where(_ => _.StartsWith("[error]", StringComparison.Ordinal) || _.StartsWith("[pageerror]", StringComparison.Ordinal))];
 
-    [SetUp]
-    public void ClearConsole() =>
-        console.Clear();
-
     /// <summary>Reports what the page logged, but only for a test that failed.</summary>
-    [TearDown]
-    public void ReportConsoleOnFailure()
+    [After(Test)]
+    public void ReportConsoleOnFailure(TestContext context)
     {
-        if (TestContext.CurrentContext.Result.Outcome.Status != TestStatus.Failed ||
+        if (context.Execution.Result?.State != TestState.Failed ||
             console.IsEmpty)
         {
             return;
         }
 
-        TestContext.Out.WriteLine($"Browser console during {TestContext.CurrentContext.Test.Name}:");
+        context.Output.WriteLine($"Browser console during {context.Metadata.TestName}:");
         foreach (var message in console)
         {
-            TestContext.Out.WriteLine($"  {message}");
+            context.Output.WriteLine($"  {message}");
         }
     }
 
-    [OneTimeSetUp]
+    [Before(TestSession)]
+    public static async Task LaunchBrowser()
+    {
+        playwright = await Playwright.CreateAsync();
+        browser = await playwright.Chromium.LaunchAsync(
+            new()
+            {
+                // Grayscale text rather than LCD subpixel antialiasing: the colour fringing is not
+                // stable between browser sessions, which is fatal to screenshot baselines.
+                Args = ["--disable-lcd-text"]
+            });
+    }
+
+    [Before(Test)]
     public async Task Start()
+    {
+        console.Clear();
+        var host = await hosts.GetOrAdd(GetType(), _ => new(StartHost)).Value;
+        BaseUrl = host.Urls.Single().TrimEnd('/') + PathBase;
+    }
+
+    async Task<WebApplication> StartHost()
     {
         var builder = WebApplication.CreateBuilder();
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
-        host = builder.Build();
+        var host = builder.Build();
 
         var files = new PhysicalFileProvider(PublishedSample.WwwRoot);
         var index = RewriteBaseHref(Path.Combine(PublishedSample.WwwRoot, "index.html"));
@@ -123,17 +140,7 @@ public abstract class BrowserFixture
         });
 
         await host.StartAsync();
-        var origin = host.Urls.Single().TrimEnd('/');
-        BaseUrl = origin + PathBase;
-
-        playwright = await Playwright.CreateAsync();
-        browser = await playwright.Chromium.LaunchAsync(
-            new()
-            {
-                // Grayscale text rather than LCD subpixel antialiasing: the colour fringing is not
-                // stable between browser sessions, which is fatal to screenshot baselines.
-                Args = ["--disable-lcd-text"]
-            });
+        return host;
     }
 
     string RewriteBaseHref(string indexPath)
@@ -147,9 +154,18 @@ public abstract class BrowserFixture
         return html.Replace("<base href=\"/\" />", $"<base href=\"{PathBase}/\" />");
     }
 
-    [OneTimeTearDown]
-    public async Task Stop()
+    [After(TestSession)]
+    public static async Task Stop()
     {
+        foreach (var started in hosts.Values)
+        {
+            if (started.IsValueCreated &&
+                started.Value.IsCompletedSuccessfully)
+            {
+                await started.Value.Result.DisposeAsync();
+            }
+        }
+
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (browser is not null)
         {
@@ -158,11 +174,5 @@ public abstract class BrowserFixture
 
         // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
         playwright?.Dispose();
-
-        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-        if (host is not null)
-        {
-            await host.DisposeAsync();
-        }
     }
 }

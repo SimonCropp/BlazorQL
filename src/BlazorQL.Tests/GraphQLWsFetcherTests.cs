@@ -1,14 +1,12 @@
 using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
-
 /// <summary>
 /// The websocket fetcher against a real socket, over a server that goes silent — which is the case
 /// worth having: closing a websocket politely means waiting for the peer's close frame, and this
 /// close happens inside the enumerator's disposal, which the run awaits before it hands the stop
 /// button back.
 /// </summary>
-[TestFixture]
 public class GraphQLWsFetcherTests
 {
     /// <summary>
@@ -37,11 +35,11 @@ public class GraphQLWsFetcherTests
 
         var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20)));
 
-        Assert.That(finished, Is.SameAs(run), "the fetch never unwound");
-        Assert.That(await run, Is.EqualTo(oneMessage));
+        await Assert.That(finished).IsSameReferenceAs(run).Because("the fetch never unwound");
+        await Assert.That(await run).IsEquivalentTo(oneMessage, CollectionOrdering.Matching);
     }
 
-    static readonly string[] oneMessage = ["Hi"];
+    static readonly string?[] oneMessage = ["Hi"];
 
     static readonly Dictionary<string, string> noHeaders = [];
 
@@ -98,7 +96,7 @@ public class GraphQLWsFetcherTests
             }
             catch (Exception exception)
             {
-                TestContext.Out.WriteLine($"Silent server stopped: {exception.Message}");
+                Console.Out.WriteLine($"Silent server stopped: {exception.Message}");
             }
         }
 

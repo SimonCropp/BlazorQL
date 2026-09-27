@@ -2,7 +2,6 @@
 /// Hover docs, over the same <c>|</c> caret convention <see cref="ContextScannerTests"/> uses. The
 /// caret marks a character inside the word being hovered, not a gap between tokens.
 /// </summary>
-[TestFixture]
 public class HoverEngineTests
 {
     static readonly SchemaIndex fixture = ContextScannerTests.LoadFixture();
@@ -11,33 +10,37 @@ public class HoverEngineTests
     static string? Hover(string marked, SchemaIndex? schema = null)
     {
         var caret = marked.IndexOf('|');
-        Assert.That(caret, Is.GreaterThanOrEqualTo(0), "the document needs a | caret marker");
+        if (caret < 0)
+        {
+            throw new ArgumentException("the document needs a | caret marker", nameof(marked));
+        }
+
         return HoverEngine.Hover(schema ?? fixture, marked.Remove(caret, 1), caret)?.Markdown;
     }
 
     [Test]
-    public void AFieldShowsItsSignature() =>
-        Assert.That(Hover("{ per|son { name } }"), Does.Contain("Query.person"));
+    public async Task AFieldShowsItsSignature() =>
+        await Assert.That(Hover("{ per|son { name } }")).Contains("Query.person");
 
     [Test]
-    public void AFieldArgumentShowsItsSignature() =>
-        Assert.That(Hover("""{ hasArgs(str|ing: "a") }"""), Does.Contain("string: String"));
+    public async Task AFieldArgumentShowsItsSignature() =>
+        await Assert.That(Hover("""{ hasArgs(str|ing: "a") }""")).Contains("string: String");
 
     [Test]
-    public void ATypeShowsItsKeyword() =>
-        Assert.That(Hover("{ ... on Per|son { name } }"), Does.Contain("type Person"));
+    public async Task ATypeShowsItsKeyword() =>
+        await Assert.That(Hover("{ ... on Per|son { name } }")).Contains("type Person");
 
     // The argument hovered inside a directive's parentheses is the directive's. Before this was
     // tracked, the enclosing field's argument of the same name answered instead.
     [Test]
-    public void ADirectiveArgumentShowsTheDirectivesArgument() =>
-        Assert.That(Hover("{ pick @size(wid|th: 1) }", roots), Does.Contain("width: Int"));
+    public async Task ADirectiveArgumentShowsTheDirectivesArgument() =>
+        await Assert.That(Hover("{ pick @size(wid|th: 1) }", roots)).Contains("width: Int");
 
     [Test]
-    public void AFieldArgumentNameReusedByADirectiveDoesNotAnswerForIt() =>
-        Assert.That(Hover("{ hasArgs @repeat(str|ing: 1) }"), Is.Null);
+    public async Task AFieldArgumentNameReusedByADirectiveDoesNotAnswerForIt() =>
+        await Assert.That(Hover("{ hasArgs @repeat(str|ing: 1) }")).IsNull();
 
     [Test]
-    public void NothingIsSaidAboutAnUnknownWord() =>
-        Assert.That(Hover("{ no|pe }"), Is.Null);
+    public async Task NothingIsSaidAboutAnUnknownWord() =>
+        await Assert.That(Hover("{ no|pe }")).IsNull();
 }

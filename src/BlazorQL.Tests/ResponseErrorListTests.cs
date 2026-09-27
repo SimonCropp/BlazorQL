@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Components;
-
 /// <summary>bUnit coverage for the per-error actions under the response pane.</summary>
-[TestFixture]
 public class ResponseErrorListTests
 {
     static IRenderedComponent<ResponseErrorList> Render(
@@ -22,7 +20,7 @@ public class ResponseErrorListTests
         new(message, path);
 
     [Test]
-    public void RendersARowPerActionableError()
+    public async Task RendersARowPerActionableError()
     {
         using var context = new BunitContext();
 
@@ -31,9 +29,9 @@ public class ResponseErrorListTests
             [Error("first", "a"), Error("second", "b", "c")]);
 
         var rows = cut.FindAll("[data-testid='response-error']");
-        Assert.That(rows, Has.Count.EqualTo(2));
-        Assert.That(rows[0].TextContent, Does.Contain("a").And.Contain("first"));
-        Assert.That(rows[1].TextContent, Does.Contain("b.c").And.Contain("second"));
+        await Assert.That(rows).Count().IsEqualTo(2);
+        await Assert.That(rows[0].TextContent).Contains("a").And.Contains("first");
+        await Assert.That(rows[1].TextContent).Contains("b.c").And.Contains("second");
     }
 
     /// <summary>
@@ -41,7 +39,7 @@ public class ResponseErrorListTests
     /// remove. Offering a button for it would promise an edit that cannot be made.
     /// </summary>
     [Test]
-    public void SkipsAnErrorWithNoPath()
+    public async Task SkipsAnErrorWithNoPath()
     {
         using var context = new BunitContext();
 
@@ -50,33 +48,33 @@ public class ResponseErrorListTests
             [Error("no path here"), Error("actionable", "a")]);
 
         var rows = cut.FindAll("[data-testid='response-error']");
-        Assert.That(rows, Has.Count.EqualTo(1));
-        Assert.That(rows[0].TextContent, Does.Contain("actionable"));
+        await Assert.That(rows).Count().IsEqualTo(1);
+        await Assert.That(rows[0].TextContent).Contains("actionable");
     }
 
     /// <summary>Nothing to act on renders nothing at all, rather than an empty strip.</summary>
     [Test]
-    public void RendersNothingWhenNoErrorNamesAField()
+    public async Task RendersNothingWhenNoErrorNamesAField()
     {
         using var context = new BunitContext();
 
         var cut = Render(context, [Error("no path here")]);
 
-        Assert.That(cut.FindAll("[data-testid='response-errors']"), Is.Empty);
+        await Assert.That(cut.FindAll("[data-testid='response-errors']")).IsEmpty();
     }
 
     [Test]
-    public void RendersNothingWithoutErrors()
+    public async Task RendersNothingWithoutErrors()
     {
         using var context = new BunitContext();
 
         var cut = Render(context, []);
 
-        Assert.That(cut.FindAll("[data-testid='response-errors']"), Is.Empty);
+        await Assert.That(cut.FindAll("[data-testid='response-errors']")).IsEmpty();
     }
 
     [Test]
-    public void RemoveRaisesTheErrorItBelongsTo()
+    public async Task RemoveRaisesTheErrorItBelongsTo()
     {
         using var context = new BunitContext();
         ResponseError? raised = null;
@@ -88,20 +86,18 @@ public class ResponseErrorListTests
         cut.FindAll("[data-testid='response-error-remove']")[1]
             .Click();
 
-        Assert.That(raised, Is.Not.Null);
-        Assert.That(raised!.PathText, Is.EqualTo("b"));
+        await Assert.That(raised).IsNotNull();
+        await Assert.That(raised!.PathText).IsEqualTo("b");
     }
 
     /// <summary>The path is what the button promises to act on, so it names it.</summary>
     [Test]
-    public void TheButtonNamesTheFieldItWouldRemove()
+    public async Task TheButtonNamesTheFieldItWouldRemove()
     {
         using var context = new BunitContext();
 
         var cut = Render(context, [Error("boom", "accessGroups", "members")]);
 
-        Assert.That(
-            cut.Find("[data-testid='response-error-remove']").GetAttribute("title"),
-            Is.EqualTo("Remove accessGroups.members from the operation"));
+        await Assert.That(cut.Find("[data-testid='response-error-remove']").GetAttribute("title")).IsEqualTo("Remove accessGroups.members from the operation");
     }
 }

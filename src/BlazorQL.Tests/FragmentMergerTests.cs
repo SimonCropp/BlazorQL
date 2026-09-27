@@ -2,11 +2,10 @@
 /// Inlining named fragments. The cases that matter are the ones a naive recursion cannot survive: a
 /// fragment that spreads itself, a pair that spread each other, and a duplicate definition name.
 /// </summary>
-[TestFixture]
 public class FragmentMergerTests
 {
     [Test]
-    public Task InlinesASpreadIntoItsOperation()
+    public async Task InlinesASpreadIntoItsOperation()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -21,13 +20,13 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return Verify(text);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Verify(text);
     }
 
     [Test]
-    public void ASelfSpreadingFragmentIsRefusedRatherThanInlined()
+    public async Task ASelfSpreadingFragmentIsRefusedRatherThanInlined()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -43,13 +42,13 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(ok, Is.False);
-        Assert.That(text, Is.Null);
-        Assert.That(error, Is.EqualTo("""Cannot spread fragment "F" within itself."""));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(text).IsNull();
+        await Assert.That(error).IsEqualTo("""Cannot spread fragment "F" within itself.""");
     }
 
     [Test]
-    public void APairOfFragmentsSpreadingEachOtherIsRefused()
+    public async Task APairOfFragmentsSpreadingEachOtherIsRefused()
     {
         var (ok, _, error) = FragmentMerger.Merge(
             """
@@ -69,12 +68,12 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(ok, Is.False);
-        Assert.That(error, Is.EqualTo("""Cannot spread fragment "A" within itself via "B"."""));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(error).IsEqualTo("""Cannot spread fragment "A" within itself via "B".""");
     }
 
     [Test]
-    public void ACycleThroughANestedSelectionIsFound()
+    public async Task ACycleThroughANestedSelectionIsFound()
     {
         var (ok, _, error) = FragmentMerger.Merge(
             """
@@ -97,8 +96,8 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(ok, Is.False);
-        Assert.That(error, Is.EqualTo("""Cannot spread fragment "A" within itself via "B"."""));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(error).IsEqualTo("""Cannot spread fragment "A" within itself via "B".""");
     }
 
     /// <summary>
@@ -106,7 +105,7 @@ public class FragmentMergerTests
     /// is still refused: any cycle makes the document invalid, and a partial merge would hide it.
     /// </summary>
     [Test]
-    public void ACycleBehindADirectiveIsStillRefused()
+    public async Task ACycleBehindADirectiveIsStillRefused()
     {
         var (ok, _, error) = FragmentMerger.Merge(
             """
@@ -122,13 +121,13 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(ok, Is.False);
-        Assert.That(error, Is.EqualTo("""Cannot spread fragment "F" within itself."""));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(error).IsEqualTo("""Cannot spread fragment "F" within itself.""");
     }
 
     /// <summary>Two definitions of one name is a validator error, not something Merge may throw on.</summary>
     [Test]
-    public Task ADuplicateFragmentNameTakesTheFirstDefinition()
+    public async Task ADuplicateFragmentNameTakesTheFirstDefinition()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -147,13 +146,13 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return Verify(text);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Verify(text);
     }
 
     [Test]
-    public Task AnUnknownSpreadIsLeftAlone()
+    public async Task AnUnknownSpreadIsLeftAlone()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -164,9 +163,9 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return Verify(text);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Verify(text);
     }
 
     /// <summary>
@@ -174,7 +173,7 @@ public class FragmentMergerTests
     /// leave the document spreading a fragment that is no longer there.
     /// </summary>
     [Test]
-    public Task ADefinitionStillSpreadBehindADirectiveIsKept()
+    public async Task ADefinitionStillSpreadBehindADirectiveIsKept()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -189,15 +188,15 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        Assert.That(DocumentInfo.Parse(text!).Fragments, Has.Count.EqualTo(1));
-        return Verify(text);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(DocumentInfo.Parse(text!).Fragments).Count().IsEqualTo(1);
+        await Verify(text);
     }
 
     /// <summary>What a kept definition spreads has to be kept as well, however deep the chain.</summary>
     [Test]
-    public Task WhatAKeptDefinitionSpreadsIsKeptToo()
+    public async Task WhatAKeptDefinitionSpreadsIsKeptToo()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -216,14 +215,14 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return Verify(text);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Verify(text);
     }
 
     /// <summary>A definition nothing spreads any more still goes.</summary>
     [Test]
-    public Task AnInlinedDefinitionIsStillRemoved()
+    public async Task AnInlinedDefinitionIsStillRemoved()
     {
         var (ok, text, error) = FragmentMerger.Merge(
             """
@@ -242,9 +241,9 @@ public class FragmentMergerTests
             }
             """);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        Assert.That(DocumentInfo.Parse(text!).Fragments, Is.Empty);
-        return Verify(text);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(DocumentInfo.Parse(text!).Fragments).IsEmpty();
+        await Verify(text);
     }
 }

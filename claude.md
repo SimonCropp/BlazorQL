@@ -30,7 +30,7 @@ One solution, no ordering constraints:
 
 ```bash
 dotnet build src/BlazorQL.slnx
-dotnet test src/BlazorQL.slnx
+dotnet test --solution src/BlazorQL.slnx
 dotnet run --project src/BlazorQL.Sample
 ```
 

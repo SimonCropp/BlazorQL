@@ -2,14 +2,13 @@
 /// bUnit coverage for the documentation explorer, rendered against a canned introspection result
 /// (a hand-written representative subset — see DocExplorerTests.schema.json).
 /// </summary>
-[TestFixture]
 public class DocExplorerTests
 {
     static readonly SchemaIndex schema = LoadSchema();
 
     static SchemaIndex LoadSchema()
     {
-        var json = File.ReadAllText(Path.Combine(TestContext.CurrentContext.TestDirectory, "DocExplorerTests.schema.json"));
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
         using var document = JsonDocument.Parse(json);
         return SchemaIndex.Parse(document.RootElement)!;
     }
@@ -43,19 +42,19 @@ public class DocExplorerTests
     }
 
     [Test]
-    public void DeprecatedFieldsToggleRevealsTheSection()
+    public async Task DeprecatedFieldsToggleRevealsTheSection()
     {
         using var context = new BunitContext();
         var cut = Render(context);
         NavigateToType(cut, "Query");
 
         // Hidden until asked for.
-        Assert.That(cut.Markup, Does.Not.Contain("oldField"));
+        await Assert.That(cut.Markup).DoesNotContain("oldField");
 
         cut.FindAll(".blazorql-doc-toggle").Single(_ => _.TextContent == "Show Deprecated Fields").Click();
-        Assert.That(cut.Markup, Does.Contain("oldField"));
-        Assert.That(cut.Markup, Does.Contain("Deprecated Fields"));
-        Assert.That(cut.FindAll(".blazorql-doc-toggle"), Is.Empty);
+        await Assert.That(cut.Markup).Contains("oldField");
+        await Assert.That(cut.Markup).Contains("Deprecated Fields");
+        await Assert.That(cut.FindAll(".blazorql-doc-toggle")).IsEmpty();
     }
 
     [Test]
@@ -77,10 +76,10 @@ public class DocExplorerTests
         await Verify(cut);
 
         // The deprecated value sits behind its own toggle.
-        Assert.That(cut.Markup, Does.Not.Contain("GRAY"));
+        await Assert.That(cut.Markup).DoesNotContain("GRAY");
         await cut.FindAll(".blazorql-doc-toggle").Single(_ => _.TextContent == "Show Deprecated Values").ClickAsync();
-        Assert.That(cut.Markup, Does.Contain("GRAY"));
-        Assert.That(cut.Markup, Does.Contain("Colors are boring."));
+        await Assert.That(cut.Markup).Contains("GRAY");
+        await Assert.That(cut.Markup).Contains("Colors are boring.");
     }
 
     [Test]
@@ -102,7 +101,7 @@ public class DocExplorerTests
     }
 
     [Test]
-    public void BackWalksUpTheStack()
+    public async Task BackWalksUpTheStack()
     {
         using var context = new BunitContext();
         var cut = Render(context);
@@ -110,16 +109,16 @@ public class DocExplorerTests
         NavigateToField(cut, "person");
 
         var back = cut.Find("[data-testid='doc-back']");
-        Assert.That(back.GetAttribute("aria-label"), Is.EqualTo("Go back to Query"));
+        await Assert.That(back.GetAttribute("aria-label")).IsEqualTo("Go back to Query");
         back.Click();
-        Assert.That(cut.Find("[data-testid='doc-back']").GetAttribute("aria-label"), Is.EqualTo("Go back to Docs"));
+        await Assert.That(cut.Find("[data-testid='doc-back']").GetAttribute("aria-label")).IsEqualTo("Go back to Docs");
         cut.Find("[data-testid='doc-back']").Click();
-        Assert.That(cut.FindAll("[data-testid='doc-back']"), Is.Empty);
-        Assert.That(cut.Markup, Does.Contain("Root Types"));
+        await Assert.That(cut.FindAll("[data-testid='doc-back']")).IsEmpty();
+        await Assert.That(cut.Markup).Contains("Root Types");
     }
 
     [Test]
-    public void SearchMatchesTypesFieldsAndArguments()
+    public async Task SearchMatchesTypesFieldsAndArguments()
     {
         using var context = new BunitContext();
         var cut = Render(context);
@@ -127,8 +126,8 @@ public class DocExplorerTests
         cut.Find("[data-testid='doc-search'] input").Input("person");
         cut.WaitForState(() => cut.FindAll(".blazorql-doc-search-result").Count > 0, TimeSpan.FromSeconds(5));
         var results = cut.FindAll(".blazorql-doc-search-result").Select(_ => _.TextContent).ToList();
-        Assert.That(results, Does.Contain("Person"));
-        Assert.That(results, Does.Contain("Query.person"));
+        await Assert.That(results).Contains("Person");
+        await Assert.That(results).Contains("Query.person");
 
         // An argument match renders Type.field(arg: ArgType).
         cut.Find("[data-testid='doc-search'] input").Input("term");
@@ -138,7 +137,7 @@ public class DocExplorerTests
     }
 
     [Test]
-    public void SearchBucketsTheCurrentTypeFirst()
+    public async Task SearchBucketsTheCurrentTypeFirst()
     {
         using var context = new BunitContext();
         var cut = Render(context);
@@ -149,9 +148,9 @@ public class DocExplorerTests
 
         // The open type's matches come first, everything else after the divider.
         var results = cut.FindAll(".blazorql-doc-search-result").Select(_ => _.TextContent).ToList();
-        Assert.That(results[0], Is.EqualTo("Person.name"));
-        Assert.That(cut.Markup, Does.Contain("Other results"));
-        Assert.That(results, Does.Contain("Named.name"));
+        await Assert.That(results[0]).IsEqualTo("Person.name");
+        await Assert.That(cut.Markup).Contains("Other results");
+        await Assert.That(results).Contains("Named.name");
     }
 
     [Test]
@@ -179,12 +178,12 @@ public class DocExplorerTests
         await cut.FindAll(".blazorql-doc-search-result").Single(_ => _.TextContent == "Query.hasArgs").ClickAsync(new());
 
         // The parent type page went onto the stack first, so back walks up naturally.
-        Assert.That(cut.FindAll("[data-testid='doc-field']"), Is.Not.Empty);
-        Assert.That(cut.Find("[data-testid='doc-back']").GetAttribute("aria-label"), Is.EqualTo("Go back to Query"));
+        await Assert.That(cut.FindAll("[data-testid='doc-field']")).IsNotEmpty();
+        await Assert.That(cut.Find("[data-testid='doc-back']").GetAttribute("aria-label")).IsEqualTo("Go back to Query");
     }
 
     [Test]
-    public void NavigatorJumpsToTheReferencedField()
+    public async Task NavigatorJumpsToTheReferencedField()
     {
         using var context = new BunitContext();
         var navigator = new DocExplorerNavigator();
@@ -192,8 +191,8 @@ public class DocExplorerTests
         navigator.NavigateTo(new("Field", "Query", "person"));
         var cut = Render(context, navigator);
 
-        Assert.That(cut.FindAll("[data-testid='doc-field']"), Is.Not.Empty);
-        Assert.That(cut.Find(".blazorql-doc-title").TextContent, Is.EqualTo("person"));
+        await Assert.That(cut.FindAll("[data-testid='doc-field']")).IsNotEmpty();
+        await Assert.That(cut.Find(".blazorql-doc-title").TextContent).IsEqualTo("person");
 
         // A reference while mounted navigates immediately.
         navigator.NavigateTo(new("Type", "Color"));
@@ -211,13 +210,13 @@ public class DocExplorerTests
 
         // Only types a selection can be built over carry the button.
         var buttons = cut.FindAll("[data-testid='doc-generate']").Select(_ => _.GetAttribute("aria-label")).ToList();
-        Assert.That(buttons, Does.Contain("Generate a query for Person"));
-        Assert.That(buttons, Does.Not.Contain("Generate a query for Color"));
-        Assert.That(buttons, Does.Not.Contain("Generate a query for PetInput"));
+        await Assert.That(buttons).Contains("Generate a query for Person");
+        await Assert.That(buttons).DoesNotContain("Generate a query for Color");
+        await Assert.That(buttons).DoesNotContain("Generate a query for PetInput");
 
         await cut.Find("[data-testid='doc-generate'][aria-label='Generate a query for Person']").ClickAsync(new());
-        Assert.That(generated, Does.StartWith("query Person {"));
-        Assert.That(generated, Does.Contain("  person {"));
+        await Assert.That(generated).StartsWith("query Person {");
+        await Assert.That(generated).Contains("  person {");
     }
 
     [Test]
@@ -231,27 +230,27 @@ public class DocExplorerTests
         NavigateToType(cut, "Query");
 
         await cut.Find(".blazorql-docs-header [data-testid='doc-generate']").ClickAsync(new());
-        Assert.That(generated, Does.StartWith("query Query {"));
+        await Assert.That(generated).StartsWith("query Query {");
 
         // An enum page has no button in the header.
         cut.Find("[data-testid='doc-back']").Click();
         NavigateToType(cut, "Color");
-        Assert.That(cut.FindAll(".blazorql-docs-header [data-testid='doc-generate']"), Is.Empty);
+        await Assert.That(cut.FindAll(".blazorql-docs-header [data-testid='doc-generate']")).IsEmpty();
     }
 
     [Test]
-    public void NoSchemaShowsThePlaceholder()
+    public async Task NoSchemaShowsThePlaceholder()
     {
         using var context = new BunitContext();
         var cut = context.Render<DocExplorer>();
-        Assert.That(cut.Markup, Does.Contain("No GraphQL schema available"));
+        await Assert.That(cut.Markup).Contains("No GraphQL schema available");
     }
 
     [Test]
-    public void SdlToggleIsHiddenWithoutTheSdl()
+    public async Task SdlToggleIsHiddenWithoutTheSdl()
     {
         using var context = new BunitContext();
         var cut = Render(context);
-        Assert.That(cut.FindAll("[data-testid='doc-sdl']"), Is.Empty);
+        await Assert.That(cut.FindAll("[data-testid='doc-sdl']")).IsEmpty();
     }
 }

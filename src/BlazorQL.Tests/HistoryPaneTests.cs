@@ -1,5 +1,4 @@
 /// <summary>bUnit coverage for the history pane over an in-memory-backed store.</summary>
-[TestFixture]
 public class HistoryPaneTests
 {
     static HistoryStore BuildStore()
@@ -18,17 +17,17 @@ public class HistoryPaneTests
         [.. cut.FindAll("[data-testid='history-item']").Select(_ => _.TextContent)];
 
     [Test]
-    public void ItemsRenderNewestFirst()
+    public async Task ItemsRenderNewestFirst()
     {
         using var context = new BunitContext();
         var cut = Render(context, BuildStore());
 
         string[] expected = ["{ third }", "{ second }", "{ first }"];
-        Assert.That(ItemTexts(cut), Is.EqualTo(expected));
+        await Assert.That(ItemTexts(cut)).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
-    public void FavoritesRenderFirst()
+    public async Task FavoritesRenderFirst()
     {
         using var context = new BunitContext();
         var store = BuildStore();
@@ -37,12 +36,12 @@ public class HistoryPaneTests
         var cut = Render(context, store);
 
         string[] expected = ["{ first }", "{ third }", "{ second }"];
-        Assert.That(ItemTexts(cut), Is.EqualTo(expected));
-        Assert.That(cut.FindAll(".blazorql-history-spacer"), Has.Count.EqualTo(1));
+        await Assert.That(ItemTexts(cut)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+        await Assert.That(cut.FindAll(".blazorql-history-spacer")).Count().IsEqualTo(1);
     }
 
     [Test]
-    public void SelectRaisesTheItem()
+    public async Task SelectRaisesTheItem()
     {
         using var context = new BunitContext();
         var store = BuildStore();
@@ -52,11 +51,11 @@ public class HistoryPaneTests
             .Add(component => component.OnSelect, item => selected = item));
 
         cut.FindAll("[data-testid='history-item']")[0].Click();
-        Assert.That(selected, Is.SameAs(store.Items[0]));
+        await Assert.That(selected).IsSameReferenceAs(store.Items[0]);
     }
 
     [Test]
-    public void LabelEditCommitsOnEnter()
+    public async Task LabelEditCommitsOnEnter()
     {
         using var context = new BunitContext();
         var store = BuildStore();
@@ -67,12 +66,12 @@ public class HistoryPaneTests
         input.Input("Renamed");
         input.KeyDown("Enter");
 
-        Assert.That(store.Items[0].Label, Is.EqualTo("Renamed"));
-        Assert.That(ItemTexts(cut)[0], Is.EqualTo("Renamed"));
+        await Assert.That(store.Items[0].Label).IsEqualTo("Renamed");
+        await Assert.That(ItemTexts(cut)[0]).IsEqualTo("Renamed");
     }
 
     [Test]
-    public void LabelEditCancelsOnEscape()
+    public async Task LabelEditCancelsOnEscape()
     {
         using var context = new BunitContext();
         var store = BuildStore();
@@ -83,35 +82,35 @@ public class HistoryPaneTests
         input.Input("Abandoned");
         input.KeyDown("Escape");
 
-        Assert.That(store.Items[0].Label, Is.Null);
-        Assert.That(ItemTexts(cut)[0], Is.EqualTo("{ third }"));
+        await Assert.That(store.Items[0].Label).IsNull();
+        await Assert.That(ItemTexts(cut)[0]).IsEqualTo("{ third }");
     }
 
     [Test]
-    public void SearchFiltersCaseInsensitively()
+    public async Task SearchFiltersCaseInsensitively()
     {
         using var context = new BunitContext();
         var cut = Render(context, BuildStore());
 
         cut.Find("[data-testid='history-search']").Input("SECOND");
         string[] expected = ["{ second }"];
-        Assert.That(ItemTexts(cut), Is.EqualTo(expected));
+        await Assert.That(ItemTexts(cut)).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
-    public void FavoriteToggleMovesTheItem()
+    public async Task FavoriteToggleMovesTheItem()
     {
         using var context = new BunitContext();
         var store = BuildStore();
         var cut = Render(context, store);
 
         cut.FindAll("[aria-label='Add favorite']")[1].Click();
-        Assert.That(store.Favorites[0].Query, Is.EqualTo("{ second }"));
-        Assert.That(ItemTexts(cut)[0], Is.EqualTo("{ second }"));
+        await Assert.That(store.Favorites[0].Query).IsEqualTo("{ second }");
+        await Assert.That(ItemTexts(cut)[0]).IsEqualTo("{ second }");
     }
 
     [Test]
-    public void DeleteRemovesTheItem()
+    public async Task DeleteRemovesTheItem()
     {
         using var context = new BunitContext();
         var store = BuildStore();
@@ -119,21 +118,21 @@ public class HistoryPaneTests
 
         cut.FindAll("[aria-label='Delete from history']")[0].Click();
         string[] expected = ["{ second }", "{ first }"];
-        Assert.That(ItemTexts(cut), Is.EqualTo(expected));
+        await Assert.That(ItemTexts(cut)).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
-    public void ClearDisablesWhenEmpty()
+    public async Task ClearDisablesWhenEmpty()
     {
         using var context = new BunitContext();
         var store = BuildStore();
         var cut = Render(context, store);
 
         var clear = cut.Find("[data-testid='history-clear']");
-        Assert.That(clear.HasAttribute("disabled"), Is.False);
+        await Assert.That(clear.HasAttribute("disabled")).IsFalse();
 
         clear.Click();
-        Assert.That(store.Items, Is.Empty);
-        Assert.That(cut.Find("[data-testid='history-clear']").HasAttribute("disabled"), Is.True);
+        await Assert.That(store.Items).IsEmpty();
+        await Assert.That(cut.Find("[data-testid='history-clear']").HasAttribute("disabled")).IsTrue();
     }
 }

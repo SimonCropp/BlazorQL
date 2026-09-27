@@ -4,7 +4,6 @@
 /// while every query the user runs works, and the bundled package is where that bites hardest: the
 /// IDE is served on the API's own origin.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class AuthenticatedEndpointTests :
     BundledFixture
@@ -36,7 +35,7 @@ public class AuthenticatedEndpointTests :
             "[data-testid='plugin-pane']:has-text('TestEnum')",
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>The gate is real: without the header the same endpoint refuses.</summary>
@@ -52,6 +51,6 @@ public class AuthenticatedEndpointTests :
                 Encoding.UTF8,
                 "application/json"));
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Unauthorized));
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Unauthorized);
     }
 }

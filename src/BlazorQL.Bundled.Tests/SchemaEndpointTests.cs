@@ -2,7 +2,6 @@
 /// The fixture's own GraphQL endpoint, checked directly. If this fails, every browser test that
 /// needs a schema fails as an unexplained timeout, so it is worth isolating.
 /// </summary>
-[TestFixture]
 public class SchemaEndpointTests :
     BundledFixture
 {
@@ -22,7 +21,7 @@ public class SchemaEndpointTests :
                 "application/json"));
         var body = await response.Content.ReadAsStringAsync();
 
-        Assert.That(body, Does.Contain("abc123"));
+        await Assert.That(body).Contains("abc123");
     }
 
     [Test]
@@ -38,6 +37,6 @@ public class SchemaEndpointTests :
                 "application/json"));
         var body = await response.Content.ReadAsStringAsync();
 
-        Assert.That(body, Does.Contain("queryType"));
+        await Assert.That(body).Contains("queryType");
     }
 }

@@ -4,22 +4,21 @@
 /// in this suite renders <see cref="BlazorQLIde"/>, because Monaco needs a browser — so that half
 /// is covered by the Playwright suite instead.
 /// </summary>
-[TestFixture]
 public class ImportRequestDialogTests
 {
     [Test]
-    public void AnEmptyDialogShowsNoSummaryAndCannotImport()
+    public async Task AnEmptyDialogShowsNoSummaryAndCannotImport()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>();
 
-        Assert.That(cut.Find("[data-testid='import-dialog']").GetAttribute("role"), Is.EqualTo("dialog"));
-        Assert.That(cut.Find("[data-testid='import-summary']").TextContent, Is.Empty);
-        Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled"));
+        await Assert.That(cut.Find("[data-testid='import-dialog']").GetAttribute("role")).IsEqualTo("dialog");
+        await Assert.That(cut.Find("[data-testid='import-summary']").TextContent).IsEmpty();
+        await Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled")).IsTrue();
     }
 
     [Test]
-    public void UnrecognisedTextKeepsImportDisabledAndShowsWhy()
+    public async Task UnrecognisedTextKeepsImportDisabledAndShowsWhy()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>();
@@ -27,34 +26,32 @@ public class ImportRequestDialogTests
         Paste(cut, "hello world");
 
         var summary = cut.Find("[data-testid='import-summary']");
-        Assert.That(summary.ClassList, Does.Contain("blazorql-import-invalid"));
-        Assert.That(summary.TextContent, Does.StartWith("Could not recognise this."));
-        Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled"));
+        await Assert.That(summary.ClassList).Contains("blazorql-import-invalid");
+        await Assert.That(summary.TextContent).StartsWith("Could not recognise this.");
+        await Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled")).IsTrue();
     }
 
     [Test]
-    public void APastedCurlEnablesImportAndSummarisesTheRequest()
+    public async Task APastedCurlEnablesImportAndSummarisesTheRequest()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>();
 
         Paste(cut, curl);
 
-        Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled"), Is.False);
-        Assert.That(
-            cut.Find("[data-testid='import-summary']").TextContent,
-            Is.EqualTo("mutation EnableUser · 1 variable · 1 of 3 headers imported"));
+        await Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled")).IsFalse();
+        await Assert.That(cut.Find("[data-testid='import-summary']").TextContent).IsEqualTo("mutation EnableUser · 1 variable · 1 of 3 headers imported");
     }
 
     [Test]
-    public void AnAnonymousOperationIsSummarisedByItsKind()
+    public async Task AnAnonymousOperationIsSummarisedByItsKind()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>();
 
         Paste(cut, """{"query":"{ hero { name } }"}""");
 
-        Assert.That(cut.Find("[data-testid='import-summary']").TextContent, Is.EqualTo("query"));
+        await Assert.That(cut.Find("[data-testid='import-summary']").TextContent).IsEqualTo("query");
     }
 
     /// <summary>
@@ -62,7 +59,7 @@ public class ImportRequestDialogTests
     /// would promise something that does not happen.
     /// </summary>
     [Test]
-    public void HeaderCountsBecomeIgnoredWhenTheHeadersEditorIsOff()
+    public async Task HeaderCountsBecomeIgnoredWhenTheHeadersEditorIsOff()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>(_ => _
@@ -71,25 +68,23 @@ public class ImportRequestDialogTests
         Paste(cut, curl);
 
         var summary = cut.Find("[data-testid='import-summary']").TextContent;
-        Assert.That(summary, Does.EndWith("· headers ignored"));
-        Assert.That(summary, Does.Not.Contain("of 3"));
+        await Assert.That(summary).EndsWith("· headers ignored");
+        await Assert.That(summary).DoesNotContain("of 3");
     }
 
     [Test]
-    public void ABatchedBodySummarisesEveryOperation()
+    public async Task ABatchedBodySummarisesEveryOperation()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>();
 
         Paste(cut, """[{"query":"query A{a}"},{"query":"mutation B{b}"},{"query":"query C{c}"}]""");
 
-        Assert.That(
-            cut.Find("[data-testid='import-summary']").TextContent,
-            Is.EqualTo("3 operations · query A, mutation B, query C"));
+        await Assert.That(cut.Find("[data-testid='import-summary']").TextContent).IsEqualTo("3 operations · query A, mutation B, query C");
     }
 
     [Test]
-    public void ImportRaisesEveryParsedRequest()
+    public async Task ImportRaisesEveryParsedRequest()
     {
         using var context = new BunitContext();
         IReadOnlyList<ImportedRequest> imported = [];
@@ -99,20 +94,20 @@ public class ImportRequestDialogTests
         Paste(cut, curl);
         cut.Find("[data-testid='import-confirm']").Click();
 
-        Assert.That(imported, Has.Count.EqualTo(1));
-        Assert.Multiple(() =>
+        await Assert.That(imported).Count().IsEqualTo(1);
+        using (Assert.Multiple())
         {
-            Assert.That(imported[0].Query, Does.Contain("mutation EnableUser"));
-            Assert.That(imported[0].Variables, Does.Contain("\"id\""));
-            Assert.That(imported[0].Headers, Does.Contain("authorization"));
+            await Assert.That(imported[0].Query).Contains("mutation EnableUser");
+            await Assert.That(imported[0].Variables).Contains("\"id\"");
+            await Assert.That(imported[0].Headers).Contains("authorization");
             // A single-operation document names its own tab, so the name is left unpinned.
-            Assert.That(imported[0].OperationName, Is.Null);
-        });
+            await Assert.That(imported[0].OperationName).IsNull();
+        }
     }
 
     /// <summary>Clearing the box is going back to the start, not an error to be told about.</summary>
     [Test]
-    public void ClearingTheTextDisablesImportWithoutAnError()
+    public async Task ClearingTheTextDisablesImportWithoutAnError()
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>();
@@ -121,9 +116,9 @@ public class ImportRequestDialogTests
         Paste(cut, "");
 
         var summary = cut.Find("[data-testid='import-summary']");
-        Assert.That(summary.TextContent, Is.Empty);
-        Assert.That(summary.ClassList, Does.Not.Contain("blazorql-import-invalid"));
-        Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled"));
+        await Assert.That(summary.TextContent).IsEmpty();
+        await Assert.That(summary.ClassList).DoesNotContain("blazorql-import-invalid");
+        await Assert.That(cut.Find("[data-testid='import-confirm']").HasAttribute("disabled")).IsTrue();
     }
 
     /// <summary>
@@ -131,7 +126,7 @@ public class ImportRequestDialogTests
     /// continuations. Ctrl-Enter is the IDE's commit chord everywhere else.
     /// </summary>
     [Test]
-    public void CtrlEnterImportsAndPlainEnterDoesNot()
+    public async Task CtrlEnterImportsAndPlainEnterDoesNot()
     {
         using var context = new BunitContext();
         var raised = 0;
@@ -140,14 +135,14 @@ public class ImportRequestDialogTests
 
         Paste(cut, curl);
         cut.Find("[data-testid='import-text']").KeyDown(Key.Enter);
-        Assert.That(raised, Is.Zero);
+        await Assert.That(raised).IsZero();
 
         cut.Find("[data-testid='import-text']").KeyDown(Key.Enter + Key.Control);
-        Assert.That(raised, Is.EqualTo(1));
+        await Assert.That(raised).IsEqualTo(1);
     }
 
     [Test]
-    public void CtrlEnterDoesNothingWhileTheTextDoesNotParse()
+    public async Task CtrlEnterDoesNothingWhileTheTextDoesNotParse()
     {
         using var context = new BunitContext();
         var raised = 0;
@@ -157,7 +152,7 @@ public class ImportRequestDialogTests
         Paste(cut, "hello world");
         cut.Find("[data-testid='import-text']").KeyDown(Key.Enter + Key.Control);
 
-        Assert.That(raised, Is.Zero);
+        await Assert.That(raised).IsZero();
     }
 
     /// <summary>
@@ -165,7 +160,7 @@ public class ImportRequestDialogTests
     /// which it does by bubbling to the overlay.
     /// </summary>
     [Test]
-    public void EscapeOverlayClickCancelAndTheCloseButtonAllClose()
+    public async Task EscapeOverlayClickCancelAndTheCloseButtonAllClose()
     {
         using var context = new BunitContext();
         var closed = 0;
@@ -177,7 +172,7 @@ public class ImportRequestDialogTests
         cut.Find(".blazorql-dialog-close").Click();
         cut.Find("[data-testid='import-cancel']").Click();
 
-        Assert.That(closed, Is.EqualTo(4));
+        await Assert.That(closed).IsEqualTo(4);
     }
 
     static void Paste(IRenderedComponent<ImportRequestDialog> cut, string text) =>

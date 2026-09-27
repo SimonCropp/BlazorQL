@@ -3,15 +3,14 @@
 /// exact static site GitHub Pages hosts — rather than the dev server, so what the tests prove is
 /// what deploys.
 /// </summary>
-[SetUpFixture]
-public class PublishedSample
+public static class PublishedSample
 {
     public static string WwwRoot { get; private set; } = null!;
 
     static string publishDirectory = null!;
 
-    [OneTimeSetUp]
-    public void Publish()
+    [Before(TestSession)]
+    public static void Publish()
     {
         // .../bin/<config>/<tfm>/ — mirror <config> onto the publish.
         var configuration = new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
@@ -46,8 +45,8 @@ public class PublishedSample
         WwwRoot = Path.Combine(publishDirectory, "wwwroot");
     }
 
-    [OneTimeTearDown]
-    public void Cleanup()
+    [After(TestSession)]
+    public static void Cleanup()
     {
         try
         {

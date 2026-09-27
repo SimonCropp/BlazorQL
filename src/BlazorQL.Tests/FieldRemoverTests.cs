@@ -3,11 +3,10 @@
 /// delete leaves a document the server will not take: an emptied selection set, an orphaned
 /// variable, a name that appears in more than one place.
 /// </summary>
-[TestFixture]
 public class FieldRemoverTests
 {
     [Test]
-    public void RemovesATopLevelField()
+    public async Task RemovesATopLevelField()
     {
         var text =
             """
@@ -23,20 +22,17 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroup"]);
 
-        Assert.That(
-            result,
-            Is.EqualTo(
-                """
+        await Assert.That(result).IsEqualTo("""
                 query {
                   accessGroups {
                     id
                   }
                 }
-                """));
+                """);
     }
 
     [Test]
-    public void RemovesANestedField()
+    public async Task RemovesANestedField()
     {
         var text =
             """
@@ -52,23 +48,20 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroups", "members"]);
 
-        Assert.That(
-            result,
-            Is.EqualTo(
-                """
+        await Assert.That(result).IsEqualTo("""
                 query {
                   accessGroups {
                     id
                   }
                 }
-                """));
+                """);
     }
 
     /// <summary>
     /// The path carries indices for list elements; the document mentions the selection set once.
     /// </summary>
     [Test]
-    public void IgnoresListIndicesInThePath()
+    public async Task IgnoresListIndicesInThePath()
     {
         var text =
             """
@@ -85,13 +78,13 @@ public class FieldRemoverTests
         // What ResponseErrors hands over for a path of ["accessGroups", 0, "members"].
         var result = FieldRemover.Remove(text, ["accessGroups", "members"]);
 
-        Assert.That(result, Does.Not.Contain("members"));
-        Assert.That(result, Does.Contain("accessGroups"));
+        await Assert.That(result).DoesNotContain("members");
+        await Assert.That(result).Contains("accessGroups");
     }
 
     /// <summary>The path names response keys, so an alias is what a segment matches.</summary>
     [Test]
-    public void MatchesOnTheAlias()
+    public async Task MatchesOnTheAlias()
     {
         var text =
             """
@@ -107,13 +100,13 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["second"]);
 
-        Assert.That(result, Does.Contain("first: accessGroup"));
-        Assert.That(result, Does.Not.Contain("second"));
+        await Assert.That(result).Contains("first: accessGroup");
+        await Assert.That(result).DoesNotContain("second");
     }
 
     /// <summary>Emptied braces do not parse, so the parent goes as well.</summary>
     [Test]
-    public void TakesTheParentWhenItWouldBeLeftEmpty()
+    public async Task TakesTheParentWhenItWouldBeLeftEmpty()
     {
         var text =
             """
@@ -129,14 +122,11 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroup", "members", "id"]);
 
-        Assert.That(
-            result,
-            Is.EqualTo(
-                """
+        await Assert.That(result).IsEqualTo("""
                 query {
                   other
                 }
-                """));
+                """);
     }
 
     /// <summary>
@@ -144,7 +134,7 @@ public class FieldRemoverTests
     /// action reports that rather than producing one.
     /// </summary>
     [Test]
-    public void RefusesWhenTheOperationWouldBeEmptied()
+    public async Task RefusesWhenTheOperationWouldBeEmptied()
     {
         var text =
             """
@@ -155,13 +145,13 @@ public class FieldRemoverTests
             }
             """;
 
-        Assert.That(FieldRemover.Remove(text, ["accessGroup"]), Is.Null);
-        Assert.That(FieldRemover.Remove(text, ["accessGroup", "id"]), Is.Null);
+        await Assert.That(FieldRemover.Remove(text, ["accessGroup"])).IsNull();
+        await Assert.That(FieldRemover.Remove(text, ["accessGroup", "id"])).IsNull();
     }
 
     /// <summary>An unused variable is a validation error, so removing its last use removes it.</summary>
     [Test]
-    public void DropsAVariableNothingUsesAnyMore()
+    public async Task DropsAVariableNothingUsesAnyMore()
     {
         var text =
             """
@@ -177,12 +167,12 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroup"]);
 
-        Assert.That(result, Does.Contain("query Groups($take: Int)"));
-        Assert.That(result, Does.Not.Contain("$id"));
+        await Assert.That(result).Contains("query Groups($take: Int)");
+        await Assert.That(result).DoesNotContain("$id");
     }
 
     [Test]
-    public void KeepsAVariableSomethingElseStillUses()
+    public async Task KeepsAVariableSomethingElseStillUses()
     {
         var text =
             """
@@ -198,13 +188,13 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroup"]);
 
-        Assert.That(result, Does.Contain("query Groups($id: ID!)"));
-        Assert.That(result, Does.Contain("role(id: $id)"));
+        await Assert.That(result).Contains("query Groups($id: ID!)");
+        await Assert.That(result).Contains("role(id: $id)");
     }
 
     /// <summary>A variable can sit at any depth inside a list or input object literal.</summary>
     [Test]
-    public void FindsAVariableNestedInAnArgumentValue()
+    public async Task FindsAVariableNestedInAnArgumentValue()
     {
         var text =
             """
@@ -220,12 +210,12 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroup"]);
 
-        Assert.That(result, Does.Contain("query Groups($title: String!)"));
+        await Assert.That(result).Contains("query Groups($title: String!)");
     }
 
     /// <summary>A path can be satisfied by a field the query only reaches through a spread.</summary>
     [Test]
-    public void ResolvesThroughAFragmentSpread()
+    public async Task ResolvesThroughAFragmentSpread()
     {
         var text =
             """
@@ -245,13 +235,13 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroups", "members"]);
 
-        Assert.That(result, Does.Not.Contain("members"));
-        Assert.That(result, Does.Contain("...Details"));
-        Assert.That(result, Does.Contain("id"));
+        await Assert.That(result).DoesNotContain("members");
+        await Assert.That(result).Contains("...Details");
+        await Assert.That(result).Contains("id");
     }
 
     [Test]
-    public void ReturnsNullWhenThePathDoesNotResolve()
+    public async Task ReturnsNullWhenThePathDoesNotResolve()
     {
         var text =
             """
@@ -262,18 +252,18 @@ public class FieldRemoverTests
             }
             """;
 
-        Assert.That(FieldRemover.Remove(text, ["somethingElse"]), Is.Null);
-        Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"]), Is.Null);
-        Assert.That(FieldRemover.Remove(text, []), Is.Null);
+        await Assert.That(FieldRemover.Remove(text, ["somethingElse"])).IsNull();
+        await Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"])).IsNull();
+        await Assert.That(FieldRemover.Remove(text, [])).IsNull();
     }
 
     [Test]
-    public void ReturnsNullWhenTheDocumentDoesNotParse() =>
-        Assert.That(FieldRemover.Remove("query { accessGroup", ["accessGroup"]), Is.Null);
+    public async Task ReturnsNullWhenTheDocumentDoesNotParse() =>
+        await Assert.That(FieldRemover.Remove("query { accessGroup", ["accessGroup"])).IsNull();
 
     /// <summary>The result has to be something the editor can go on validating.</summary>
     [Test]
-    public void LeavesAParsableDocument()
+    public async Task LeavesAParsableDocument()
     {
         var text =
             """
@@ -292,8 +282,8 @@ public class FieldRemoverTests
 
         var result = FieldRemover.Remove(text, ["accessGroup"]);
 
-        Assert.That(result, Is.Not.Null);
-        Assert.That(DocumentInfo.Parse(result!).Parses, Is.True);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(DocumentInfo.Parse(result!).Parses).IsTrue();
     }
 
     /// <summary>
@@ -301,7 +291,7 @@ public class FieldRemoverTests
     /// re-enter forever. NoFragmentCycles is a validator gap, so such a document does get here.
     /// </summary>
     [Test]
-    public void ReturnsNullForAPathThatDoesNotResolveThroughASelfSpreadingFragment()
+    public async Task ReturnsNullForAPathThatDoesNotResolveThroughASelfSpreadingFragment()
     {
         var text =
             """
@@ -317,11 +307,11 @@ public class FieldRemoverTests
             }
             """;
 
-        Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"]), Is.Null);
+        await Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"])).IsNull();
     }
 
     [Test]
-    public void ResolvesThroughAPairOfFragmentsThatSpreadEachOther()
+    public async Task ResolvesThroughAPairOfFragmentsThatSpreadEachOther()
     {
         var text =
             """
@@ -342,11 +332,8 @@ public class FieldRemoverTests
             }
             """;
 
-        Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"]), Is.Null);
-        Assert.That(
-            FieldRemover.Remove(text, ["accessGroups", "name"]),
-            Is.EqualTo(
-                """
+        await Assert.That(FieldRemover.Remove(text, ["accessGroups", "gone"])).IsNull();
+        await Assert.That(FieldRemover.Remove(text, ["accessGroups", "name"])).IsEqualTo("""
                 query {
                   accessGroups {
                     ...A
@@ -361,6 +348,6 @@ public class FieldRemoverTests
                 fragment B on AccessGroup {
                   ...A
                 }
-                """));
+                """);
     }
 }

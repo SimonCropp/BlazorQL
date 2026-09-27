@@ -1,8 +1,8 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The M6 storage layer over the published sample: history recording and restoring, tab/query
 /// survival across a reload, theme persistence, and the settings dialog's clear-storage.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class PersistenceTests :
     BrowserFixture
@@ -46,9 +46,7 @@ public class PersistenceTests :
         // The pane was closed during the run; the item is there when it opens.
         await page.ClickAsync("[data-testid='sidebar-history']");
         await page.WaitForSelectorAsync("[data-testid='history-item']", 10);
-        Assert.That(
-            await page.Locator("[data-testid='history-item']").First.TextContentAsync(),
-            Is.EqualTo("FromHistory"));
+        await Assert.That(await page.Locator("[data-testid='history-item']").First.TextContentAsync()).IsEqualTo("FromHistory");
 
         // Editing the operation away and clicking the item brings the query back.
         await page.SetEditorValueAsync("query SomethingElse { test }");
@@ -56,7 +54,7 @@ public class PersistenceTests :
         await page.ClickAsync("[data-testid='history-item']");
         await WaitForOperationTextAsync(page, "FromHistory");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -91,11 +89,11 @@ public class PersistenceTests :
         await page.GoToAppAsync(BaseUrl);
 
         // Both tabs are back, the first still titled by its operation.
-        Assert.That(await page.Locator(".blazorql-tab").CountAsync(), Is.EqualTo(2));
+        await Assert.That(await page.Locator(".blazorql-tab").CountAsync()).IsEqualTo(2);
         await page.ClickAsync(".blazorql-tab-button:has-text('PersistMe')");
         await WaitForOperationTextAsync(page, "PersistMe");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -126,7 +124,7 @@ public class PersistenceTests :
             null,
             new() {Timeout = 10_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -144,16 +142,14 @@ public class PersistenceTests :
         await page.WaitForSelectorAsync("[data-testid='clear-storage']:has-text('Cleared data')", 10);
 
         // Every namespaced key is gone.
-        Assert.That(
-            await page.EvaluateAsync<int>("() => Object.keys(localStorage).filter(_ => _.startsWith('blazorql:')).length"),
-            Is.Zero);
+        await Assert.That(await page.EvaluateAsync<int>("() => Object.keys(localStorage).filter(_ => _.startsWith('blazorql:')).length")).IsZero();
 
         // A reload boots fresh: one default tab carrying the sample's demo query.
         await page.ReloadAsync();
         await page.GoToAppAsync(BaseUrl);
         await WaitForOperationTextAsync(page, "query Demo");
-        Assert.That(await page.Locator(".blazorql-tab").CountAsync(), Is.EqualTo(1));
+        await Assert.That(await page.Locator(".blazorql-tab").CountAsync()).IsEqualTo(1);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

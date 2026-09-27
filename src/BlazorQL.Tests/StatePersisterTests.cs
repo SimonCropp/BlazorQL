@@ -3,18 +3,17 @@
 /// the time it persists, so a second window in front of that write is latency and nothing else;
 /// a click has not, so its window stays.
 /// </summary>
-[TestFixture]
 public class StatePersisterTests
 {
     [Test]
-    public void NowWritesWithoutWaiting()
+    public async Task NowWritesWithoutWaiting()
     {
         var writes = 0;
         using var persister = new StatePersister(() => writes++, 10_000);
 
         persister.Now();
 
-        Assert.That(writes, Is.EqualTo(1));
+        await Assert.That(writes).IsEqualTo(1);
     }
 
     /// <summary>
@@ -31,7 +30,7 @@ public class StatePersisterTests
         persister.Now();
         await Task.Delay(200);
 
-        Assert.That(writes, Is.EqualTo(1));
+        await Assert.That(writes).IsEqualTo(1);
     }
 
     [Test]
@@ -44,11 +43,11 @@ public class StatePersisterTests
         persister.Soon();
         persister.Soon();
 
-        Assert.That(writes, Is.Zero);
+        await Assert.That(writes).IsZero();
 
         await WaitFor(() => writes > 0);
 
-        Assert.That(writes, Is.EqualTo(1));
+        await Assert.That(writes).IsEqualTo(1);
     }
 
     /// <summary>A window that has closed is not a debouncer that has stopped.</summary>
@@ -63,7 +62,7 @@ public class StatePersisterTests
 
         await WaitFor(() => writes > 1);
 
-        Assert.That(writes, Is.EqualTo(2));
+        await Assert.That(writes).IsEqualTo(2);
     }
 
     /// <summary>
@@ -80,7 +79,7 @@ public class StatePersisterTests
         persister.Dispose();
         await Task.Delay(200);
 
-        Assert.That(writes, Is.Zero);
+        await Assert.That(writes).IsZero();
     }
 
     static async Task WaitFor(Func<bool> condition)

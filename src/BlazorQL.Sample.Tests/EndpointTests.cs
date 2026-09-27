@@ -1,9 +1,9 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The sample's endpoint box: applying an endpoint swaps the IDE's fetcher, which re-introspects.
 /// A dead endpoint fails visibly; clearing it restores the in-browser schema. Console errors are
 /// deliberately not asserted here — the dead endpoint logs network failures.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class EndpointTests :
     BrowserFixture
@@ -87,7 +87,7 @@ public class EndpointTests :
         await page.FillAsync("[data-testid='endpoint']", "");
         await page.ClickAsync("[data-testid='endpoint-apply']");
         await page.SetEditorValueAsync("{ ");
-        Assert.That(await page.SuggestAsync(), Does.Contain("person"));
+        await Assert.That(await page.SuggestAsync()).Contains("person");
 
         // Now let the slow one land, and give its continuation room to run.
         await answered.Task;
@@ -96,8 +96,8 @@ public class EndpointTests :
         await page.SetEditorValueAsync("{ ");
         var suggestions = await page.SuggestAsync();
 
-        Assert.That(suggestions, Does.Contain("person"));
-        Assert.That(suggestions, Does.Not.Contain("onlyFromSlow"));
+        await Assert.That(suggestions).Contains("person");
+        await Assert.That(suggestions).DoesNotContain("onlyFromSlow");
     }
 
     const string slowSchema =

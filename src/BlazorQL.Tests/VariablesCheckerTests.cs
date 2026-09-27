@@ -3,7 +3,6 @@
 /// through the checker whole, because what the pane shows is all of its answers or none: the
 /// diagnostics pass swallows an exception, and the markers then stay as they were.
 /// </summary>
-[TestFixture]
 public class VariablesCheckerTests
 {
     static readonly SchemaIndex schema = ContextScannerTests.LoadFixture();
@@ -11,15 +10,18 @@ public class VariablesCheckerTests
     static IReadOnlyList<string> Check(string query, string? variables)
     {
         var operation = DocumentInfo.Parse(query).OperationNode(null);
-        Assert.That(operation, Is.Not.Null);
+        if (operation is null)
+        {
+            throw new ArgumentException("the query has no operation", nameof(query));
+        }
 
         if (variables is null)
         {
-            return VariablesChecker.Check(schema, operation!, null);
+            return VariablesChecker.Check(schema, operation, null);
         }
 
         using var document = JsonDocument.Parse(variables);
-        return VariablesChecker.Check(schema, operation!, document.RootElement);
+        return VariablesChecker.Check(schema, operation, document.RootElement);
     }
 
     static readonly string[] wrongType = ["$term expects a String."];
@@ -27,22 +29,16 @@ public class VariablesCheckerTests
     static readonly string[] wrongIntType = ["$v expects an Int."];
 
     [Test]
-    public void AValueOfTheWrongTypeIsReported() =>
-        Assert.That(
-            Check("query Q($term: String) { search(term: $term) { __typename } }", """{"term": 1}"""),
-            Is.EqualTo(wrongType));
+    public async Task AValueOfTheWrongTypeIsReported() =>
+        await Assert.That(Check("query Q($term: String) { search(term: $term) { __typename } }", """{"term": 1}""")).IsEquivalentTo(wrongType, CollectionOrdering.Matching);
 
     [Test]
-    public void AVariableTheOperationDoesNotDeclareIsReported() =>
-        Assert.That(
-            Check("query Q { person { name } }", """{"nope": 1}"""),
-            Is.EqualTo(notDeclared));
+    public async Task AVariableTheOperationDoesNotDeclareIsReported() =>
+        await Assert.That(Check("query Q { person { name } }", """{"nope": 1}""")).IsEquivalentTo(notDeclared, CollectionOrdering.Matching);
 
     [Test]
-    public void AMatchingDocumentIsAccepted() =>
-        Assert.That(
-            Check("query Q($term: String) { search(term: $term) { __typename } }", """{"term": "a"}"""),
-            Is.Empty);
+    public async Task AMatchingDocumentIsAccepted() =>
+        await Assert.That(Check("query Q($term: String) { search(term: $term) { __typename } }", """{"term": "a"}""")).IsEmpty();
 
     /// <summary>
     /// Two declarations of one name is a validator gap, not licence to throw: the exception was
@@ -50,12 +46,10 @@ public class VariablesCheckerTests
     /// before, for as long as the duplicate was there.
     /// </summary>
     [Test]
-    public void ADuplicateDeclarationTakesTheFirstRatherThanThrowing() =>
-        Assert.That(
-            Check("query Q($v: Int, $v: Int) { person { name } }", """{"v": "not an int"}"""),
-            Is.EqualTo(wrongIntType));
+    public async Task ADuplicateDeclarationTakesTheFirstRatherThanThrowing() =>
+        await Assert.That(Check("query Q($v: Int, $v: Int) { person { name } }", """{"v": "not an int"}""")).IsEquivalentTo(wrongIntType, CollectionOrdering.Matching);
 
     [Test]
-    public void ADuplicateDeclarationWithNoVariablesDocumentDoesNotThrow() =>
-        Assert.That(Check("query Q($v: Int, $v: Int) { person { name } }", null), Is.Empty);
+    public async Task ADuplicateDeclarationWithNoVariablesDocumentDoesNotThrow() =>
+        await Assert.That(Check("query Q($v: Int, $v: Int) { person { name } }", null)).IsEmpty();
 }

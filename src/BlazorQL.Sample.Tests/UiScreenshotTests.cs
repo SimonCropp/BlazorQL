@@ -1,10 +1,10 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// Verify.Playwright captures of the sample at a fixed viewport. These pngs are the images the
 /// docs embed — an <c>&lt;img&gt;</c> in readme/docs points straight at a <c>*.verified.png</c>, so
 /// a published screenshot cannot drift from the UI: a change fails the snapshot, and accepting the
 /// new baseline is what republishes the image.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class UiScreenshotTests :
     BrowserFixture

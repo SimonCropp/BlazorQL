@@ -1,4 +1,4 @@
-[TestFixture]
+
 public class HistoryStoreTests
 {
     static HistoryStore BuildStore(
@@ -11,63 +11,63 @@ public class HistoryStoreTests
             maxLength);
 
     [Test]
-    public void RecordsAnExecution()
+    public async Task RecordsAnExecution()
     {
         var store = BuildStore();
         store.Record("{ id }", """{"a": 1}""", null, "Op");
 
-        Assert.That(store.Items, Has.Count.EqualTo(1));
-        Assert.That(store.Items[0].Query, Is.EqualTo("{ id }"));
-        Assert.That(store.Items[0].Variables, Is.EqualTo("""{"a": 1}"""));
-        Assert.That(store.Items[0].OperationName, Is.EqualTo("Op"));
+        await Assert.That(store.Items).Count().IsEqualTo(1);
+        await Assert.That(store.Items[0].Query).IsEqualTo("{ id }");
+        await Assert.That(store.Items[0].Variables).IsEqualTo("""{"a": 1}""");
+        await Assert.That(store.Items[0].OperationName).IsEqualTo("Op");
     }
 
     [Test]
-    public void SkipsEmptyAndWhitespaceQueries()
+    public async Task SkipsEmptyAndWhitespaceQueries()
     {
         var store = BuildStore();
         store.Record("", null, null, null);
         store.Record("   \n\t", null, null, null);
 
-        Assert.That(store.Items, Is.Empty);
+        await Assert.That(store.Items).IsEmpty();
     }
 
     [Test]
-    public void SkipsQueriesThatDoNotParse()
+    public async Task SkipsQueriesThatDoNotParse()
     {
         var store = BuildStore(parses: _ => _ != "{ broken");
         store.Record("{ broken", null, null, null);
         store.Record("{ id }", null, null, null);
 
-        Assert.That(store.Items, Has.Count.EqualTo(1));
-        Assert.That(store.Items[0].Query, Is.EqualTo("{ id }"));
+        await Assert.That(store.Items).Count().IsEqualTo(1);
+        await Assert.That(store.Items[0].Query).IsEqualTo("{ id }");
     }
 
     [Test]
-    public void SkipsOversizedQueries()
+    public async Task SkipsOversizedQueries()
     {
         var store = BuildStore();
         store.Record($"{{ {new string('a', 100_001)} }}", null, null, null);
 
-        Assert.That(store.Items, Is.Empty);
+        await Assert.That(store.Items).IsEmpty();
     }
 
     [Test]
-    public void SkipsAnExactRepeatOfTheHead()
+    public async Task SkipsAnExactRepeatOfTheHead()
     {
         var store = BuildStore();
         store.Record("{ id }", """{"a": 1}""", "{}", null);
         store.Record("{ id }", """{"a": 1}""", "{}", null);
 
-        Assert.That(store.Items, Has.Count.EqualTo(1));
+        await Assert.That(store.Items).Count().IsEqualTo(1);
 
         // Changing any of query/variables/headers records again.
         store.Record("{ id }", """{"a": 2}""", "{}", null);
-        Assert.That(store.Items, Has.Count.EqualTo(2));
+        await Assert.That(store.Items).Count().IsEqualTo(2);
     }
 
     [Test]
-    public void EvictsTheOldestBeyondMaxLength()
+    public async Task EvictsTheOldestBeyondMaxLength()
     {
         var store = BuildStore(maxLength: 3);
         for (var i = 0; i < 5; i++)
@@ -75,14 +75,14 @@ public class HistoryStoreTests
             store.Record($"{{ q{i} }}", null, null, null);
         }
 
-        Assert.That(store.Items, Has.Count.EqualTo(3));
+        await Assert.That(store.Items).Count().IsEqualTo(3);
         // Newest first, the two oldest evicted.
         string[] expected = ["{ q4 }", "{ q3 }", "{ q2 }"];
-        Assert.That(store.Items.Select(_ => _.Query), Is.EqualTo(expected));
+        await Assert.That(store.Items.Select(_ => _.Query)).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
-    public void FavoritesAreUnlimitedAndUncapped()
+    public async Task FavoritesAreUnlimitedAndUncapped()
     {
         var store = BuildStore(maxLength: 2);
         for (var i = 0; i < 4; i++)
@@ -91,30 +91,30 @@ public class HistoryStoreTests
             store.ToggleFavorite(store.Items[0]);
         }
 
-        Assert.That(store.Favorites, Has.Count.EqualTo(4));
-        Assert.That(store.Items, Is.Empty);
+        await Assert.That(store.Favorites).Count().IsEqualTo(4);
+        await Assert.That(store.Items).IsEmpty();
     }
 
     [Test]
-    public void ToggleFavoriteMovesBetweenLists()
+    public async Task ToggleFavoriteMovesBetweenLists()
     {
         var store = BuildStore();
         store.Record("{ id }", null, null, null);
         var item = store.Items[0];
 
         store.ToggleFavorite(item);
-        Assert.That(item.Favorite, Is.True);
-        Assert.That(store.Items, Is.Empty);
-        Assert.That(store.Favorites, Is.EqualTo([item]));
+        await Assert.That(item.Favorite).IsTrue();
+        await Assert.That(store.Items).IsEmpty();
+        await Assert.That(store.Favorites).IsEquivalentTo([item], CollectionOrdering.Matching);
 
         store.ToggleFavorite(item);
-        Assert.That(item.Favorite, Is.False);
-        Assert.That(store.Favorites, Is.Empty);
-        Assert.That(store.Items, Is.EqualTo([item]));
+        await Assert.That(item.Favorite).IsFalse();
+        await Assert.That(store.Favorites).IsEmpty();
+        await Assert.That(store.Items).IsEquivalentTo([item], CollectionOrdering.Matching);
     }
 
     [Test]
-    public void ClearOnlyRemovesNonFavorites()
+    public async Task ClearOnlyRemovesNonFavorites()
     {
         var store = BuildStore();
         store.Record("{ keep }", null, null, null);
@@ -123,12 +123,12 @@ public class HistoryStoreTests
 
         store.ClearNonFavorites();
 
-        Assert.That(store.Items, Is.Empty);
-        Assert.That(store.Favorites, Has.Count.EqualTo(1));
+        await Assert.That(store.Items).IsEmpty();
+        await Assert.That(store.Favorites).Count().IsEqualTo(1);
     }
 
     [Test]
-    public void PersistsAndReloads()
+    public async Task PersistsAndReloads()
     {
         var backend = new InMemoryStorageBackend();
         var storage = new StorageService(backend);
@@ -140,15 +140,15 @@ public class HistoryStoreTests
 
         // A fresh store over the same storage sees everything, favorite flags included.
         var reloaded = BuildStore(storage);
-        Assert.That(reloaded.Items, Has.Count.EqualTo(1));
-        Assert.That(reloaded.Items[0].Label, Is.EqualTo("My label"));
-        Assert.That(reloaded.Items[0].Variables, Is.EqualTo("""{"x": 1}"""));
-        Assert.That(reloaded.Favorites, Has.Count.EqualTo(1));
-        Assert.That(reloaded.Favorites[0].Favorite, Is.True);
+        await Assert.That(reloaded.Items).Count().IsEqualTo(1);
+        await Assert.That(reloaded.Items[0].Label).IsEqualTo("My label");
+        await Assert.That(reloaded.Items[0].Variables).IsEqualTo("""{"x": 1}""");
+        await Assert.That(reloaded.Favorites).Count().IsEqualTo(1);
+        await Assert.That(reloaded.Favorites[0].Favorite).IsTrue();
     }
 
     [Test]
-    public void MatchesSearchesQueryLabelAndOperationName()
+    public async Task MatchesSearchesQueryLabelAndOperationName()
     {
         var item = new HistoryItem
         {
@@ -157,15 +157,15 @@ public class HistoryStoreTests
             OperationName = "FindThings"
         };
 
-        Assert.That(HistoryStore.Matches(item, ""), Is.True);
-        Assert.That(HistoryStore.Matches(item, "findthings"), Is.True);
-        Assert.That(HistoryStore.Matches(item, "my label"), Is.True);
-        Assert.That(HistoryStore.Matches(item, "{ id }"), Is.True);
-        Assert.That(HistoryStore.Matches(item, "nowhere"), Is.False);
+        await Assert.That(HistoryStore.Matches(item, "")).IsTrue();
+        await Assert.That(HistoryStore.Matches(item, "findthings")).IsTrue();
+        await Assert.That(HistoryStore.Matches(item, "my label")).IsTrue();
+        await Assert.That(HistoryStore.Matches(item, "{ id }")).IsTrue();
+        await Assert.That(HistoryStore.Matches(item, "nowhere")).IsFalse();
     }
 
     [Test]
-    public void DisplayTextPrefersLabelThenOperationNameThenCondensedQuery()
+    public async Task DisplayTextPrefersLabelThenOperationNameThenCondensedQuery()
     {
         var item = new HistoryItem
         {
@@ -179,15 +179,15 @@ public class HistoryStoreTests
             OperationName = "FromRun",
             Label = "Labelled"
         };
-        Assert.That(HistoryStore.DisplayText(item), Is.EqualTo("Labelled"));
+        await Assert.That(HistoryStore.DisplayText(item)).IsEqualTo("Labelled");
 
         item.Label = null;
-        Assert.That(HistoryStore.DisplayText(item), Is.EqualTo("FromRun"));
+        await Assert.That(HistoryStore.DisplayText(item)).IsEqualTo("FromRun");
 
         var unnamed = item with
         {
             OperationName = null
         };
-        Assert.That(HistoryStore.DisplayText(unnamed), Is.EqualTo("query Long { id }"));
+        await Assert.That(HistoryStore.DisplayText(unnamed)).IsEqualTo("query Long { id }");
     }
 }

@@ -1,10 +1,8 @@
 using System.IO.Compression;
-
 /// <summary>
 /// The http contract of the mounted endpoints, without a browser: content negotiation, validators,
 /// caching, and the shape of the rendered page.
 /// </summary>
-[TestFixture]
 public class ServingTests :
     BundledFixture
 {
@@ -45,11 +43,11 @@ public class ServingTests :
         using var response = await Get(client, bootScript, brotli: true);
         var bytes = await response.Content.ReadAsByteArrayAsync();
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        Assert.That(response.Content.Headers.ContentEncoding, Does.Contain("br"));
-        Assert.That(response.Headers.Vary, Does.Contain("Accept-Encoding"));
-        Assert.That(response.Content.Headers.ContentLength, Is.EqualTo(bytes.Length));
-        Assert.That(Decompress(bytes), Is.Not.Empty);
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(response.Content.Headers.ContentEncoding).Contains("br");
+        await Assert.That(response.Headers.Vary).Contains("Accept-Encoding");
+        await Assert.That(response.Content.Headers.ContentLength).IsEqualTo(bytes.Length);
+        await Assert.That(Decompress(bytes)).IsNotEmpty();
     }
 
     [Test]
@@ -61,8 +59,8 @@ public class ServingTests :
         using var compressed = await Get(client, bootScript, brotli: true);
         var identity = await plain.Content.ReadAsByteArrayAsync();
 
-        Assert.That(plain.Content.Headers.ContentEncoding, Is.Empty);
-        Assert.That(identity, Is.EqualTo(Decompress(await compressed.Content.ReadAsByteArrayAsync())));
+        await Assert.That(plain.Content.Headers.ContentEncoding).IsEmpty();
+        await Assert.That(identity).IsEquivalentTo(Decompress(await compressed.Content.ReadAsByteArrayAsync()), CollectionOrdering.Matching);
     }
 
     /// <summary>A zero quality is a refusal, which a Contains check would read as acceptance.</summary>
@@ -75,7 +73,7 @@ public class ServingTests :
 
         using var response = await client.SendAsync(request);
 
-        Assert.That(response.Content.Headers.ContentEncoding, Is.Empty);
+        await Assert.That(response.Content.Headers.ContentEncoding).IsEmpty();
     }
 
     [Test]
@@ -89,7 +87,7 @@ public class ServingTests :
         request.Headers.IfNoneMatch.Add(seed.Headers.ETag!);
         using var response = await client.SendAsync(request);
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotModified));
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotModified);
     }
 
     /// <summary>An etag identifies a representation, so the two codings cannot share one.</summary>
@@ -101,7 +99,7 @@ public class ServingTests :
         using var compressed = await Get(client, bootScript, brotli: true);
         using var identity = await Get(client, bootScript, brotli: false);
 
-        Assert.That(compressed.Headers.ETag, Is.Not.EqualTo(identity.Headers.ETag));
+        await Assert.That(compressed.Headers.ETag).IsNotEqualTo(identity.Headers.ETag);
     }
 
     /// <summary>
@@ -117,8 +115,8 @@ public class ServingTests :
         var fingerprinted = await FindFingerprintedRoute(client);
         using var stable = await Get(client, fingerprinted, brotli: true);
 
-        Assert.That(boot.Headers.CacheControl!.NoCache, Is.True);
-        Assert.That(stable.Headers.CacheControl!.MaxAge, Is.EqualTo(TimeSpan.FromDays(365)));
+        await Assert.That(boot.Headers.CacheControl!.NoCache).IsTrue();
+        await Assert.That(stable.Headers.CacheControl!.MaxAge).IsEqualTo(TimeSpan.FromDays(365));
     }
 
     [Test]
@@ -128,7 +126,7 @@ public class ServingTests :
 
         using var response = await Get(client, "/_framework/does-not-exist.wasm", brotli: true);
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
     }
 
     [Test]
@@ -139,8 +137,8 @@ public class ServingTests :
 
         using var response = await client.GetAsync(IdeUrl);
 
-        Assert.That((int) response.StatusCode, Is.InRange(300, 399));
-        Assert.That(response.Headers.Location!.ToString(), Does.EndWith("/blazorql/"));
+        await Assert.That((int) response.StatusCode).IsBetween(300, 399);
+        await Assert.That(response.Headers.Location!.ToString()).EndsWith("/blazorql/");
     }
 
     [Test]
@@ -151,9 +149,9 @@ public class ServingTests :
         using var response = await Get(client, "/", brotli: false);
         var html = await response.Content.ReadAsStringAsync();
 
-        Assert.That(html, Does.Contain("/blazorql/"));
-        Assert.That(html, Does.Contain("id=\"blazorql-config\""));
-        Assert.That(response.Headers.CacheControl!.NoStore, Is.True);
+        await Assert.That(html).Contains("/blazorql/");
+        await Assert.That(html).Contains("id=\"blazorql-config\"");
+        await Assert.That(response.Headers.CacheControl!.NoStore).IsTrue();
     }
 
     /// <summary>
@@ -172,8 +170,8 @@ public class ServingTests :
         var script = config[..config.IndexOf("</script>", StringComparison.Ordinal)];
 
         // The query survived, but only in escaped form.
-        Assert.That(script, Does.Contain("alert(1)"));
-        Assert.That(script, Does.Not.Contain("<script>"));
+        await Assert.That(script).Contains("alert(1)");
+        await Assert.That(script).DoesNotContain("<script>");
     }
 
     [Test]
@@ -184,9 +182,9 @@ public class ServingTests :
 
         using var response = await client.SendAsync(request);
 
-        Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-        Assert.That(response.Content.Headers.ContentLength, Is.GreaterThan(0));
-        Assert.That(await response.Content.ReadAsByteArrayAsync(), Is.Empty);
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(response.Content.Headers.ContentLength ?? 0).IsGreaterThan(0);
+        await Assert.That(await response.Content.ReadAsByteArrayAsync()).IsEmpty();
     }
 
     /// <summary>Reads a fingerprinted asset name out of the boot config the runtime itself uses.</summary>
@@ -195,7 +193,7 @@ public class ServingTests :
         using var response = await Get(client, "/_framework/dotnet.js", brotli: true);
         var script = Encoding.UTF8.GetString(Decompress(await response.Content.ReadAsByteArrayAsync()));
         var match = Regex.Match(script, "\"(dotnet\\.native\\.[a-z0-9]{10}\\.wasm)\"");
-        Assert.That(match.Success, "The boot config no longer names a fingerprinted native asset.");
+        await Assert.That(match.Success).IsTrue().Because("The boot config no longer names a fingerprinted native asset.");
         return "/_framework/" + match.Groups[1].Value;
     }
 

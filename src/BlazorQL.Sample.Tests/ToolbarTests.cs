@@ -1,9 +1,9 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The M7 toolbar operations over the published sample: prettify, merge, copy, fill-leaves on
 /// execute, share links, the response copy/download overlay, the status footer, and the global
 /// re-fetch shortcut.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class ToolbarTests :
     BrowserFixture
@@ -54,7 +54,7 @@ public class ToolbarTests :
             """,
             null,
             new() {Timeout = 30_000});
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -80,7 +80,7 @@ public class ToolbarTests :
             """,
             null,
             new() {Timeout = 30_000});
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -94,7 +94,7 @@ public class ToolbarTests :
 
         // The clipboard write is best-effort; the observable contract is a clean console.
         await page.WaitForTimeoutAsync(500);
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -110,7 +110,7 @@ public class ToolbarTests :
 
         await WaitForOperationTextAsync(page, "person {");
         await WaitForResponseTextAsync(page, "Mark");
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -135,7 +135,7 @@ public class ToolbarTests :
         await second.WaitForSelectorAsync("[data-testid='blazorql'][data-ready]", 90);
         await WaitForOperationTextAsync(second, "query Shared");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -152,8 +152,8 @@ public class ToolbarTests :
         var download = await page.RunAndWaitForDownloadAsync(() =>
             page.ClickAsync("[data-testid='response-download']"));
 
-        Assert.That(download.SuggestedFilename, Is.EqualTo("response.json"));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(download.SuggestedFilename).IsEqualTo("response.json");
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -167,8 +167,8 @@ public class ToolbarTests :
         await WaitForResponseTextAsync(page, "abc123");
 
         var status = await page.WaitForSelectorAsync("[data-testid='status-line']", 10);
-        Assert.That(await status!.TextContentAsync(), Does.StartWith("OK ·").And.EndWith("ms"));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(await status!.TextContentAsync()).StartsWith("OK ·").And.EndsWith("ms");
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -184,7 +184,7 @@ public class ToolbarTests :
             null,
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -211,7 +211,7 @@ public class ToolbarTests :
         await page.GotoAsync($"{BaseUrl}/explorer");
         await page.WaitForSelectorAsync("[data-testid='copy']", 60);
 
-        Assert.That(await page.QuerySelectorAsync("[data-testid='blazorql'][data-ready]"), Is.Null);
+        await Assert.That(await page.QuerySelectorAsync("[data-testid='blazorql'][data-ready]")).IsNull();
 
         await page.ClickAsync("[data-testid='copy']");
         await page.ClickAsync("[data-testid='share']");
@@ -232,7 +232,7 @@ public class ToolbarTests :
             null,
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -266,6 +266,6 @@ public class ToolbarTests :
             }
             """);
 
-        Assert.That(revokedWithTheClick, Is.False);
+        await Assert.That(revokedWithTheClick).IsFalse();
     }
 }

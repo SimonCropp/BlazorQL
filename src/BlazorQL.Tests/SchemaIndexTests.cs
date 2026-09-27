@@ -1,68 +1,68 @@
-[TestFixture]
+
 public class SchemaIndexTests
 {
     static string SchemaJson() =>
-        File.ReadAllText(Path.Combine(TestContext.CurrentContext.TestDirectory, "DocExplorerTests.schema.json"));
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
 
     [Test]
-    public void ParsesAWrappedIntrospectionResult()
+    public async Task ParsesAWrappedIntrospectionResult()
     {
         using var document = JsonDocument.Parse(SchemaJson());
         var schema = SchemaIndex.Parse(document.RootElement)!;
 
-        Assert.That(schema, Is.Not.Null);
-        Assert.That(schema.QueryTypeName, Is.EqualTo("Query"));
-        Assert.That(schema.MutationTypeName, Is.Null);
-        Assert.That(schema.Description, Does.Contain("hand-written"));
-        Assert.That(schema.IsRootType("Query"), Is.True);
-        Assert.That(schema.IsRootType("Person"), Is.False);
+        await Assert.That(schema).IsNotNull();
+        await Assert.That(schema.QueryTypeName).IsEqualTo("Query");
+        await Assert.That(schema.MutationTypeName).IsNull();
+        await Assert.That(schema.Description).Contains("hand-written");
+        await Assert.That(schema.IsRootType("Query")).IsTrue();
+        await Assert.That(schema.IsRootType("Person")).IsFalse();
 
         var person = schema.Find("Person")!;
-        Assert.That(person, Is.Not.Null);
-        Assert.That(person.Kind, Is.EqualTo("OBJECT"));
-        Assert.That(person.Interfaces!.Single().Name, Is.EqualTo("Named"));
+        await Assert.That(person).IsNotNull();
+        await Assert.That(person.Kind).IsEqualTo("OBJECT");
+        await Assert.That(person.Interfaces!.Single().Name).IsEqualTo("Named");
 
         var query = schema.Find("Query")!;
         var hasArgs = query.Fields!.Single(_ => _.Name == "hasArgs");
-        Assert.That(hasArgs.Args.Single(_ => _.Name == "count").DefaultValue, Is.EqualTo("0"));
+        await Assert.That(hasArgs.Args.Single(_ => _.Name == "count").DefaultValue).IsEqualTo("0");
         var deprecatedArg = hasArgs.Args.Single(_ => _.Name == "deprecatedArg");
-        Assert.That(deprecatedArg.IsDeprecated, Is.True);
-        Assert.That(deprecatedArg.DeprecationReason, Does.Contain("instead"));
+        await Assert.That(deprecatedArg.IsDeprecated).IsTrue();
+        await Assert.That(deprecatedArg.DeprecationReason).Contains("instead");
 
         var friends = person.Fields!.Single(_ => _.Name == "friends");
-        Assert.That(friends.Type.Display(), Is.EqualTo("[Person]"));
-        Assert.That(friends.Type.Unwrap().Name, Is.EqualTo("Person"));
+        await Assert.That(friends.Type.Display()).IsEqualTo("[Person]");
+        await Assert.That(friends.Type.Unwrap().Name).IsEqualTo("Person");
 
         var color = schema.Find("Color")!;
-        Assert.That(color.EnumValues!.Single(_ => _.IsDeprecated).Name, Is.EqualTo("GRAY"));
+        await Assert.That(color.EnumValues!.Single(_ => _.IsDeprecated).Name).IsEqualTo("GRAY");
 
         var petInput = schema.Find("PetInput")!;
-        Assert.That(petInput.InputFields!.Single(_ => _.Name == "name").DefaultValue, Is.EqualTo("\"Rex\""));
+        await Assert.That(petInput.InputFields!.Single(_ => _.Name == "name").DefaultValue).IsEqualTo("\"Rex\"");
 
-        Assert.That(schema.Find("JSON")!.SpecifiedByURL, Is.EqualTo("https://example.com/json-spec"));
+        await Assert.That(schema.Find("JSON")!.SpecifiedByURL).IsEqualTo("https://example.com/json-spec");
 
         var directive = schema.Directives.Single();
-        Assert.That(directive.Name, Is.EqualTo("repeat"));
-        Assert.That(directive.IsRepeatable, Is.True);
-        Assert.That(directive.Locations.Single(), Is.EqualTo("FIELD"));
+        await Assert.That(directive.Name).IsEqualTo("repeat");
+        await Assert.That(directive.IsRepeatable).IsTrue();
+        await Assert.That(directive.Locations.Single()).IsEqualTo("FIELD");
     }
 
     [Test]
-    public void ParsesABareIntrospectionResult()
+    public async Task ParsesABareIntrospectionResult()
     {
         using var document = JsonDocument.Parse(SchemaJson());
         var bare = document.RootElement.GetProperty("data");
         var schema = SchemaIndex.Parse(bare)!;
 
-        Assert.That(schema, Is.Not.Null);
-        Assert.That(schema.QueryTypeName, Is.EqualTo("Query"));
+        await Assert.That(schema).IsNotNull();
+        await Assert.That(schema.QueryTypeName).IsEqualTo("Query");
     }
 
     [Test]
-    public void ReturnsNullWhenTheShapeIsNotIntrospection()
+    public async Task ReturnsNullWhenTheShapeIsNotIntrospection()
     {
         using var document = JsonDocument.Parse("""{"data": {"something": 1}}""");
-        Assert.That(SchemaIndex.Parse(document.RootElement), Is.Null);
+        await Assert.That(SchemaIndex.Parse(document.RootElement)).IsNull();
     }
 
     /// <summary>
@@ -70,41 +70,41 @@ public class SchemaIndexTests
     /// first ask and every one after it have to agree.
     /// </summary>
     [Test]
-    public void MemberLookupsFindWhatAScanWouldHave()
+    public async Task MemberLookupsFindWhatAScanWouldHave()
     {
         using var document = JsonDocument.Parse(SchemaJson());
         var schema = SchemaIndex.Parse(document.RootElement)!;
 
         var query = schema.Find("Query")!;
-        Assert.That(schema.Field(query, "hasArgs")!.Name, Is.EqualTo("hasArgs"));
-        Assert.That(schema.Field(query, "hasArgs")!.Name, Is.EqualTo("hasArgs"));
-        Assert.That(schema.Field(query, "nope"), Is.Null);
-        Assert.That(schema.Field(null, "hasArgs"), Is.Null);
+        await Assert.That(schema.Field(query, "hasArgs")!.Name).IsEqualTo("hasArgs");
+        await Assert.That(schema.Field(query, "hasArgs")!.Name).IsEqualTo("hasArgs");
+        await Assert.That(schema.Field(query, "nope")).IsNull();
+        await Assert.That(schema.Field(null, "hasArgs")).IsNull();
 
         var input = schema.Find("PetInput")!;
-        Assert.That(schema.InputField(input, "name")!.Name, Is.EqualTo("name"));
-        Assert.That(schema.InputField(input, "nope"), Is.Null);
-        Assert.That(schema.InputField(null, "name"), Is.Null);
+        await Assert.That(schema.InputField(input, "name")!.Name).IsEqualTo("name");
+        await Assert.That(schema.InputField(input, "nope")).IsNull();
+        await Assert.That(schema.InputField(null, "name")).IsNull();
 
         var color = schema.Find("Color")!;
-        Assert.That(schema.EnumValue(color, "RED")!.Name, Is.EqualTo("RED"));
-        Assert.That(schema.EnumValue(color, "MAUVE"), Is.Null);
-        Assert.That(schema.EnumValue(null, "RED"), Is.Null);
+        await Assert.That(schema.EnumValue(color, "RED")!.Name).IsEqualTo("RED");
+        await Assert.That(schema.EnumValue(color, "MAUVE")).IsNull();
+        await Assert.That(schema.EnumValue(null, "RED")).IsNull();
 
-        Assert.That(schema.Directive("repeat")!.Name, Is.EqualTo("repeat"));
-        Assert.That(schema.Directive("nope"), Is.Null);
+        await Assert.That(schema.Directive("repeat")!.Name).IsEqualTo("repeat");
+        await Assert.That(schema.Directive("nope")).IsNull();
     }
 
     /// <summary>A type has fields or input fields, never both. Asking for the other gives nothing.</summary>
     [Test]
-    public void TheWrongKindOfMemberIsNotFound()
+    public async Task TheWrongKindOfMemberIsNotFound()
     {
         using var document = JsonDocument.Parse(SchemaJson());
         var schema = SchemaIndex.Parse(document.RootElement)!;
 
         var query = schema.Find("Query")!;
 
-        Assert.That(schema.InputField(query, "hasArgs"), Is.Null);
-        Assert.That(schema.EnumValue(query, "hasArgs"), Is.Null);
+        await Assert.That(schema.InputField(query, "hasArgs")).IsNull();
+        await Assert.That(schema.EnumValue(query, "hasArgs")).IsNull();
     }
 }

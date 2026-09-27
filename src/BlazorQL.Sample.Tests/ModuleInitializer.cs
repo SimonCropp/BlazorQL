@@ -1,3 +1,7 @@
+// One browser drives every test, and the screenshot baselines and timeouts were set against a
+// serial run, which is what NUnit gave by default.
+[assembly: NotInParallel]
+
 public static class ModuleInitializer
 {
     [ModuleInitializer]

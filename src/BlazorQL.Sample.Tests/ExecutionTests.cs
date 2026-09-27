@@ -1,9 +1,9 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The core loop against the in-browser schema: schema-aware completion and validation from the
 /// language worker, execution through the local GraphQL.NET fetcher, and subscription streaming —
 /// all with no server anywhere.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class ExecutionTests :
     BrowserFixture
@@ -17,7 +17,7 @@ public class ExecutionTests :
         await page.SetEditorValueAsync("{ ");
         var suggestions = await page.SuggestAsync();
 
-        Assert.That(suggestions, Does.Contain("test").And.Contain("person").And.Contain("hasArgs"));
+        await Assert.That(suggestions).Contains("test").And.Contains("person").And.Contains("hasArgs");
     }
 
     [Test]
@@ -56,7 +56,7 @@ public class ExecutionTests :
             null,
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -106,7 +106,7 @@ public class ExecutionTests :
             null,
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -212,6 +212,6 @@ public class ExecutionTests :
         // Long enough for every event of the abandoned subscription to have come and gone.
         await page.WaitForTimeoutAsync(4000);
 
-        Assert.That(await page.QuerySelectorAsync("[data-testid='status-line']"), Is.Null);
+        await Assert.That(await page.QuerySelectorAsync("[data-testid='status-line']")).IsNull();
     }
 }

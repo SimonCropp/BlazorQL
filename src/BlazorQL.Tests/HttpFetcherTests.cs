@@ -3,7 +3,6 @@
 /// multipart/mixed incremental-delivery body yields each part in order, the request carries the
 /// negotiated accept header plus the user's own, and only a non-JSON body is a failure.
 /// </summary>
-[TestFixture]
 public class HttpFetcherTests
 {
     const string url = "http://example.test/graphql";
@@ -16,8 +15,8 @@ public class HttpFetcherTests
 
         var results = await Collect(fetcher, new("{ id }"));
 
-        Assert.That(results, Has.Count.EqualTo(1));
-        Assert.That(results[0].GetProperty("data").GetProperty("id").GetString(), Is.EqualTo("abc123"));
+        await Assert.That(results).Count().IsEqualTo(1);
+        await Assert.That(results[0].GetProperty("data").GetProperty("id").GetString()).IsEqualTo("abc123");
     }
 
     [Test]
@@ -50,10 +49,10 @@ public class HttpFetcherTests
 
         var results = await Collect(fetcher, new("{ deferrable { normalString ... @defer { deferredString } } }"));
 
-        Assert.That(results, Has.Count.EqualTo(3));
-        Assert.That(results[0].GetProperty("data").GetProperty("deferrable").GetProperty("normalString").GetString(), Is.EqualTo("Nice"));
-        Assert.That(results[1].GetProperty("incremental")[0].GetProperty("data").GetProperty("deferredString").GetString(), Is.EqualTo("later"));
-        Assert.That(results[2].GetProperty("hasNext").GetBoolean(), Is.False);
+        await Assert.That(results).Count().IsEqualTo(3);
+        await Assert.That(results[0].GetProperty("data").GetProperty("deferrable").GetProperty("normalString").GetString()).IsEqualTo("Nice");
+        await Assert.That(results[1].GetProperty("incremental")[0].GetProperty("data").GetProperty("deferredString").GetString()).IsEqualTo("later");
+        await Assert.That(results[2].GetProperty("hasNext").GetBoolean()).IsFalse();
     }
 
     [Test]
@@ -72,12 +71,12 @@ public class HttpFetcherTests
             });
 
         var request = handler.Request!;
-        Assert.That(request.Headers.NonValidated["Accept"].ToString(), Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8"));
-        Assert.That(request.Headers.GetValues("authorization").Single(), Is.EqualTo("Bearer token"));
-        Assert.That(request.Headers.GetValues("x-custom").Single(), Is.EqualTo("value"));
-        Assert.That(request.Content!.Headers.ContentType!.MediaType, Is.EqualTo("application/json"));
+        await Assert.That(request.Headers.NonValidated["Accept"].ToString()).IsEqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8");
+        await Assert.That(request.Headers.GetValues("authorization").Single()).IsEqualTo("Bearer token");
+        await Assert.That(request.Headers.GetValues("x-custom").Single()).IsEqualTo("value");
+        await Assert.That(request.Content!.Headers.ContentType!.MediaType).IsEqualTo("application/json");
         // Null variables are omitted, names are camelCase.
-        Assert.That(handler.RequestBody, Is.EqualTo("""{"query":"{ id }","operationName":"Op"}"""));
+        await Assert.That(handler.RequestBody).IsEqualTo("""{"query":"{ id }","operationName":"Op"}""");
     }
 
     [Test]
@@ -86,17 +85,17 @@ public class HttpFetcherTests
         var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.BadRequest, """{"errors":[{"message":"boom"}]}"""));
         var fetcher = new HttpFetcher(new(handler), url);
 
-        Assert.That(fetcher.LastStatus, Is.Null);
+        await Assert.That(fetcher.LastStatus).IsNull();
         var results = await Collect(fetcher, new("{ id }"));
 
         // GraphQL errors ride non-200s as ordinary documents.
-        Assert.That(results, Has.Count.EqualTo(1));
-        Assert.That(results[0].GetProperty("errors")[0].GetProperty("message").GetString(), Is.EqualTo("boom"));
-        Assert.That(fetcher.LastStatus, Is.EqualTo(new HttpFetchStatus(400, "Bad Request")));
+        await Assert.That(results).Count().IsEqualTo(1);
+        await Assert.That(results[0].GetProperty("errors")[0].GetProperty("message").GetString()).IsEqualTo("boom");
+        await Assert.That(fetcher.LastStatus).IsEqualTo(new HttpFetchStatus(400, "Bad Request"));
     }
 
     [Test]
-    public void NonJsonBodyThrows()
+    public async Task NonJsonBodyThrows()
     {
         var longTail = new string('x', 600);
         var handler = new FakeHandler(_ => new(HttpStatusCode.BadGateway)
@@ -105,12 +104,12 @@ public class HttpFetcherTests
         });
         var fetcher = new HttpFetcher(new(handler), url);
 
-        var exception = Assert.ThrowsAsync<InvalidOperationException>(() => Collect(fetcher, new("{ id }")));
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => Collect(fetcher, new("{ id }")));
 
-        Assert.That(exception!.Message, Does.Contain("502").And.Contain("<html>gateway fell over"));
+        await Assert.That(exception!.Message).Contains("502").And.Contains("<html>gateway fell over");
         // Only the first 500 characters of the body are reported.
-        Assert.That(exception.Message, Does.Not.Contain("</html>"));
-        Assert.That(fetcher.LastStatus!.StatusCode, Is.EqualTo(502));
+        await Assert.That(exception.Message).DoesNotContain("</html>");
+        await Assert.That(fetcher.LastStatus!.StatusCode).IsEqualTo(502);
     }
 
     static HttpResponseMessage JsonResponse(HttpStatusCode status, string body) =>
@@ -168,8 +167,8 @@ public class HttpFetcherTests
 
         var content = handler.Request!.Content!;
 
-        Assert.That(content.Headers.GetValues("Content-Type").Single(), Is.EqualTo("application/graphql-request+json"));
-        Assert.That(handler.RequestBody, Is.EqualTo("""{"query":"{ id }"}"""));
+        await Assert.That(content.Headers.GetValues("Content-Type").Single()).IsEqualTo("application/graphql-request+json");
+        await Assert.That(handler.RequestBody).IsEqualTo("""{"query":"{ id }"}""");
     }
 
     [Test]
@@ -186,7 +185,7 @@ public class HttpFetcherTests
                 ["accept"] = "application/json"
             });
 
-        Assert.That(handler.Request!.Headers.GetValues("Accept").Single(), Is.EqualTo("application/json"));
+        await Assert.That(handler.Request!.Headers.GetValues("Accept").Single()).IsEqualTo("application/json");
     }
 
     [Test]
@@ -197,8 +196,6 @@ public class HttpFetcherTests
 
         await Collect(fetcher, new("{ id }"), new() {["x-custom"] = "value"});
 
-        Assert.That(
-            handler.Request!.Headers.NonValidated["Accept"].ToString(),
-            Is.EqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8"));
+        await Assert.That(handler.Request!.Headers.NonValidated["Accept"].ToString()).IsEqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8");
     }
 }

@@ -3,7 +3,6 @@
 /// pending/completed id format, @stream items, error accumulation, and the replace semantics of
 /// plain results (a subscription event replaces; a patch merges).
 /// </summary>
-[TestFixture]
 public class IncrementalMergerTests
 {
     [Test]
@@ -74,8 +73,7 @@ public class IncrementalMergerTests
         var merger = new IncrementalMerger();
         merger.Add(Parse("""{"data":{},"hasNext":true}"""));
 
-        Assert.Throws<InvalidOperationException>(
-            () => merger.Add(Parse("""{"incremental":[{"id":"9","data":{"x":1}}],"hasNext":false}""")));
+        Assert.Throws<InvalidOperationException>(() => merger.Add(Parse("""{"incremental":[{"id":"9","data":{"x":1}}],"hasNext":false}""")));
     }
 
     static JsonElement Parse(string json) =>

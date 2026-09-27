@@ -3,14 +3,13 @@
 /// tests use. Every generated document must also survive prettify unchanged, so the generator's
 /// layout and the formatter's agree.
 /// </summary>
-[TestFixture]
 public class QueryGeneratorTests
 {
     static readonly SchemaIndex schema = LoadSchema();
 
     static SchemaIndex LoadSchema()
     {
-        var json = File.ReadAllText(Path.Combine(TestContext.CurrentContext.TestDirectory, "DocExplorerTests.schema.json"));
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
         return Parse(json);
     }
 
@@ -25,7 +24,11 @@ public class QueryGeneratorTests
         var generated = QueryGenerator.Generate(index, index.Find(typeName)!)!;
         // The printer writes the platform newline; the generator always writes \n.
         var formatted = Formatter.FormatGraphQL(generated).Replace("\r\n", "\n");
-        Assert.That(formatted, Is.EqualTo(generated), "prettify should be a no-op");
+        if (formatted != generated)
+        {
+            throw new($"prettify should be a no-op, but produced:\n{formatted}");
+        }
+
         return generated;
     }
 
@@ -55,12 +58,12 @@ public class QueryGeneratorTests
         Verify(Generate(schema, "Named"));
 
     [Test]
-    public void LeafAndInputTypesGenerateNothing()
+    public async Task LeafAndInputTypesGenerateNothing()
     {
-        Assert.That(QueryGenerator.CanGenerate(schema.Find("Color")!), Is.False);
-        Assert.That(QueryGenerator.CanGenerate(schema.Find("PetInput")!), Is.False);
-        Assert.That(QueryGenerator.CanGenerate(schema.Find("String")!), Is.False);
-        Assert.That(QueryGenerator.Generate(schema, schema.Find("Color")!), Is.Null);
+        await Assert.That(QueryGenerator.CanGenerate(schema.Find("Color")!)).IsFalse();
+        await Assert.That(QueryGenerator.CanGenerate(schema.Find("PetInput")!)).IsFalse();
+        await Assert.That(QueryGenerator.CanGenerate(schema.Find("String")!)).IsFalse();
+        await Assert.That(QueryGenerator.Generate(schema, schema.Find("Color")!)).IsNull();
     }
 
     // The reported case: a type no root field returns, but something nested does. Nesting the
@@ -72,7 +75,7 @@ public class QueryGeneratorTests
 
     // The chain is the shortest one, and each step keeps the arguments it requires.
     [Test]
-    public void TheChainIsTheShortestThatReaches()
+    public async Task TheChainIsTheShortestThatReaches()
     {
         var index = Nested();
 
@@ -80,15 +83,15 @@ public class QueryGeneratorTests
 
         string[] toPortfolio = ["groups", "portfolios"];
         string[] toGroup = ["groups"];
-        Assert.That(path, Is.Not.Null);
-        Assert.That(path!.Select(_ => _.Name), Is.EqualTo(toPortfolio).AsCollection);
-        Assert.That(index.PathFromQuery("Group")!.Select(_ => _.Name), Is.EqualTo(toGroup).AsCollection);
+        await Assert.That(path).IsNotNull();
+        await Assert.That(path!.Select(_ => _.Name)).IsEquivalentTo(toPortfolio, CollectionOrdering.Matching);
+        await Assert.That(index.PathFromQuery("Group")!.Select(_ => _.Name)).IsEquivalentTo(toGroup, CollectionOrdering.Matching);
     }
 
     // Nothing reaches it, so there is no operation to build and the fragment stands.
     [Test]
-    public void AnUnreachableTypeHasNoChain() =>
-        Assert.That(Nested().PathFromQuery("Orphan"), Is.Null);
+    public async Task AnUnreachableTypeHasNoChain() =>
+        await Assert.That(Nested().PathFromQuery("Orphan")).IsNull();
 
     static SchemaIndex Nested() =>
         Parse(

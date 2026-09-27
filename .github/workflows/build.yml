@@ -61,7 +61,7 @@ jobs:
         run: dotnet build src/BlazorQL.slnx -c Release ${{ env.VERSION_ARGUMENT }}
 
       - name: Test
-        run: dotnet test src/BlazorQL.slnx -c Release --no-build
+        run: dotnet test --solution src/BlazorQL.slnx -c Release --no-build
 
       # After the build, never instead of it: packing the RCL from a clean obj fails on its
       # static web assets manifest.

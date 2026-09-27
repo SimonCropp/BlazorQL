@@ -2,7 +2,6 @@
 /// The trailing-edge debounce behind every editor-change handler. Nothing awaits the task it
 /// starts, so what it does with a failure is the whole of what anyone will ever learn about one.
 /// </summary>
-[TestFixture]
 public class DebouncerTests
 {
     [Test]
@@ -24,7 +23,7 @@ public class DebouncerTests
 
         await WaitFor(() => ran.Count > 0);
 
-        Assert.That(ran, Is.EqualTo(lastOnly));
+        await Assert.That(ran).IsEquivalentTo(lastOnly, CollectionOrdering.Matching);
     }
 
     static readonly int[] lastOnly = [2];
@@ -43,7 +42,7 @@ public class DebouncerTests
 
         await Task.Delay(200);
 
-        Assert.That(ran, Is.False);
+        await Assert.That(ran).IsFalse();
     }
 
     [Test]
@@ -60,7 +59,7 @@ public class DebouncerTests
         debouncer.Cancel();
         await Task.Delay(200);
 
-        Assert.That(ran, Is.False);
+        await Assert.That(ran).IsFalse();
     }
 
     /// <summary>Cancel closes a window rather than the debouncer, unlike Dispose.</summary>
@@ -80,15 +79,19 @@ public class DebouncerTests
 
         await WaitFor(() => ran);
 
-        Assert.That(ran, Is.True);
+        await Assert.That(ran).IsTrue();
     }
 
+    // Console.Error is process-wide, so nothing else may run while it is swapped out.
     [Test]
+    [NotInParallel]
     public async Task AFailingActionIsReportedRatherThanLost()
     {
         var written = new StringWriter();
         var original = Console.Error;
+#pragma warning disable TUnit0055
         Console.SetError(written);
+#pragma warning restore TUnit0055
         try
         {
             using var debouncer = new Debouncer(20);
@@ -98,10 +101,12 @@ public class DebouncerTests
         }
         finally
         {
+#pragma warning disable TUnit0055
             Console.SetError(original);
+#pragma warning restore TUnit0055
         }
 
-        Assert.That(written.ToString(), Does.Contain("the editor is gone"));
+        await Assert.That(written.ToString()).Contains("the editor is gone");
     }
 
     static async Task WaitFor(Func<bool> condition)

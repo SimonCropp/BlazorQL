@@ -3,7 +3,6 @@
 /// <c>|</c> where the caret sits, and most of them do not parse — that is the point: the scanner
 /// runs mid-edit, so its contract is over brace and paren frames rather than over an AST.
 /// </summary>
-[TestFixture]
 public class ContextScannerTests
 {
     static readonly SchemaIndex fixture = LoadFixture();
@@ -66,7 +65,7 @@ public class ContextScannerTests
 
     public static SchemaIndex LoadFixture() =>
         Parse(File.ReadAllText(
-            Path.Combine(TestContext.CurrentContext.TestDirectory, "DocExplorerTests.schema.json")));
+            Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json")));
 
     public static SchemaIndex Parse(string json)
     {
@@ -78,115 +77,119 @@ public class ContextScannerTests
     static ScanResult Scan(string marked, SchemaIndex? schema = null)
     {
         var caret = marked.IndexOf('|');
-        Assert.That(caret, Is.GreaterThanOrEqualTo(0), "the document needs a | caret marker");
+        if (caret < 0)
+        {
+            throw new ArgumentException("the document needs a | caret marker", nameof(marked));
+        }
+
         return ContextScanner.Scan(schema ?? fixture, marked.Remove(caret, 1), caret);
     }
 
     [Test]
-    public void AnEmptyDocumentOffersTheDocumentLevel()
+    public async Task AnEmptyDocumentOffersTheDocumentLevel()
     {
         var scan = Scan("|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Document));
-        Assert.That(scan.CurrentType, Is.Null);
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Document);
+        await Assert.That(scan.CurrentType).IsNull();
     }
 
     [Test]
-    public void BetweenOperationsIsStillTheDocumentLevel()
+    public async Task BetweenOperationsIsStillTheDocumentLevel()
     {
         var scan = Scan("{ person { name } }\n\n|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Document));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Document);
     }
 
     [Test]
-    public void AnAnonymousSelectionResolvesToTheQueryRoot()
+    public async Task AnAnonymousSelectionResolvesToTheQueryRoot()
     {
         var scan = Scan("{|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     // The name whose end is the caret is the word being typed, so it must not be read as context —
     // otherwise every keystroke would resolve a different (partial) field.
     [Test]
-    public void ThePartialWordAtTheCaretIsNotContext()
+    public async Task ThePartialWordAtTheCaretIsNotContext()
     {
         var scan = Scan("{ per|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void ANestedSelectionResolvesThroughTheFieldsType()
+    public async Task ANestedSelectionResolvesThroughTheFieldsType()
     {
         var scan = Scan("{ person { | } }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Person"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Person");
     }
 
     // friends is [Person]: the wrappers come off before the type is looked up.
     [Test]
-    public void AListFieldResolvesToItsUnwrappedType()
+    public async Task AListFieldResolvesToItsUnwrappedType()
     {
         var scan = Scan("{ person { friends { | } } }");
 
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Person"));
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Person");
     }
 
     [Test]
-    public void ASelectionOnAnUnknownFieldResolvesToNoType()
+    public async Task ASelectionOnAnUnknownFieldResolvesToNoType()
     {
         var scan = Scan("{ nope { | } }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType, Is.Null);
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType).IsNull();
     }
 
     [Test]
-    public void AClosedSelectionPopsBackToItsParent()
+    public async Task AClosedSelectionPopsBackToItsParent()
     {
         var scan = Scan("{ person { name } | }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void AnInlineFragmentsSelectionResolvesToItsTypeCondition()
+    public async Task AnInlineFragmentsSelectionResolvesToItsTypeCondition()
     {
         var scan = Scan("{ search { ... on Person { | } } }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Person"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Person");
     }
 
     [Test]
-    public void AFragmentDefinitionsSelectionResolvesToItsTypeCondition()
+    public async Task AFragmentDefinitionsSelectionResolvesToItsTypeCondition()
     {
         var scan = Scan("fragment Fields on Person { | }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Person"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Person");
     }
 
     [Test]
-    public void AnOperationKeywordSelectsItsRootType()
+    public async Task AnOperationKeywordSelectsItsRootType()
     {
-        Assert.That(Scan("query {|", roots).CurrentType!.Name, Is.EqualTo("Query"));
-        Assert.That(Scan("mutation {|", roots).CurrentType!.Name, Is.EqualTo("Mutation"));
-        Assert.That(Scan("subscription {|", roots).CurrentType!.Name, Is.EqualTo("Subscription"));
+        await Assert.That(Scan("query {|", roots).CurrentType!.Name).IsEqualTo("Query");
+        await Assert.That(Scan("mutation {|", roots).CurrentType!.Name).IsEqualTo("Mutation");
+        await Assert.That(Scan("subscription {|", roots).CurrentType!.Name).IsEqualTo("Subscription");
     }
 
     [Test]
-    public void ANamedOperationStillSelectsItsRootType()
+    public async Task ANamedOperationStillSelectsItsRootType()
     {
         var scan = Scan("mutation Save {|", roots);
 
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Mutation"));
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Mutation");
     }
 
     /// <summary>
@@ -195,111 +198,111 @@ public class ContextScannerTests
     /// cannot serve would be worse than offering none.
     /// </summary>
     [Test]
-    public void AnOperationOnARootTheSchemaLacksResolvesToNoType()
+    public async Task AnOperationOnARootTheSchemaLacksResolvesToNoType()
     {
         var scan = Scan("mutation {|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType, Is.Null);
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType).IsNull();
     }
 
     // The anonymous shorthand still reaches the query root.
     [Test]
-    public void TheAnonymousShorthandStillFallsBackToTheQueryRoot() =>
-        Assert.That(Scan("{|").CurrentType!.Name, Is.EqualTo("Query"));
+    public async Task TheAnonymousShorthandStillFallsBackToTheQueryRoot() =>
+        await Assert.That(Scan("{|").CurrentType!.Name).IsEqualTo("Query");
 
     [Test]
-    public void AnOpenParenAfterAFieldIsAnArgumentName()
+    public async Task AnOpenParenAfterAFieldIsAnArgumentName()
     {
         var scan = Scan("{ search(|) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(scan.CurrentField!.Name, Is.EqualTo("search"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(scan.CurrentField!.Name).IsEqualTo("search");
     }
 
     [Test]
-    public void AClosedArgumentListPopsBackToTheSelection()
+    public async Task AClosedArgumentListPopsBackToTheSelection()
     {
         var scan = Scan("{ hasArgs(string: \"a\") | }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void AfterAnArgumentColonIsAnArgumentValue()
+    public async Task AfterAnArgumentColonIsAnArgumentValue()
     {
         var scan = Scan("{ hasArgs(string: |) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentValue));
-        Assert.That(scan.CurrentArgument!.Name, Is.EqualTo("string"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentValue);
+        await Assert.That(scan.CurrentArgument!.Name).IsEqualTo("string");
     }
 
     // A literal value consumes the colon, so the next bare name is read as the next argument.
     [Test]
-    public void AValueThenACommaReturnsToArgumentNames()
+    public async Task AValueThenACommaReturnsToArgumentNames()
     {
         var scan = Scan("{ pick(color: RED, |) }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(scan.CurrentField!.Name, Is.EqualTo("pick"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(scan.CurrentField!.Name).IsEqualTo("pick");
     }
 
     [Test]
-    public void AnOpenBraceInAnArgumentValueIsAnInputObject()
+    public async Task AnOpenBraceInAnArgumentValueIsAnInputObject()
     {
         var scan = Scan("{ hasArgs(input: {|}) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.InputField));
-        Assert.That(scan.CurrentInputType!.Name, Is.EqualTo("PetInput"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.InputField);
+        await Assert.That(scan.CurrentInputType!.Name).IsEqualTo("PetInput");
     }
 
     [Test]
-    public void AfterAnInputFieldColonIsAValueForThatField()
+    public async Task AfterAnInputFieldColonIsAValueForThatField()
     {
         var scan = Scan("{ hasArgs(input: {name: |}) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentValue));
-        Assert.That(scan.CurrentArgument!.Name, Is.EqualTo("name"));
-        Assert.That(scan.CurrentInputType!.Name, Is.EqualTo("PetInput"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentValue);
+        await Assert.That(scan.CurrentArgument!.Name).IsEqualTo("name");
+        await Assert.That(scan.CurrentInputType!.Name).IsEqualTo("PetInput");
     }
 
     // An enum literal consumes the colon, so the next bare name is read as the next input field.
     [Test]
-    public void AValueThenACommaReturnsToInputFieldNames()
+    public async Task AValueThenACommaReturnsToInputFieldNames()
     {
         var scan = Scan("{ pick(where: {shade: RED, |}) }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.InputField));
-        Assert.That(scan.CurrentInputType!.Name, Is.EqualTo("Filter"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.InputField);
+        await Assert.That(scan.CurrentInputType!.Name).IsEqualTo("Filter");
     }
 
     [Test]
-    public void AnInputObjectNestsThroughItsOwnFields()
+    public async Task AnInputObjectNestsThroughItsOwnFields()
     {
         var scan = Scan("{ pick(where: {nested: {|}}) }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.InputField));
-        Assert.That(scan.CurrentInputType!.Name, Is.EqualTo("Filter"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.InputField);
+        await Assert.That(scan.CurrentInputType!.Name).IsEqualTo("Filter");
     }
 
     [Test]
-    public void ABracketIsAValuePositionForTheEnclosingArgument()
+    public async Task ABracketIsAValuePositionForTheEnclosingArgument()
     {
         var scan = Scan("{ pick(tags: [|]) }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentValue));
-        Assert.That(scan.CurrentArgument!.Name, Is.EqualTo("tags"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentValue);
+        await Assert.That(scan.CurrentArgument!.Name).IsEqualTo("tags");
     }
 
     // A list of input objects: the bracket carries the argument through to the brace.
     [Test]
-    public void AnInputObjectInsideAListStillResolves()
+    public async Task AnInputObjectInsideAListStillResolves()
     {
         var scan = Scan("{ hasArgs(input: [{|}]) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.InputField));
-        Assert.That(scan.CurrentInputType!.Name, Is.EqualTo("PetInput"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.InputField);
+        await Assert.That(scan.CurrentInputType!.Name).IsEqualTo("PetInput");
     }
 
     /// <summary>
@@ -308,222 +311,222 @@ public class ContextScannerTests
     /// the rest are cleared as the literal ends.
     /// </summary>
     [Test]
-    public void AClosedLiteralValueReturnsToArgumentNames()
+    public async Task AClosedLiteralValueReturnsToArgumentNames()
     {
-        Assert.That(Scan("{ pick(tags: [\"a\"], |) }", roots).Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(Scan("{ hasArgs(string: \"a\", |) }").Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(Scan("{ hasArgs(count: 1, |) }").Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(Scan("{ hasArgs(count: -1.5e3, |) }").Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(Scan("{ hasArgs(input: {name: \"a\"}, |) }").Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(Scan("query Q($s: String) { hasArgs(string: $s, |) }").Mode, Is.EqualTo(ScanMode.ArgumentName));
+        await Assert.That(Scan("{ pick(tags: [\"a\"], |) }", roots).Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(Scan("{ hasArgs(string: \"a\", |) }").Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(Scan("{ hasArgs(count: 1, |) }").Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(Scan("{ hasArgs(count: -1.5e3, |) }").Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(Scan("{ hasArgs(input: {name: \"a\"}, |) }").Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(Scan("query Q($s: String) { hasArgs(string: $s, |) }").Mode).IsEqualTo(ScanMode.ArgumentName);
     }
 
     // The same inside an input object, where the next position is an input field name.
     [Test]
-    public void AClosedLiteralValueReturnsToInputFieldNames()
+    public async Task AClosedLiteralValueReturnsToInputFieldNames()
     {
         var scan = Scan("{ hasArgs(input: {name: \"a\", |}) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.InputField));
-        Assert.That(scan.CurrentInputType!.Name, Is.EqualTo("PetInput"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.InputField);
+        await Assert.That(scan.CurrentInputType!.Name).IsEqualTo("PetInput");
     }
 
     // A literal still being typed is not a finished value.
     [Test]
-    public void ALiteralAtTheCaretIsStillAValuePosition()
+    public async Task ALiteralAtTheCaretIsStillAValuePosition()
     {
-        Assert.That(Scan("{ hasArgs(count: 1|").Mode, Is.EqualTo(ScanMode.ArgumentValue));
-        Assert.That(Scan("{ hasArgs(string: \"a|").Mode, Is.EqualTo(ScanMode.ArgumentValue));
+        await Assert.That(Scan("{ hasArgs(count: 1|").Mode).IsEqualTo(ScanMode.ArgumentValue);
+        await Assert.That(Scan("{ hasArgs(string: \"a|").Mode).IsEqualTo(ScanMode.ArgumentValue);
     }
 
     [Test]
-    public void AVariableTypeFollowsTheColonInADefinition()
+    public async Task AVariableTypeFollowsTheColonInADefinition()
     {
         var scan = Scan("query Q($id: |)");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.VariableType));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.VariableType);
     }
 
     [Test]
-    public void DefinedVariablesAreCollectedInOrder()
+    public async Task DefinedVariablesAreCollectedInOrder()
     {
         var scan = Scan("query Q($a: String, $b: |)");
         string[] expected = ["a", "b"];
 
-        Assert.That(scan.DeclaredVariables, Is.EqualTo(expected));
+        await Assert.That(scan.DeclaredVariables).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     // Nothing to offer where the variable's own name is being typed.
     [Test]
-    public void AVariableNamePositionOffersNothing()
+    public async Task AVariableNamePositionOffersNothing()
     {
         var scan = Scan("query Q($|)");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.None));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.None);
     }
 
     [Test]
-    public void ADollarInAnArgumentValueIsAVariableReference()
+    public async Task ADollarInAnArgumentValueIsAVariableReference()
     {
         var scan = Scan("query Q($term: String) { search(term: $|) }");
 
         string[] expected = ["term"];
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Variable));
-        Assert.That(scan.DeclaredVariables, Is.EqualTo(expected));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Variable);
+        await Assert.That(scan.DeclaredVariables).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
-    public void ADollarInAnInputObjectIsAVariableReference()
+    public async Task ADollarInAnInputObjectIsAVariableReference()
     {
         var scan = Scan("query Q($n: String) { hasArgs(input: {name: $|}) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Variable));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Variable);
     }
 
     [Test]
-    public void AnEllipsisIsAFragmentSpread()
+    public async Task AnEllipsisIsAFragmentSpread()
     {
         var scan = Scan("{ ...|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.FragmentSpread));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.FragmentSpread);
     }
 
     [Test]
-    public void AnEllipsisFollowedByOnIsATypeCondition()
+    public async Task AnEllipsisFollowedByOnIsATypeCondition()
     {
         var scan = Scan("{ ... on |");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.TypeCondition));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.TypeCondition);
     }
 
     [Test]
-    public void AFragmentDefinitionsOnIsATypeCondition()
+    public async Task AFragmentDefinitionsOnIsATypeCondition()
     {
         var scan = Scan("fragment Fields on |");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.TypeCondition));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.TypeCondition);
     }
 
     // Mid-edit, the ellipsis is often not there yet: a bare "on" opening a selection still reads
     // as a type condition rather than as a field named on.
     [Test]
-    public void ABareOnInsideASelectionIsATypeCondition()
+    public async Task ABareOnInsideASelectionIsATypeCondition()
     {
         var scan = Scan("{ person { on |");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.TypeCondition));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.TypeCondition);
     }
 
     [Test]
-    public void AnAtSignIsADirective()
+    public async Task AnAtSignIsADirective()
     {
         var scan = Scan("{ person @|");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Directive));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Directive);
     }
 
     // A directive already named is structurally inert — the selection carries on around it.
     [Test]
-    public void ANamedDirectiveLeavesTheSelectionIntact()
+    public async Task ANamedDirectiveLeavesTheSelectionIntact()
     {
         var scan = Scan("{ person @include(if: true) { | } }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Person"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Person");
     }
 
     // Fragment names come from the whole document, including the part after the caret.
     [Test]
-    public void FragmentNamesAreCollectedFromTheWholeDocument()
+    public async Task FragmentNamesAreCollectedFromTheWholeDocument()
     {
         var scan = Scan("{ ...| }\n\nfragment Fields on Person { name }\nfragment More on Post { title }");
 
         string[] expected = ["Fields", "More"];
 
-        Assert.That(scan.FragmentNames, Is.EqualTo(expected));
+        await Assert.That(scan.FragmentNames).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
-    public void ACommentIsSkippedWhole()
+    public async Task ACommentIsSkippedWhole()
     {
         var scan = Scan("{\n  # } person { nonsense\n  |\n}");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void AStringIsSkippedWhole()
+    public async Task AStringIsSkippedWhole()
     {
         var scan = Scan("{ hasArgs(string: \"} # { ) $\") | }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void AnEscapedQuoteDoesNotEndTheString()
+    public async Task AnEscapedQuoteDoesNotEndTheString()
     {
         var scan = Scan("{ hasArgs(string: \"a\\\" } {\") | }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void ABlockStringIsSkippedWhole()
+    public async Task ABlockStringIsSkippedWhole()
     {
         var scan = Scan("{ hasArgs(string: \"\"\"\n } { )\n\"\"\") | }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     // An unterminated block string swallows the rest of the document rather than derailing the
     // frames it has already resolved.
     [Test]
-    public void AnUnterminatedBlockStringLeavesTheFramesAlone()
+    public async Task AnUnterminatedBlockStringLeavesTheFramesAlone()
     {
         var scan = Scan("{ person { name } \"\"\"unclosed |");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Query"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Query");
     }
 
     [Test]
-    public void AnUnterminatedStringDoesNotRunPastTheCaret()
+    public async Task AnUnterminatedStringDoesNotRunPastTheCaret()
     {
         var scan = Scan("{ hasArgs(string: \"unclosed |");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentValue));
-        Assert.That(scan.CurrentArgument!.Name, Is.EqualTo("string"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentValue);
+        await Assert.That(scan.CurrentArgument!.Name).IsEqualTo("string");
     }
 
     [Test]
-    public void AnOffsetPastTheEndIsClamped()
+    public async Task AnOffsetPastTheEndIsClamped()
     {
         var scan = ContextScanner.Scan(fixture, "{ person { ", 500);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
-        Assert.That(scan.CurrentType!.Name, Is.EqualTo("Person"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
+        await Assert.That(scan.CurrentType!.Name).IsEqualTo("Person");
     }
 
     [Test]
-    public void ANegativeOffsetIsClamped()
+    public async Task ANegativeOffsetIsClamped()
     {
         var scan = ContextScanner.Scan(fixture, "{ person { name } }", -5);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Document));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Document);
     }
 
     // More closers than openers is ordinary mid-edit text and must not throw.
     [Test]
-    public void UnbalancedClosersAreIgnored()
+    public async Task UnbalancedClosersAreIgnored()
     {
         var scan = Scan("} ) ] |");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Document));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Document);
     }
 
     // ---- Directive arguments ----
@@ -531,76 +534,76 @@ public class ContextScannerTests
     // The "(" after a directive name opens the directive's argument list. Before this was tracked
     // the frame carried the enclosing field, so the field's arguments were what got offered.
     [Test]
-    public void AnOpenParenAfterADirectiveIsTheDirectivesArgumentList()
+    public async Task AnOpenParenAfterADirectiveIsTheDirectivesArgumentList()
     {
         var scan = Scan("{ pick @size(|) }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("size"));
-        Assert.That(scan.CurrentField, Is.Null);
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(scan.CurrentDirective!.Name).IsEqualTo("size");
+        await Assert.That(scan.CurrentField).IsNull();
     }
 
     [Test]
-    public void ADirectiveArgumentValueResolvesAgainstTheDirectivesArgument()
+    public async Task ADirectiveArgumentValueResolvesAgainstTheDirectivesArgument()
     {
         var scan = Scan("{ pick @size(shade: |) }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentValue));
-        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("size"));
-        Assert.That(scan.CurrentArgument!.Name, Is.EqualTo("shade"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentValue);
+        await Assert.That(scan.CurrentDirective!.Name).IsEqualTo("size");
+        await Assert.That(scan.CurrentArgument!.Name).IsEqualTo("shade");
     }
 
     // The everyday case: a directive on a field that has arguments of its own.
     [Test]
-    public void ADirectiveOnAFieldWithArgumentsDoesNotOfferTheFieldsArguments()
+    public async Task ADirectiveOnAFieldWithArgumentsDoesNotOfferTheFieldsArguments()
     {
         var scan = Scan("{ hasArgs @repeat(|) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("repeat"));
-        Assert.That(scan.CurrentField, Is.Null);
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(scan.CurrentDirective!.Name).IsEqualTo("repeat");
+        await Assert.That(scan.CurrentField).IsNull();
     }
 
     [Test]
-    public void AnUnknownDirectiveOffersNoArguments()
+    public async Task AnUnknownDirectiveOffersNoArguments()
     {
         var scan = Scan("{ hasArgs @nope(|) }");
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(scan.CurrentDirective, Is.Null);
-        Assert.That(scan.CurrentField, Is.Null);
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(scan.CurrentDirective).IsNull();
+        await Assert.That(scan.CurrentField).IsNull();
     }
 
     // A closed directive argument list leaves the field's own list reachable again.
     [Test]
-    public void TheFieldsArgumentsAreStillReachableAfterADirective()
+    public async Task TheFieldsArgumentsAreStillReachableAfterADirective()
     {
         var scan = Scan("{ pick @size(width: 1) | }", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.Selection));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.Selection);
 
         var arguments = Scan("{ pick(|) @size(width: 1) }", roots);
 
-        Assert.That(arguments.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(arguments.CurrentField!.Name, Is.EqualTo("pick"));
-        Assert.That(arguments.CurrentDirective, Is.Null);
+        await Assert.That(arguments.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(arguments.CurrentField!.Name).IsEqualTo("pick");
+        await Assert.That(arguments.CurrentDirective).IsNull();
     }
 
     [Test]
-    public void ADirectiveOnAnOperationOpensItsArgumentsRatherThanVariableDefinitions()
+    public async Task ADirectiveOnAnOperationOpensItsArgumentsRatherThanVariableDefinitions()
     {
         var scan = Scan("query Q @size(|)", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.ArgumentName));
-        Assert.That(scan.CurrentDirective!.Name, Is.EqualTo("size"));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.ArgumentName);
+        await Assert.That(scan.CurrentDirective!.Name).IsEqualTo("size");
     }
 
     [Test]
-    public void VariableDefinitionsStillOpenAfterAnOperationName()
+    public async Task VariableDefinitionsStillOpenAfterAnOperationName()
     {
         var scan = Scan("query Q($v: |)", roots);
 
-        Assert.That(scan.Mode, Is.EqualTo(ScanMode.VariableType));
+        await Assert.That(scan.Mode).IsEqualTo(ScanMode.VariableType);
     }
 
     // ---- Fragment name collection ----
@@ -608,31 +611,31 @@ public class ContextScannerTests
     // "fragment" is only the keyword when it stands as a word of its own. A comment that mentions
     // fragments used to yield a fragment named "s", and { fragmentCount } one named "Count".
     [Test]
-    public void ProseMentioningFragmentsDefinesNoFragment()
+    public async Task ProseMentioningFragmentsDefinesNoFragment()
     {
         var scan = Scan("{ ...| # see fragments here\n }");
 
-        Assert.That(scan.FragmentNames, Is.Empty);
+        await Assert.That(scan.FragmentNames).IsEmpty();
     }
 
     [Test]
-    public void AFieldWhoseNameStartsWithFragmentDefinesNoFragment()
+    public async Task AFieldWhoseNameStartsWithFragmentDefinesNoFragment()
     {
         var scan = Scan("{ fragmentCount ...| }");
 
-        Assert.That(scan.FragmentNames, Is.Empty);
+        await Assert.That(scan.FragmentNames).IsEmpty();
     }
 
     [Test]
-    public void AStringMentioningFragmentDefinesNoFragment()
+    public async Task AStringMentioningFragmentDefinesNoFragment()
     {
         var scan = Scan("""{ search(term: "fragment Nope on Person") ...| }""");
 
-        Assert.That(scan.FragmentNames, Is.Empty);
+        await Assert.That(scan.FragmentNames).IsEmpty();
     }
 
     [Test]
-    public void ABlockStringMentioningFragmentDefinesNoFragment()
+    public async Task ABlockStringMentioningFragmentDefinesNoFragment()
     {
         var scan = Scan(
             """"
@@ -641,20 +644,20 @@ public class ContextScannerTests
             """) ...| }
             """");
 
-        Assert.That(scan.FragmentNames, Is.Empty);
+        await Assert.That(scan.FragmentNames).IsEmpty();
     }
 
     [Test]
-    public void AFragmentWithNoNameDefinesNothing()
+    public async Task AFragmentWithNoNameDefinesNothing()
     {
         var scan = Scan("{ ...| }\n\nfragment ");
 
-        Assert.That(scan.FragmentNames, Is.Empty);
+        await Assert.That(scan.FragmentNames).IsEmpty();
     }
 
     // The real thing still lands, next to the near misses.
     [Test]
-    public void RealDefinitionsSurviveAlongsideTheNearMisses()
+    public async Task RealDefinitionsSurviveAlongsideTheNearMisses()
     {
         var scan = Scan(
             """
@@ -666,6 +669,6 @@ public class ContextScannerTests
 
         string[] expected = ["Fields"];
 
-        Assert.That(scan.FragmentNames, Is.EqualTo(expected));
+        await Assert.That(scan.FragmentNames).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 }

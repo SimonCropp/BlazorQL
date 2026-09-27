@@ -8,7 +8,6 @@
 /// Console assertions carry the weight here: a blocked font or language worker leaves a page that
 /// still looks right, and only says so in the console.
 /// </remarks>
-[TestFixture]
 [Category("Browser")]
 public class CspTests :
     BrowserFixture
@@ -31,8 +30,8 @@ public class CspTests :
         var languages = await page.EvaluateAsync<string[]>(
             "() => monaco.languages.getLanguages().map(_ => _.id)");
 
-        Assert.That(languages, Does.Contain("graphql"));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(languages).Contains("graphql");
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -66,7 +65,7 @@ public class CspTests :
             }
             """);
 
-        Assert.That(rules, Is.GreaterThan(0));
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(rules).IsGreaterThan(0);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

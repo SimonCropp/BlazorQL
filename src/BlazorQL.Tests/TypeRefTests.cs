@@ -1,4 +1,4 @@
-[TestFixture]
+
 public class TypeRefTests
 {
     static TypeRef Named(string name) =>
@@ -23,22 +23,22 @@ public class TypeRefTests
         };
 
     [Test]
-    public void DisplayRendersTheFullNesting()
+    public async Task DisplayRendersTheFullNesting()
     {
-        Assert.That(Named("String").Display(), Is.EqualTo("String"));
-        Assert.That(NonNull(Named("String")).Display(), Is.EqualTo("String!"));
-        Assert.That(List(Named("Int")).Display(), Is.EqualTo("[Int]"));
-        Assert.That(List(NonNull(Named("Int"))).Display(), Is.EqualTo("[Int!]"));
-        Assert.That(NonNull(List(Named("Foo"))).Display(), Is.EqualTo("[Foo]!"));
-        Assert.That(NonNull(List(NonNull(Named("Foo")))).Display(), Is.EqualTo("[Foo!]!"));
-        Assert.That(List(List(Named("Foo"))).Display(), Is.EqualTo("[[Foo]]"));
+        await Assert.That(Named("String").Display()).IsEqualTo("String");
+        await Assert.That(NonNull(Named("String")).Display()).IsEqualTo("String!");
+        await Assert.That(List(Named("Int")).Display()).IsEqualTo("[Int]");
+        await Assert.That(List(NonNull(Named("Int"))).Display()).IsEqualTo("[Int!]");
+        await Assert.That(NonNull(List(Named("Foo"))).Display()).IsEqualTo("[Foo]!");
+        await Assert.That(NonNull(List(NonNull(Named("Foo")))).Display()).IsEqualTo("[Foo!]!");
+        await Assert.That(List(List(Named("Foo"))).Display()).IsEqualTo("[[Foo]]");
     }
 
     [Test]
-    public void UnwrapReachesTheNamedType()
+    public async Task UnwrapReachesTheNamedType()
     {
         var wrapped = NonNull(List(NonNull(Named("Foo"))));
-        Assert.That(wrapped.Unwrap().Name, Is.EqualTo("Foo"));
-        Assert.That(Named("Bar").Unwrap().Name, Is.EqualTo("Bar"));
+        await Assert.That(wrapped.Unwrap().Name).IsEqualTo("Foo");
+        await Assert.That(Named("Bar").Unwrap().Name).IsEqualTo("Bar");
     }
 }

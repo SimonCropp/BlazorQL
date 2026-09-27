@@ -1,8 +1,8 @@
-[TestFixture]
+
 public class TabStoreTests
 {
     [Test]
-    public void TitlePrefersRenameOverOperationNameOverQuery()
+    public async Task TitlePrefersRenameOverOperationNameOverQuery()
     {
         var tab = new TabState
         {
@@ -10,17 +10,17 @@ public class TabStoreTests
             OperationName = "FromRun",
             RenameOverride = "Renamed"
         };
-        Assert.That(TabStore.Title(tab), Is.EqualTo("Renamed"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("Renamed");
 
         tab.RenameOverride = null;
-        Assert.That(TabStore.Title(tab), Is.EqualTo("FromRun"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("FromRun");
 
         tab.OperationName = null;
-        Assert.That(TabStore.Title(tab), Is.EqualTo("FromQuery"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("FromQuery");
     }
 
     [Test]
-    public void TitleSkipsCommentLines()
+    public async Task TitleSkipsCommentLines()
     {
         var tab = new TabState
         {
@@ -30,17 +30,17 @@ public class TabStoreTests
                 mutation DoThing { setString(value: "x") }
                 """
         };
-        Assert.That(TabStore.Title(tab), Is.EqualTo("DoThing"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("DoThing");
     }
 
     [Test]
-    public void TitleFallsBackToUntitled()
+    public async Task TitleFallsBackToUntitled()
     {
         var tab = new TabState
         {
             Query = "{ id }"
         };
-        Assert.That(TabStore.Title(tab), Is.EqualTo("<untitled>"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("<untitled>");
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public class TabStoreTests
     /// answer — every line tried and rejected — so it is the one most likely to tempt a shortcut.
     /// </summary>
     [Test]
-    public void TitleIgnoresAKeywordThatOnlyAppearsInAComment()
+    public async Task TitleIgnoresAKeywordThatOnlyAppearsInAComment()
     {
         var tab = new TabState
         {
@@ -61,48 +61,48 @@ public class TabStoreTests
                 }
                 """
         };
-        Assert.That(TabStore.Title(tab), Is.EqualTo("<untitled>"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("<untitled>");
     }
 
     /// <summary>The keyword is not word-bounded, and the last match on the line is the one taken.</summary>
     [Test]
-    public void TitleTakesTheLastDeclarationOnALine()
+    public async Task TitleTakesTheLastDeclarationOnALine()
     {
         var tab = new TabState
         {
             Query = "query First { id } query Second { id }"
         };
-        Assert.That(TabStore.Title(tab), Is.EqualTo("Second"));
+        await Assert.That(TabStore.Title(tab)).IsEqualTo("Second");
     }
 
     [Test]
-    public void CloseKeepsTheActiveTabSensible()
+    public async Task CloseKeepsTheActiveTabSensible()
     {
         var store = new TabStore();
         store.Add("one");
         store.Add("two");
         store.Add("three");
-        Assert.That(store.ActiveIndex, Is.EqualTo(2));
+        await Assert.That(store.ActiveIndex).IsEqualTo(2);
 
         // Closing an earlier tab shifts the active index with the list.
         store.Close(0);
-        Assert.That(store.ActiveIndex, Is.EqualTo(1));
-        Assert.That(store.Active.Query, Is.EqualTo("three"));
+        await Assert.That(store.ActiveIndex).IsEqualTo(1);
+        await Assert.That(store.Active.Query).IsEqualTo("three");
 
         // Closing the active last tab activates the neighbour.
         store.Close(1);
-        Assert.That(store.ActiveIndex, Is.Zero);
-        Assert.That(store.Active.Query, Is.EqualTo("two"));
+        await Assert.That(store.ActiveIndex).IsZero();
+        await Assert.That(store.Active.Query).IsEqualTo("two");
     }
 
     [Test]
-    public void ActivateSwitchesTheActiveTab()
+    public async Task ActivateSwitchesTheActiveTab()
     {
         var store = new TabStore();
         store.Add("one");
         store.Add("two");
         store.Activate(0);
-        Assert.That(store.Active.Query, Is.EqualTo("one"));
+        await Assert.That(store.Active.Query).IsEqualTo("one");
     }
 
     /// <summary>
@@ -111,31 +111,31 @@ public class TabStoreTests
     /// Active threw for everything that read it afterwards.
     /// </summary>
     [Test]
-    public void ClosingTheLastTabIsRefused()
+    public async Task ClosingTheLastTabIsRefused()
     {
         var store = new TabStore();
         store.Add("only");
 
-        Assert.That(store.Close(0), Is.False);
-        Assert.That(store.Tabs, Has.Count.EqualTo(1));
-        Assert.That(store.ActiveIndex, Is.Zero);
-        Assert.That(store.Active.Query, Is.EqualTo("only"));
+        await Assert.That(store.Close(0)).IsFalse();
+        await Assert.That(store.Tabs).Count().IsEqualTo(1);
+        await Assert.That(store.ActiveIndex).IsZero();
+        await Assert.That(store.Active.Query).IsEqualTo("only");
     }
 
     [Test]
-    public void ClosingDownToOneTabStops()
+    public async Task ClosingDownToOneTabStops()
     {
         var store = new TabStore();
         store.Add("one");
         store.Add("two");
 
-        Assert.That(store.Close(1), Is.True);
-        Assert.That(store.Close(0), Is.False);
-        Assert.That(store.Active.Query, Is.EqualTo("one"));
+        await Assert.That(store.Close(1)).IsTrue();
+        await Assert.That(store.Close(0)).IsFalse();
+        await Assert.That(store.Active.Query).IsEqualTo("one");
     }
 
     [Test]
-    public void DuplicateInsertsACopyBesideTheSourceAndActivatesIt()
+    public async Task DuplicateInsertsACopyBesideTheSourceAndActivatesIt()
     {
         var store = new TabStore();
         var source = store.Add("query One($x: Int) { id }", """{"Authorization": "token"}""");
@@ -147,18 +147,18 @@ public class TabStoreTests
 
         var copy = store.Duplicate(0);
 
-        Assert.That(store.Tabs, Has.Count.EqualTo(3));
-        Assert.That(store.ActiveIndex, Is.EqualTo(1));
-        Assert.That(store.Tabs[1], Is.SameAs(copy));
+        await Assert.That(store.Tabs).Count().IsEqualTo(3);
+        await Assert.That(store.ActiveIndex).IsEqualTo(1);
+        await Assert.That(store.Tabs[1]).IsSameReferenceAs(copy);
         // Beside its source rather than at the end, pushing the tab that followed it along.
-        Assert.That(store.Tabs[2].Query, Is.EqualTo("two"));
-        Assert.That(copy.Id, Is.Not.EqualTo(source.Id));
+        await Assert.That(store.Tabs[2].Query).IsEqualTo("two");
+        await Assert.That(copy.Id).IsNotEqualTo(source.Id);
         // Everything but the id. Compared as records, so a member TabState gains later is covered too.
-        Assert.That(copy with {Id = source.Id}, Is.EqualTo(source));
+        await Assert.That(copy with {Id = source.Id}).IsEqualTo(source);
     }
 
     [Test]
-    public void EditingADuplicateLeavesTheSourceAlone()
+    public async Task EditingADuplicateLeavesTheSourceAlone()
     {
         var store = new TabStore();
         var source = store.Add("query One { id }");
@@ -167,12 +167,12 @@ public class TabStoreTests
         copy.Query = "query Changed { id }";
         copy.Variables = """{"x": 2}""";
 
-        Assert.That(source.Query, Is.EqualTo("query One { id }"));
-        Assert.That(source.Variables, Is.Empty);
+        await Assert.That(source.Query).IsEqualTo("query One { id }");
+        await Assert.That(source.Variables).IsEmpty();
     }
 
     [Test]
-    public void DuplicatingTheLastTabAppendsIt()
+    public async Task DuplicatingTheLastTabAppendsIt()
     {
         var store = new TabStore();
         store.Add("one");
@@ -180,9 +180,9 @@ public class TabStoreTests
 
         store.Duplicate(1);
 
-        Assert.That(store.Tabs, Has.Count.EqualTo(3));
-        Assert.That(store.ActiveIndex, Is.EqualTo(2));
-        Assert.That(store.Active.Query, Is.EqualTo("two"));
+        await Assert.That(store.Tabs).Count().IsEqualTo(3);
+        await Assert.That(store.ActiveIndex).IsEqualTo(2);
+        await Assert.That(store.Active.Query).IsEqualTo("two");
     }
 
     /// <summary>
@@ -190,16 +190,16 @@ public class TabStoreTests
     /// asked about can have moved by the time the answer arrives.
     /// </summary>
     [Test]
-    public void IndexOfFollowsATabThatMoved()
+    public async Task IndexOfFollowsATabThatMoved()
     {
         var store = new TabStore();
         store.Add("one");
         var two = store.Add("two");
 
         store.Duplicate(0);
-        Assert.That(store.IndexOf(two.Id), Is.EqualTo(2));
+        await Assert.That(store.IndexOf(two.Id)).IsEqualTo(2);
 
         store.Close(2);
-        Assert.That(store.IndexOf(two.Id), Is.EqualTo(-1));
+        await Assert.That(store.IndexOf(two.Id)).IsEqualTo(-1);
     }
 }

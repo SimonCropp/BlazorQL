@@ -1,9 +1,9 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The sample's default page — an ordinary Blazor app consuming the GraphQL schema through the
 /// shared fetcher: its load-time query, mutation, and subscription, the sidecar capturing them,
 /// and the links into the query explorer.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class HomeUiTests :
     BrowserFixture
@@ -15,19 +15,19 @@ public class HomeUiTests :
         await page.GoToHomeAsync(BaseUrl);
 
         var name = await page.Locator("[data-testid='home-name']").InnerTextAsync();
-        Assert.That(name, Does.Contain("Mark"));
-        Assert.That(name, Does.Contain("age 21"));
+        await Assert.That(name).Contains("Mark");
+        await Assert.That(name).Contains("age 21");
         var friends = page.Locator("[data-testid='home-friends'] li");
-        Assert.That(await friends.CountAsync(), Is.EqualTo(4));
-        Assert.That(await friends.First.InnerTextAsync(), Is.EqualTo("James"));
+        await Assert.That(await friends.CountAsync()).IsEqualTo(4);
+        await Assert.That(await friends.First.InnerTextAsync()).IsEqualTo("James");
 
         await page.FillAsync("[data-testid='home-echo-input']", "hi from the tests");
         await page.ClickAsync("[data-testid='home-echo-send']");
         await page.WaitForSelectorAsync("[data-testid='home-echo-result']", 10);
         var echoed = await page.Locator("[data-testid='home-echo-result']").InnerTextAsync();
-        Assert.That(echoed, Does.Contain("hi from the tests"));
+        await Assert.That(echoed).Contains("hi from the tests");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -46,7 +46,7 @@ public class HomeUiTests :
             null,
             new() {Timeout = 10_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -63,9 +63,9 @@ public class HomeUiTests :
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
 
         var query = await page.Locator("[data-testid='blazorql-sidecar-query']").InnerTextAsync();
-        Assert.That(query, Does.Contain("query Profile"));
+        await Assert.That(query).Contains("query Profile");
         var response = await page.Locator("[data-testid='blazorql-sidecar-response']").First.InnerTextAsync();
-        Assert.That(response, Does.Contain("Mark"));
+        await Assert.That(response).Contains("Mark");
 
         // The captured request opens pre-populated in the explorer, in a new tab.
         var popup = await page.RunAndWaitForPopupAsync(() =>
@@ -80,7 +80,7 @@ public class HomeUiTests :
             null,
             new() {Timeout = 30_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -92,7 +92,7 @@ public class HomeUiTests :
         await page.ClickAsync("[data-testid='open-explorer']");
         await page.WaitForIdeReadyAsync();
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -115,6 +115,6 @@ public class HomeUiTests :
         await page.ClickAsync("[data-testid='open-explorer']");
         await page.WaitForIdeReadyAsync();
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

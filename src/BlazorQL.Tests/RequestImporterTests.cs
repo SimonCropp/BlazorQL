@@ -4,37 +4,36 @@
 /// is neater than what Chrome actually emits. Cookie and token values are the only edits, shortened
 /// because their length is not what any of these tests are about.
 /// </summary>
-[TestFixture]
 public class RequestImporterTests
 {
     [Test]
-    public Task ARawGetUrlImportsItsQueryAndOperationName()
+    public async Task ARawGetUrlImportsItsQueryAndOperationName()
     {
         var (ok, requests, error) = RequestImporter.Import(getUrl);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return VerifyRequest(requests[0]);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await VerifyRequest(requests[0]);
     }
 
     [Test]
-    public Task ABashCurlImportsTheBodysMutation()
+    public async Task ABashCurlImportsTheBodysMutation()
     {
         var (ok, requests, error) = RequestImporter.Import(bashCurl);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return VerifyRequest(requests[0]);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await VerifyRequest(requests[0]);
     }
 
     [Test]
-    public Task ACmdCurlImportsTheBodysMutation()
+    public async Task ACmdCurlImportsTheBodysMutation()
     {
         var (ok, requests, error) = RequestImporter.Import(cmdCurl);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return VerifyRequest(requests[0]);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await VerifyRequest(requests[0]);
     }
 
     /// <summary>
@@ -42,43 +41,43 @@ public class RequestImporterTests
     /// the strongest single check that either decoder is right.
     /// </summary>
     [Test]
-    public void TheTwoShellFlavoursOfOneRequestImportIdentically()
+    public async Task TheTwoShellFlavoursOfOneRequestImportIdentically()
     {
         var (_, fromBash, _) = RequestImporter.Import(bashCurl);
         var (_, fromCmd, _) = RequestImporter.Import(cmdCurl);
 
-        Assert.That(fromCmd[0], Is.EqualTo(fromBash[0]));
+        await Assert.That(fromCmd[0]).IsEqualTo(fromBash[0]);
     }
 
     [Test]
-    public Task APowerShellCommandImportsTheBodysMutation()
+    public async Task APowerShellCommandImportsTheBodysMutation()
     {
         var (ok, requests, error) = RequestImporter.Import(powerShell);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return VerifyRequest(requests[0]);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await VerifyRequest(requests[0]);
     }
 
     [Test]
-    public Task AFetchSnippetImportsTheBodysMutation()
+    public async Task AFetchSnippetImportsTheBodysMutation()
     {
         var (ok, requests, error) = RequestImporter.Import(fetchCall);
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return VerifyRequest(requests[0]);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await VerifyRequest(requests[0]);
     }
 
     [Test]
-    public Task ABareJsonBodyImportsItsOperation()
+    public async Task ABareJsonBodyImportsItsOperation()
     {
         var (ok, requests, error) = RequestImporter.Import(
             """{"operationName":"EnableUser","variables":{"id":"a"},"query":"mutation EnableUser($id:ID!){enableUser(id:$id){success}}"}""");
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        return VerifyRequest(requests[0]);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await VerifyRequest(requests[0]);
     }
 
     /// <summary>
@@ -87,7 +86,7 @@ public class RequestImporterTests
     /// value in half here.
     /// </summary>
     [Test]
-    public void AQuotedHeaderValueSurvivesTheCmdEncoding()
+    public async Task AQuotedHeaderValueSurvivesTheCmdEncoding()
     {
         // Named x- rather than sec- so it survives the denylist and can be asserted through the
         // public entry point rather than only against the tokenizer.
@@ -96,11 +95,9 @@ public class RequestImporterTests
 
         using var headers = JsonDocument.Parse(requests[0].Headers);
 
-        Assert.That(
-            headers.RootElement.GetProperty("x-ch-ua").GetString(),
-            Is.EqualTo("""
+        await Assert.That(headers.RootElement.GetProperty("x-ch-ua").GetString()).IsEqualTo("""
                        "Chromium";v="152", "Not?A_Brand";v="24"
-                       """));
+                       """);
     }
 
     /// <summary>
@@ -108,12 +105,12 @@ public class RequestImporterTests
     /// knows the escaped-quote form doubles every backslash in a value instead.
     /// </summary>
     [Test]
-    public void ALiteralBackslashSurvivesTheCmdEncoding()
+    public async Task ALiteralBackslashSurvivesTheCmdEncoding()
     {
         var tokens = ShellTokenizer.TokenizeCmd(
             """curl --url ^"http://localhost^" -b ^"^\^\^\^\attacker.com^\^\share^\^\leak=foo^" """);
 
-        Assert.That(tokens[^1], Is.EqualTo(@"\\attacker.com\share\leak=foo"));
+        await Assert.That(tokens[^1]).IsEqualTo(@"\\attacker.com\share\leak=foo");
     }
 
     /// <summary>
@@ -121,23 +118,23 @@ public class RequestImporterTests
     /// rare shape: devtools uses it for any body or cookie carrying a newline.
     /// </summary>
     [Test]
-    public void AnsiCQuotingIsDecoded()
+    public async Task AnsiCQuotingIsDecoded()
     {
         var tokens = ShellTokenizer.TokenizeBash("""curl --url 'http://localhost' -b $'query=evil\r\n & calc \u0021'""");
 
-        Assert.That(tokens[^1], Is.EqualTo("query=evil\r\n & calc !"));
+        await Assert.That(tokens[^1]).IsEqualTo("query=evil\r\n & calc !");
     }
 
     /// <summary>Chrome's syntax for a header it captured with no value at all.</summary>
     [Test]
-    public void ABareHeaderNameWithATrailingSemicolonIsNotAFailure()
+    public async Task ABareHeaderNameWithATrailingSemicolonIsNotAFailure()
     {
         var (ok, requests, error) = RequestImporter.Import(
             """curl --url 'http://localhost/graphql' -H 'x-trace;' --data-raw '{"query":"{ id }"}'""");
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        Assert.That(requests[0].Headers, Does.Contain("x-trace"));
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Headers).Contains("x-trace");
     }
 
     /// <summary>
@@ -145,11 +142,11 @@ public class RequestImporterTests
     /// the tools strip open over an empty object.
     /// </summary>
     [Test]
-    public void AnEmptyVariablesObjectLeavesTheVariablesPaneEmpty()
+    public async Task AnEmptyVariablesObjectLeavesTheVariablesPaneEmpty()
     {
         var (_, requests, _) = RequestImporter.Import("https://host/graphql?variables=%7B%7D&query=query%20A%7Bid%7D");
 
-        Assert.That(requests[0].Variables, Is.Empty);
+        await Assert.That(requests[0].Variables).IsEmpty();
     }
 
     /// <summary>
@@ -157,53 +154,54 @@ public class RequestImporterTests
     /// as form encoding would turn data into whitespace.
     /// </summary>
     [Test]
-    public void APlusSignInAUrlIsNotASpace()
+    public async Task APlusSignInAUrlIsNotASpace()
     {
         var (_, requests, _) = RequestImporter.Import(
             "https://host/graphql?query=query%20A%7Bid%7D&variables=%7B%22at%22%3A%222026-07-30T04%3A26%3A09%2B10%3A00%22%7D");
 
-        Assert.That(requests[0].Variables, Does.Contain("+10:00"));
+        await Assert.That(requests[0].Variables).Contains("+10:00");
     }
 
     [Test]
-    public void BrowserControlledHeadersAreDropped()
+    public async Task BrowserControlledHeadersAreDropped()
     {
         var (_, requests, _) = RequestImporter.Import(cmdCurl);
         var request = requests[0];
 
-        Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
-            Assert.That(request.Headers, Does.Contain("df-client-version"));
-            Assert.That(request.Headers, Does.Contain("df-client-commit-hash"));
+            await Assert.That(request.Headers).Contains("df-client-version");
+            await Assert.That(request.Headers).Contains("df-client-commit-hash");
             // The session token, the client hints, and everything else the browser owns.
-            Assert.That(request.Headers, Does.Not.Contain("cookie"));
-            Assert.That(request.Headers, Does.Not.Contain("sec-ch-ua"));
-            Assert.That(request.Headers, Does.Not.Contain("user-agent"));
-            Assert.That(request.Headers, Does.Not.Contain("origin"));
+            await Assert.That(request.Headers).DoesNotContain("cookie");
+            await Assert.That(request.Headers).DoesNotContain("sec-ch-ua");
+            await Assert.That(request.Headers).DoesNotContain("user-agent");
+            await Assert.That(request.Headers).DoesNotContain("origin");
             // Accept is negotiated by the fetcher; an imported one disables incremental delivery.
-            Assert.That(request.Headers, Does.Not.Contain("accept"));
-            Assert.That(request.HeadersImported, Is.EqualTo(2));
-            Assert.That(request.HeadersFound, Is.EqualTo(19));
-        });
+            await Assert.That(request.Headers).DoesNotContain("accept");
+            await Assert.That(request.HeadersImported).IsEqualTo(2);
+            await Assert.That(request.HeadersFound).IsEqualTo(19);
+
+        }
     }
 
     [Test]
-    public void AnAuthorizationHeaderIsKept()
+    public async Task AnAuthorizationHeaderIsKept()
     {
         var (_, requests, _) = RequestImporter.Import(
             """curl --url 'http://localhost/graphql' -H 'authorization: Bearer abc' --data-raw '{"query":"{ id }"}'""");
 
-        Assert.That(requests[0].Headers, Does.Contain("Bearer abc"));
+        await Assert.That(requests[0].Headers).Contains("Bearer abc");
     }
 
     [Test]
-    public void APersistedQueryReportsThatTheDocumentCannotBeRecovered()
+    public async Task APersistedQueryReportsThatTheDocumentCannotBeRecovered()
     {
         var (ok, _, error) = RequestImporter.Import(
             "https://host/graphql?operationName=A&extensions=%7B%22persistedQuery%22%3A%7B%22sha256Hash%22%3A%22abc%22%7D%7D");
 
-        Assert.That(ok, Is.False);
-        Assert.That(error, Is.EqualTo(RequestBodyReader.PersistedQuery));
+        await Assert.That(ok).IsFalse();
+        await Assert.That(error).IsEqualTo(RequestBodyReader.PersistedQuery);
     }
 
     /// <summary>
@@ -211,12 +209,12 @@ public class RequestImporterTests
     /// document would be state the document already carries.
     /// </summary>
     [Test]
-    public void ASingleOperationDoesNotPinTheOperationName()
+    public async Task ASingleOperationDoesNotPinTheOperationName()
     {
         var (_, requests, _) = RequestImporter.Import(
             """{"operationName":"A","query":"query A{id}"}""");
 
-        Assert.That(requests[0].OperationName, Is.Null);
+        await Assert.That(requests[0].OperationName).IsNull();
     }
 
     /// <summary>
@@ -224,77 +222,78 @@ public class RequestImporterTests
     /// pinned or the pane validates against the wrong declarations.
     /// </summary>
     [Test]
-    public void AMultiOperationDocumentPinsTheOperationName()
+    public async Task AMultiOperationDocumentPinsTheOperationName()
     {
         var (_, requests, _) = RequestImporter.Import(
             """{"operationName":"B","query":"query A{id} query B($x:Int){other(x:$x)}"}""");
 
-        Assert.That(requests[0].OperationName, Is.EqualTo("B"));
+        await Assert.That(requests[0].OperationName).IsEqualTo("B");
     }
 
     [Test]
-    public void ABatchedBodyBecomesOneRequestEach()
+    public async Task ABatchedBodyBecomesOneRequestEach()
     {
         var (ok, requests, error) = RequestImporter.Import(
             """[{"query":"query A{a}"},{"query":"query B{b}"},{"query":"query C{c}"}]""");
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        Assert.That(requests, Has.Count.EqualTo(3));
-        Assert.That(requests[2].Query, Does.Contain("C"));
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests).Count().IsEqualTo(3);
+        await Assert.That(requests[2].Query).Contains("C");
     }
 
     /// <summary>A brace opens both a JSON object and an anonymous query; only one of them parses.</summary>
     [Test]
-    public void ADocumentPastedOnItsOwnIsStillImported()
+    public async Task ADocumentPastedOnItsOwnIsStillImported()
     {
         var (ok, requests, error) = RequestImporter.Import("{ hero { name } }");
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
-        Assert.That(requests[0].Query, Does.Contain("hero"));
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Query).Contains("hero");
     }
 
     [Test]
-    public void AMarkdownFenceAroundThePasteIsIgnored()
+    public async Task AMarkdownFenceAroundThePasteIsIgnored()
     {
         var (ok, _, error) = RequestImporter.Import(
             $"```bash\n{bashCurl}\n```");
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
     }
 
     [Test]
-    public void AShellPromptBeforeThePasteIsIgnored()
+    public async Task AShellPromptBeforeThePasteIsIgnored()
     {
         var (ok, _, error) = RequestImporter.Import($"$ {bashCurl}");
 
-        Assert.That(error, Is.Null);
-        Assert.That(ok);
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
     }
 
-    [TestCase("")]
-    [TestCase("   ")]
-    [TestCase("hello world")]
-    [TestCase("curl")]
-    [TestCase("curl --url")]
-    [TestCase("""curl --url ^" """)]
-    [TestCase("fetch(")]
-    [TestCase("{")]
-    [TestCase("[")]
-    [TestCase("$'")]
-    [TestCase("https://")]
-    [TestCase("https://host/graphql")]
-    [TestCase("Invoke-WebRequest -Headers @{")]
-    [TestCase("""{"variables":{}}""")]
-    public void MalformedInputIsRefusedRatherThanThrown(string text)
+    [Test]
+    [Arguments("")]
+    [Arguments("   ")]
+    [Arguments("hello world")]
+    [Arguments("curl")]
+    [Arguments("curl --url")]
+    [Arguments("""curl --url ^" """)]
+    [Arguments("fetch(")]
+    [Arguments("{")]
+    [Arguments("[")]
+    [Arguments("$'")]
+    [Arguments("https://")]
+    [Arguments("https://host/graphql")]
+    [Arguments("Invoke-WebRequest -Headers @{")]
+    [Arguments("""{"variables":{}}""")]
+    public async Task MalformedInputIsRefusedRatherThanThrown(string text)
     {
         var (ok, requests, error) = RequestImporter.Import(text);
 
-        Assert.That(ok, Is.False);
-        Assert.That(requests, Is.Empty);
-        Assert.That(error, Is.Not.Null.And.Not.Empty);
+        await Assert.That(ok).IsFalse();
+        await Assert.That(requests).IsEmpty();
+        await Assert.That(error).IsNotNullOrEmpty();
     }
 
     static Task VerifyRequest(ImportedRequest request) =>

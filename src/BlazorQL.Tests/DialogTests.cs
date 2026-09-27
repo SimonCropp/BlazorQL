@@ -1,46 +1,45 @@
 /// <summary>bUnit coverage for the settings and short-keys dialogs.</summary>
-[TestFixture]
 public class DialogTests
 {
     [Test]
-    public void SettingsRendersAllThreeSections()
+    public async Task SettingsRendersAllThreeSections()
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>();
 
-        Assert.That(cut.Find("[data-testid='settings-dialog']").GetAttribute("role"), Is.EqualTo("dialog"));
-        Assert.That(cut.Markup, Does.Contain("Persist headers"));
-        Assert.That(cut.Markup, Does.Contain("Save headers upon reloading."));
-        Assert.That(cut.Markup, Does.Contain("Only enable if you trust this device."));
-        Assert.That(cut.Markup, Does.Contain("Theme"));
-        Assert.That(cut.Markup, Does.Contain("Clear storage"));
+        await Assert.That(cut.Find("[data-testid='settings-dialog']").GetAttribute("role")).IsEqualTo("dialog");
+        await Assert.That(cut.Markup).Contains("Persist headers");
+        await Assert.That(cut.Markup).Contains("Save headers upon reloading.");
+        await Assert.That(cut.Markup).Contains("Only enable if you trust this device.");
+        await Assert.That(cut.Markup).Contains("Theme");
+        await Assert.That(cut.Markup).Contains("Clear storage");
     }
 
     [Test]
-    public void PersistHeadersSectionHiddenWithoutHeadersEditor()
+    public async Task PersistHeadersSectionHiddenWithoutHeadersEditor()
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>(_ => _
             .Add(component => component.ShowPersistHeaders, false));
 
-        Assert.That(cut.Markup, Does.Not.Contain("Persist headers"));
-        Assert.That(cut.Markup, Does.Not.Contain("Only enable if you trust this device."));
+        await Assert.That(cut.Markup).DoesNotContain("Persist headers");
+        await Assert.That(cut.Markup).DoesNotContain("Only enable if you trust this device.");
     }
 
     [Test]
-    public void ThemeSectionHiddenWhenForced()
+    public async Task ThemeSectionHiddenWhenForced()
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>(_ => _
             .Add(component => component.ShowTheme, false));
 
-        Assert.That(cut.FindAll("[data-testid='theme-system']"), Is.Empty);
-        Assert.That(cut.FindAll("[data-testid='theme-light']"), Is.Empty);
-        Assert.That(cut.FindAll("[data-testid='theme-dark']"), Is.Empty);
+        await Assert.That(cut.FindAll("[data-testid='theme-system']")).IsEmpty();
+        await Assert.That(cut.FindAll("[data-testid='theme-light']")).IsEmpty();
+        await Assert.That(cut.FindAll("[data-testid='theme-dark']")).IsEmpty();
     }
 
     [Test]
-    public void ThemeButtonsReportTheCurrentChoiceAndRaiseSelection()
+    public async Task ThemeButtonsReportTheCurrentChoiceAndRaiseSelection()
     {
         using var context = new BunitContext();
         Theme? selected = null;
@@ -48,14 +47,14 @@ public class DialogTests
             .Add(component => component.Theme, Theme.Dark)
             .Add(component => component.OnThemeSelected, theme => selected = theme));
 
-        Assert.That(cut.Find("[data-testid='theme-dark']").ClassList, Does.Contain("blazorql-active"));
+        await Assert.That(cut.Find("[data-testid='theme-dark']").ClassList).Contains("blazorql-active");
 
         cut.Find("[data-testid='theme-light']").Click();
-        Assert.That(selected, Is.EqualTo(Theme.Light));
+        await Assert.That(selected).IsEqualTo(Theme.Light);
     }
 
     [Test]
-    public void PersistHeadersButtonsRaiseTheChoice()
+    public async Task PersistHeadersButtonsRaiseTheChoice()
     {
         using var context = new BunitContext();
         bool? persisted = null;
@@ -63,14 +62,14 @@ public class DialogTests
             .Add(component => component.OnPersistHeadersChanged, value => persisted = value));
 
         cut.Find("[data-testid='persist-headers-on']").Click();
-        Assert.That(persisted, Is.True);
+        await Assert.That(persisted).IsTrue();
 
         cut.Find("[data-testid='persist-headers-off']").Click();
-        Assert.That(persisted, Is.False);
+        await Assert.That(persisted).IsFalse();
     }
 
     [Test]
-    public void ClearDataFlipsToClearedAndDisables()
+    public async Task ClearDataFlipsToClearedAndDisables()
     {
         using var context = new BunitContext();
         var cleared = false;
@@ -82,28 +81,28 @@ public class DialogTests
             }));
 
         var button = cut.Find("[data-testid='clear-storage']");
-        Assert.That(button.TextContent, Is.EqualTo("Clear data"));
+        await Assert.That(button.TextContent).IsEqualTo("Clear data");
 
         button.Click();
-        Assert.That(cleared, Is.True);
+        await Assert.That(cleared).IsTrue();
         var after = cut.Find("[data-testid='clear-storage']");
-        Assert.That(after.TextContent, Is.EqualTo("Cleared data"));
-        Assert.That(after.HasAttribute("disabled"), Is.True);
+        await Assert.That(after.TextContent).IsEqualTo("Cleared data");
+        await Assert.That(after.HasAttribute("disabled")).IsTrue();
     }
 
     [Test]
-    public void ClearDataReportsFailure()
+    public async Task ClearDataReportsFailure()
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>(_ => _
             .Add(component => component.ClearStorageAction, () => false));
 
         cut.Find("[data-testid='clear-storage']").Click();
-        Assert.That(cut.Find("[data-testid='clear-storage']").TextContent, Is.EqualTo("Failed"));
+        await Assert.That(cut.Find("[data-testid='clear-storage']").TextContent).IsEqualTo("Failed");
     }
 
     [Test]
-    public void EscapeAndOverlayClickClose()
+    public async Task EscapeAndOverlayClickClose()
     {
         using var context = new BunitContext();
         var closed = 0;
@@ -111,24 +110,24 @@ public class DialogTests
             .Add(component => component.OnClose, () => closed++));
 
         cut.Find(".blazorql-dialog-overlay").KeyDown("Escape");
-        Assert.That(closed, Is.EqualTo(1));
+        await Assert.That(closed).IsEqualTo(1);
 
         cut.Find(".blazorql-dialog-overlay").Click();
-        Assert.That(closed, Is.EqualTo(2));
+        await Assert.That(closed).IsEqualTo(2);
 
         cut.Find(".blazorql-dialog-close").Click();
-        Assert.That(closed, Is.EqualTo(3));
+        await Assert.That(closed).IsEqualTo(3);
     }
 
     [Test]
-    public void ShortKeysListsEveryDocumentedShortcut()
+    public async Task ShortKeysListsEveryDocumentedShortcut()
     {
         using var context = new BunitContext();
         var cut = context.Render<ShortKeysDialog>();
 
-        Assert.That(cut.Find("[data-testid='shortkeys-dialog']").GetAttribute("role"), Is.EqualTo("dialog"));
+        await Assert.That(cut.Find("[data-testid='shortkeys-dialog']").GetAttribute("role")).IsEqualTo("dialog");
         // Header row plus the nine shortcuts.
-        Assert.That(cut.FindAll(".blazorql-shortkeys-table tbody tr"), Has.Count.EqualTo(9));
+        await Assert.That(cut.FindAll(".blazorql-shortkeys-table tbody tr")).Count().IsEqualTo(9);
         foreach (var expected in (string[])
                  [
                      "Execute query",
@@ -142,10 +141,10 @@ public class DialogTests
                      "Search in documentation"
                  ])
         {
-            Assert.That(cut.Markup, Does.Contain(expected));
+            await Assert.That(cut.Markup).Contains(expected);
         }
 
-        Assert.That(cut.Markup, Does.Contain("Ctrl-Enter"));
-        Assert.That(cut.Markup, Does.Contain("Monaco/VS Code keybindings"));
+        await Assert.That(cut.Markup).Contains("Ctrl-Enter");
+        await Assert.That(cut.Markup).Contains("Monaco/VS Code keybindings");
     }
 }

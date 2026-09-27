@@ -1,9 +1,9 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The foundation smoke: the published sample boots with the BlazorMonaco editor stack — Monaco
 /// mounted, graphql/json languages present, and, decisively, a console free of errors, which is
 /// where asset and MIME failures land while the page otherwise looks fine.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class BootTests :
     BrowserFixture
@@ -21,9 +21,9 @@ public class BootTests :
                     .map(_ => _.id)
                     .filter(_ => ['graphql', 'json'].includes(_))
             """);
-        Assert.That(languages, Is.EquivalentTo(["graphql", "json"]));
+        await Assert.That(languages).IsEquivalentTo(["graphql", "json"]);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -32,7 +32,7 @@ public class BootTests :
         var page = await NewPageAsync();
         await page.GoToHomeAsync(BaseUrl);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -47,15 +47,13 @@ public class BootTests :
 
         await page.WaitForSelectorAsync(".route-missing", 90);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
-
 /// <summary>
 /// The same smoke with the app mounted under a sub-path — how GitHub Pages hosts it. Every asset
 /// reference resolves through the base href, and this is the fixture that keeps it that way.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class SubpathBootTests :
     BrowserFixture
@@ -75,9 +73,9 @@ public class SubpathBootTests :
                     .map(_ => _.id)
                     .filter(_ => ['graphql', 'json'].includes(_))
             """);
-        Assert.That(languages, Is.EquivalentTo(["graphql", "json"]));
+        await Assert.That(languages).IsEquivalentTo(["graphql", "json"]);
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -92,8 +90,8 @@ public class SubpathBootTests :
 
         await page.ClickAsync("[data-testid='open-explorer']");
         await page.WaitForIdeReadyAsync();
-        Assert.That(page.Url, Does.Contain("/BlazorQL/explorer"));
+        await Assert.That(page.Url).Contains("/BlazorQL/explorer");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

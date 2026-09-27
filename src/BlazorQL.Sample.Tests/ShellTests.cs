@@ -1,8 +1,8 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The M4 layout shell: tabs, editor tools, plugin pane toggles, theming, and the variables/headers
 /// wiring into execution — all over the published sample.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class ShellTests :
     BrowserFixture
@@ -34,7 +34,7 @@ public class ShellTests :
         await WaitForOperationTextAsync(page, "_.getValue().includes('One')");
 
         // A single remaining tab has no close button.
-        Assert.That(await page.Locator("[aria-label='Close Tab']").CountAsync(), Is.Zero);
+        await Assert.That(await page.Locator("[aria-label='Close Tab']").CountAsync()).IsZero();
     }
 
     /// <summary>
@@ -50,11 +50,9 @@ public class ShellTests :
         var version = page.Locator("[data-testid='blazorql-version']");
         var text = await version.InnerTextAsync();
 
-        Assert.That(text, Does.Match(@"^v\d+\.\d+\.\d+"));
+        await Assert.That(text).Matches(@"^v\d+\.\d+\.\d+");
         // Beside the logo, not somewhere else in the header.
-        Assert.That(
-            await page.Locator(".blazorql-logo [data-testid='blazorql-version']").CountAsync(),
-            Is.EqualTo(1));
+        await Assert.That(await page.Locator(".blazorql-logo [data-testid='blazorql-version']").CountAsync()).IsEqualTo(1);
     }
 
     /// <summary>Waits until the operation model (bound as <c>_</c>) satisfies the condition.</summary>
@@ -146,17 +144,17 @@ public class ShellTests :
         var operation = await page.GetModelValueAsync("blazorql-operation");
         var variables = await page.GetModelValueAsync("blazorql-variables");
         var response = await page.GetModelValueAsync("blazorql-response");
-        Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
             // Beside its source rather than after Other, under the same title, and active.
-            Assert.That(string.Join(", ", titles), Is.EqualTo("Source, Source, Other"));
-            Assert.That(selected, Is.EqualTo("true"));
+            await Assert.That(string.Join(", ", titles)).IsEqualTo("Source, Source, Other");
+            await Assert.That(selected).IsEqualTo("true");
             // LoadActiveTab has just written all three from the copy, so a response that did not come
             // across would read empty.
-            Assert.That(operation, Does.Contain("query Source"));
-            Assert.That(variables, Is.EqualTo("""{"x": 1}"""));
-            Assert.That(response, Does.Contain("abc123"));
-        });
+            await Assert.That(operation).Contains("query Source");
+            await Assert.That(variables).IsEqualTo("""{"x": 1}""");
+            await Assert.That(response).Contains("abc123");
+        }
 
         await page.SetEditorValueAsync("query Copy($x: Int) { id hasArgs(int: $x) }");
         await page.SetModelValueAsync("variables", """{"x": 2}""");
@@ -183,11 +181,9 @@ public class ShellTests :
             """);
 
         // The copy's title followed its own query rather than being frozen into a rename.
-        Assert.That(
-            string.Join(", ", await page.Locator(".blazorql-tab-button").AllInnerTextsAsync()),
-            Is.EqualTo("Source, Copy, Other"));
+        await Assert.That(string.Join(", ", await page.Locator(".blazorql-tab-button").AllInnerTextsAsync())).IsEqualTo("Source, Copy, Other");
         // A copied id would surface as Blazor's duplicate @key error.
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     [Test]
@@ -250,7 +246,7 @@ public class ShellTests :
         var page = await NewPageAsync();
         await page.GoToAppAsync(BaseUrl);
 
-        Assert.That(await page.Locator("[data-testid='plugin-pane']").CountAsync(), Is.Zero);
+        await Assert.That(await page.Locator("[data-testid='plugin-pane']").CountAsync()).IsZero();
 
         await page.ClickAsync("[data-testid='sidebar-docs']");
         await page.WaitForSelectorAsync("[data-testid='plugin-pane']:has-text('Documentation Explorer')", 10);
@@ -274,7 +270,7 @@ public class ShellTests :
         await page.GoToAppAsync(BaseUrl);
 
         // Playwright's default color scheme is light, so System resolves to light at boot.
-        Assert.That(await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme"), Is.EqualTo("light"));
+        await Assert.That(await page.EvaluateAsync<string>("() => document.documentElement.dataset.theme")).IsEqualTo("light");
 
         // System -> Light: still light.
         await page.ClickAsync("[data-testid='theme-toggle']");
@@ -306,7 +302,7 @@ public class ShellTests :
         await page.GoToAppAsync(BaseUrl);
 
         // The sample sets no default headers or variables, so the tools start collapsed.
-        Assert.That(await page.Locator(".blazorql-editor-tools.blazorql-collapsed").CountAsync(), Is.EqualTo(1));
+        await Assert.That(await page.Locator(".blazorql-editor-tools.blazorql-collapsed").CountAsync()).IsEqualTo(1);
 
         await page.ClickAsync("[aria-label='Show editor tools']");
         await page.WaitForSelectorAsync(".blazorql-editor-tools:not(.blazorql-collapsed)", 10);
@@ -369,7 +365,7 @@ public class ShellTests :
             """);
 
         // One frame for fifty moves, not fifty.
-        Assert.That(scheduled, Is.GreaterThan(0).And.LessThan(5));
+        await Assert.That(scheduled).IsGreaterThan(0).And.IsLessThan(5);
 
         // The drag ended at 0.3 of the container, and that is where the editors column sits.
         await page.WaitForFunctionAsync(
@@ -383,7 +379,7 @@ public class ShellTests :
             null,
             new() {Timeout = 10_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -414,27 +410,28 @@ public class ShellTests :
         var variables = await page.GetModelValueAsync("blazorql-variables");
         var headers = await page.GetModelValueAsync("blazorql-request-headers");
 
-        Assert.Multiple(() =>
+        using (Assert.Multiple())
         {
             // The one-line body arrived indented, not as it was pasted.
-            Assert.That(operation, Does.Contain("mutation EnableUser("));
-            Assert.That(variables, Does.Contain("\"id\""));
+            await Assert.That(operation).Contains("mutation EnableUser(");
+            await Assert.That(variables).Contains("\"id\"");
             // The custom header survived; the content type and the client hints did not.
-            Assert.That(headers, Does.Contain("authorization"));
-            Assert.That(headers, Does.Not.Contain("sec-ch-ua"));
-        });
+            await Assert.That(headers).Contains("authorization");
+            await Assert.That(headers).DoesNotContain("sec-ch-ua");
+
+        }
 
         // LoadActiveTab opened the tools strip, because the imported tab has variables.
-        Assert.That(await page.Locator(".blazorql-editor-tools.blazorql-collapsed").CountAsync(), Is.Zero);
+        await Assert.That(await page.Locator(".blazorql-editor-tools.blazorql-collapsed").CountAsync()).IsZero();
 
         var status = await page.WaitForSelectorAsync("[data-testid='status-line']", 10);
-        Assert.That(await status!.TextContentAsync(), Is.EqualTo("Imported 1 request · 1 of 3 headers imported"));
+        await Assert.That(await status!.TextContentAsync()).IsEqualTo("Imported 1 request · 1 of 3 headers imported");
 
         // The tab that was open before the import still holds its own text.
         await page.ClickAsync(".blazorql-tab-button:has-text('Existing')");
         await WaitForOperationTextAsync(page, "_.getValue().includes('Existing')");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     const string importedCurl =

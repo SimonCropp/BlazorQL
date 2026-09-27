@@ -3,7 +3,6 @@
 /// documents, failures, and cancellation into the <see cref="SidecarStore"/>, plus the store's
 /// eviction and the panel's IDE deep link.
 /// </summary>
-[TestFixture]
 public class SidecarTests
 {
     static readonly Dictionary<string, string> noHeaders = [];
@@ -25,18 +24,18 @@ public class SidecarTests
         };
         var documents = await Drain(fetcher, request, headers);
 
-        Assert.That(documents, Has.Count.EqualTo(1));
+        await Assert.That(documents).Count().IsEqualTo(1);
         var entry = store.Entries.Single();
-        Assert.That(entry.Kind, Is.EqualTo("query"));
-        Assert.That(entry.Name, Is.EqualTo("People"));
-        Assert.That(entry.Query, Is.EqualTo(request.Query));
-        Assert.That(entry.VariablesJson, Does.Contain("\"id\": \"abc123\""));
-        Assert.That(entry.Headers.Single(), Is.EqualTo(new KeyValuePair<string, string>("authorization", "Bearer token")));
-        Assert.That(entry.Documents.Single(), Does.Contain("\"name\": \"Mark\""));
-        Assert.That(entry.DocumentCount, Is.EqualTo(1));
-        Assert.That(entry.Completed, Is.True);
-        Assert.That(entry.Cancelled, Is.False);
-        Assert.That(entry.Error, Is.Null);
+        await Assert.That(entry.Kind).IsEqualTo("query");
+        await Assert.That(entry.Name).IsEqualTo("People");
+        await Assert.That(entry.Query).IsEqualTo(request.Query);
+        await Assert.That(entry.VariablesJson).Contains("\"id\": \"abc123\"");
+        await Assert.That(entry.Headers.Single()).IsEqualTo(new KeyValuePair<string, string>("authorization", "Bearer token"));
+        await Assert.That(entry.Documents.Single()).Contains("\"name\": \"Mark\"");
+        await Assert.That(entry.DocumentCount).IsEqualTo(1);
+        await Assert.That(entry.Completed).IsTrue();
+        await Assert.That(entry.Cancelled).IsFalse();
+        await Assert.That(entry.Error).IsNull();
     }
 
     [Test]
@@ -50,26 +49,26 @@ public class SidecarTests
         await Drain(fetcher, new("this does not parse"), noHeaders);
 
         var entries = store.Entries;
-        Assert.That(entries[0].Kind, Is.EqualTo("mutation"));
-        Assert.That(entries[0].Name, Is.EqualTo("<anonymous>"));
-        Assert.That(entries[1].Kind, Is.EqualTo("subscription"));
-        Assert.That(entries[1].Name, Is.EqualTo("OnGreeting"));
-        Assert.That(entries[2].Kind, Is.EqualTo("query"));
-        Assert.That(entries[2].Name, Is.EqualTo("<anonymous>"));
+        await Assert.That(entries[0].Kind).IsEqualTo("mutation");
+        await Assert.That(entries[0].Name).IsEqualTo("<anonymous>");
+        await Assert.That(entries[1].Kind).IsEqualTo("subscription");
+        await Assert.That(entries[1].Name).IsEqualTo("OnGreeting");
+        await Assert.That(entries[2].Kind).IsEqualTo("query");
+        await Assert.That(entries[2].Name).IsEqualTo("<anonymous>");
     }
 
     [Test]
-    public void RecordsFailureAndRethrows()
+    public async Task RecordsFailureAndRethrows()
     {
         var store = NewStore();
         var fetcher = new SidecarFetcher(new ThrowingFetcher("boom"), store);
 
-        Assert.ThrowsAsync<InvalidOperationException>(() => Drain(fetcher, new("{ id }"), noHeaders));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Drain(fetcher, new("{ id }"), noHeaders));
 
         var entry = store.Entries.Single();
-        Assert.That(entry.Completed, Is.True);
-        Assert.That(entry.Error, Is.EqualTo("boom"));
-        Assert.That(entry.Cancelled, Is.False);
+        await Assert.That(entry.Completed).IsTrue();
+        await Assert.That(entry.Error).IsEqualTo("boom");
+        await Assert.That(entry.Cancelled).IsFalse();
     }
 
     [Test]
@@ -92,12 +91,12 @@ public class SidecarTests
             caught = true;
         }
 
-        Assert.That(caught, Is.True);
+        await Assert.That(caught).IsTrue();
         var entry = store.Entries.Single();
-        Assert.That(entry.Completed, Is.True);
-        Assert.That(entry.Cancelled, Is.True);
-        Assert.That(entry.Error, Is.Null);
-        Assert.That(entry.Documents, Has.Count.EqualTo(1));
+        await Assert.That(entry.Completed).IsTrue();
+        await Assert.That(entry.Cancelled).IsTrue();
+        await Assert.That(entry.Error).IsNull();
+        await Assert.That(entry.Documents).Count().IsEqualTo(1);
     }
 
     [Test]
@@ -114,10 +113,10 @@ public class SidecarTests
         }
 
         var entry = store.Entries.Single();
-        Assert.That(entry.Completed, Is.True);
-        Assert.That(entry.Cancelled, Is.False);
-        Assert.That(entry.Error, Is.Null);
-        Assert.That(entry.DocumentCount, Is.EqualTo(1));
+        await Assert.That(entry.Completed).IsTrue();
+        await Assert.That(entry.Cancelled).IsFalse();
+        await Assert.That(entry.Error).IsNull();
+        await Assert.That(entry.DocumentCount).IsEqualTo(1);
     }
 
     [Test]
@@ -131,7 +130,7 @@ public class SidecarTests
         await Drain(fetcher, new("query Third { id }"), noHeaders);
 
         string[] expected = ["Second", "Third"];
-        Assert.That(store.Entries.Select(_ => _.Name), Is.EqualTo(expected));
+        await Assert.That(store.Entries.Select(_ => _.Name)).IsEquivalentTo(expected, CollectionOrdering.Matching);
     }
 
     [Test]
@@ -145,10 +144,10 @@ public class SidecarTests
         var documents = await Drain(fetcher, new("{ n }"), noHeaders);
 
         // The consumer still receives everything — only the log is capped.
-        Assert.That(documents, Has.Count.EqualTo(3));
+        await Assert.That(documents).Count().IsEqualTo(3);
         var entry = store.Entries.Single();
-        Assert.That(entry.Documents, Has.Count.EqualTo(2));
-        Assert.That(entry.DocumentCount, Is.EqualTo(3));
+        await Assert.That(entry.Documents).Count().IsEqualTo(2);
+        await Assert.That(entry.DocumentCount).IsEqualTo(3);
     }
 
     [Test]
@@ -159,12 +158,12 @@ public class SidecarTests
 
         var documents = await Drain(fetcher, new("{ id }"), noHeaders);
 
-        Assert.That(documents, Has.Count.EqualTo(1));
-        Assert.That(store.Entries, Is.Empty);
+        await Assert.That(documents).Count().IsEqualTo(1);
+        await Assert.That(store.Entries).IsEmpty();
     }
 
     [Test]
-    public void ClearRaisesChangedAndEmpties()
+    public async Task ClearRaisesChangedAndEmpties()
     {
         var store = NewStore();
         var raised = 0;
@@ -172,12 +171,12 @@ public class SidecarTests
 
         store.Clear();
 
-        Assert.That(store.Entries, Is.Empty);
-        Assert.That(raised, Is.EqualTo(1));
+        await Assert.That(store.Entries).IsEmpty();
+        await Assert.That(raised).IsEqualTo(1);
     }
 
     [Test]
-    public void IdeHrefRoundTripsThroughShareLink()
+    public async Task IdeHrefRoundTripsThroughShareLink()
     {
         var entry = new SidecarEntry
         {
@@ -190,14 +189,14 @@ public class SidecarTests
         };
 
         var href = BlazorQLSidecar.IdeHref(entry, "/ide")!;
-        Assert.That(href, Does.StartWith("/ide#q="));
+        await Assert.That(href).StartsWith("/ide#q=");
 
         var shared = ShareLinkCodec.TryDecode(href[href.IndexOf('#')..])!;
-        Assert.That(shared.Query, Is.EqualTo(entry.Query));
-        Assert.That(shared.Variables, Is.EqualTo(entry.VariablesJson));
+        await Assert.That(shared.Query).IsEqualTo(entry.Query);
+        await Assert.That(shared.Variables).IsEqualTo(entry.VariablesJson);
 
-        Assert.That(BlazorQLSidecar.IdeHref(entry, ""), Does.StartWith("#q="));
-        Assert.That(BlazorQLSidecar.IdeHref(entry, null), Is.Null);
+        await Assert.That(BlazorQLSidecar.IdeHref(entry, "")).StartsWith("#q=");
+        await Assert.That(BlazorQLSidecar.IdeHref(entry, null)).IsNull();
     }
 
     static SidecarStore NewStore(Action<SidecarOptions>? configure = null)

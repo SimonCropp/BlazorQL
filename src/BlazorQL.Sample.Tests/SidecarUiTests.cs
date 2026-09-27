@@ -1,9 +1,9 @@
-﻿/// <summary>
+﻿using System.Threading.Tasks;
+/// <summary>
 /// The debug sidecar over the published sample: the floating launcher, capture of the app's
 /// requests, the detail view, the IDE deep link, the keyboard shortcut, and clearing. The sample
 /// renders it on its app page only — the query explorer is the IDE itself, so it never shows there.
 /// </summary>
-[TestFixture]
 [Category("Browser")]
 public class SidecarUiTests :
     BrowserFixture
@@ -23,23 +23,23 @@ public class SidecarUiTests :
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar']", 10);
 
         var rows = page.Locator("[data-testid='blazorql-sidecar-entries'] li");
-        Assert.That(await rows.CountAsync(), Is.GreaterThanOrEqualTo(2));
+        await Assert.That(await rows.CountAsync()).IsGreaterThanOrEqualTo(2);
         var row = page.Locator("[data-testid='blazorql-sidecar-entries'] li", new() {HasTextString = "Echo"});
         await row.ClickAsync();
 
         await page.WaitForSelectorAsync("[data-testid='blazorql-sidecar-detail']", 10);
         var query = await page.Locator("[data-testid='blazorql-sidecar-query']").InnerTextAsync();
-        Assert.That(query, Does.Contain("mutation Echo"));
+        await Assert.That(query).Contains("mutation Echo");
         var response = await page.Locator("[data-testid='blazorql-sidecar-response']").First.InnerTextAsync();
-        Assert.That(response, Does.Contain("from the sidecar test"));
+        await Assert.That(response).Contains("from the sidecar test");
 
         // The deep link routes to the explorer page with a share fragment carrying exactly the
         // captured operation.
         var href = await page.Locator("[data-testid='blazorql-sidecar-ide-link']").GetAttributeAsync("href");
-        Assert.That(href, Does.StartWith("explorer#q="));
-        Assert.That(DecodeShareFragment(href!), Does.Contain("mutation Echo"));
+        await Assert.That(href).StartsWith("explorer#q=");
+        await Assert.That(DecodeShareFragment(href!)).Contains("mutation Echo");
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
     /// <summary>
@@ -76,6 +76,6 @@ public class SidecarUiTests :
             null,
             new() {Timeout = 10_000});
 
-        Assert.That(ConsoleErrors(), Is.Empty);
+        await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
