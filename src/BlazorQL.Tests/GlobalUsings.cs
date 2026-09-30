@@ -6,7 +6,6 @@ global using System.Text;
 global using System.Text.Json;
 global using Bunit;
 global using TUnit.Assertions.Enums;
-global using VerifyTests.DiffPlex;
 global using BlazorQL;
 global using static VerifyTUnit.Verifier;
 global using GraphQL;

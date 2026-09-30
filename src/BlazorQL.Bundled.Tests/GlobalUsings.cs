@@ -8,7 +8,6 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Playwright;
 global using TUnit.Assertions.Enums;
-global using VerifyTests.DiffPlex;
 global using BlazorQL;
 global using GraphQL;
 global using GraphQL.SystemTextJson;
