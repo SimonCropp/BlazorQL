@@ -11,7 +11,6 @@
     <PackageReference Include="TUnit" />
     <PackageReference Include="Microsoft.Playwright" />
     <PackageReference Include="Verify.TUnit" />
-    <PackageReference Include="Verify.DiffPlex" />
     <PackageReference Include="Verify.Playwright" />
     <PackageReference Include="DiffEngine" />
     <!-- The host app under test is a real GraphQL server, which is what the sample cannot be. -->

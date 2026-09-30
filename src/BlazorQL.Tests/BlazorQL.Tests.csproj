@@ -10,7 +10,6 @@
     <PackageReference Include="TUnit" />
     <PackageReference Include="Verify.TUnit" />
     <PackageReference Include="Verify.Bunit" />
-    <PackageReference Include="Verify.DiffPlex" />
     <PackageReference Include="DiffEngine" />
     <PackageReference Include="MarkdownSnippets.MsBuild" PrivateAssets="all" />
     <!--
