@@ -622,6 +622,39 @@ public class QueryBuilderTests
         await Assert.That(literal is null ? null : QueryBuilder.Print(literal)).IsEqualTo(expected);
     }
 
+    // A list is typed as its items separated by commas; one bad item refuses the lot.
+    [Test]
+    [Arguments("ID", "1, 2 ,3", """["1", "2", "3"]""")]
+    [Arguments("ID", "", "[]")]
+    [Arguments("Role", "ADMIN,EDITOR", "[ADMIN, EDITOR]")]
+    [Arguments("Role", "ADMIN, NOPE", null)]
+    public async Task ReadsAListInputAsALiteral(string type, string input, string? expected)
+    {
+        TypeRef listType = new()
+        {
+            Kind = "LIST",
+            OfType = new()
+            {
+                Kind = "NON_NULL",
+                OfType = new() {Kind = "SCALAR", Name = type}
+            }
+        };
+        var literal = QueryBuilder.Literal(schema, listType, input);
+
+        await Assert.That(literal is null ? null : QueryBuilder.Print(literal)).IsEqualTo(expected);
+    }
+
+    // A single item would pass input coercion, but reads as the wrong type.
+    [Test]
+    public async Task SwitchesAListArgumentOnAsAnEmptyList() =>
+        await Assert.That(ToggleArgument("{ users { id } }", ["users"], "ids"))
+            .IsEqualTo("{ users(ids: []) { id } }");
+
+    [Test]
+    public async Task ShowsAListAsItsItemsSeparatedByCommas() =>
+        await Assert.That(QueryBuilder.Display(QueryBuilder.Literal(schema, new() {Kind = "LIST", OfType = new() {Kind = "SCALAR", Name = "ID"}}, "a,b")!))
+            .IsEqualTo("a, b");
+
     // ---- Variables ----
 
     // The literal becomes the variable's default, so the operation asks what it asked before.

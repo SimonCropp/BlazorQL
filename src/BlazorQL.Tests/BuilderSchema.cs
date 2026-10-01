@@ -10,7 +10,7 @@ public static class BuilderSchema
         """
         type Query {
           user(id: ID!): User
-          users(first: Int, filter: UserFilter, role: Role): [User!]!
+          users(first: Int, filter: UserFilter, role: Role, ids: [ID!], roles: [Role!]): [User!]!
           search(term: String!): [SearchResult!]!
           node(id: ID!): Node
           viewer: User

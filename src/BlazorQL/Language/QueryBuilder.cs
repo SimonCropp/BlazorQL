@@ -91,8 +91,17 @@ public static partial class QueryBuilder
         {
             GraphQLStringValue text => text.Value.ToString(),
             GraphQLNullValue => "",
+            GraphQLListValue list => string.Join(", ", (list.Values ?? []).Select(Display)),
             _ => Print(value)
         };
+
+    /// <summary>Whether the type is a list, nullable or not.</summary>
+    public static bool IsList(TypeRef type) =>
+        (type.Kind == "NON_NULL" ? type.OfType : type)?.Kind == "LIST";
+
+    /// <summary>The type of a list type's items.</summary>
+    static TypeRef ListItem(TypeRef type) =>
+        (type.Kind == "NON_NULL" ? type.OfType! : type).OfType!;
 
     /// <summary>
     /// What an input's text means as a literal of <paramref name="type"/>, or null when it is not one.
@@ -101,6 +110,27 @@ public static partial class QueryBuilder
     /// </summary>
     public static GraphQLValue? Literal(SchemaIndex schema, TypeRef type, string input)
     {
+        // A list is typed as its items separated by commas, each a literal of the item type.
+        if (IsList(type))
+        {
+            var itemType = ListItem(type);
+            List<GraphQLValue> items = [];
+            foreach (var item in input.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (Literal(schema, itemType, item) is not { } literal)
+                {
+                    return null;
+                }
+
+                items.Add(literal);
+            }
+
+            return new GraphQLListValue
+            {
+                Values = items
+            };
+        }
+
         var named = schema.Find(type.Unwrap().Name);
         if (named?.Kind == "ENUM")
         {
@@ -154,8 +184,8 @@ public static partial class QueryBuilder
     /// arguments of a field it adds, and an argument or input field it switches on.
     /// </summary>
     /// <remarks>
-    /// A list takes a single item, which input coercion accepts for any list type and which is the one
-    /// shape the pane edits. An input object carries its own required fields, so the literal is one the
+    /// A list starts empty: a single item would pass input coercion, but reads as the wrong type to
+    /// anyone looking at the operation. An input object carries its own required fields, so the literal is one the
     /// validator accepts as it stands.
     /// </remarks>
     public static GraphQLValue DefaultValue(SchemaIndex schema, TypeRef type) =>
@@ -576,6 +606,14 @@ public static partial class QueryBuilder
 
     static GraphQLValue DefaultValue(SchemaIndex schema, TypeRef type, int depth)
     {
+        if (IsList(type))
+        {
+            return new GraphQLListValue
+            {
+                Values = []
+            };
+        }
+
         var named = schema.Find(type.Unwrap().Name);
         switch (named?.Kind)
         {
