@@ -1,0 +1,15 @@
+﻿{
+  Instance: {
+    OnEdit: {
+      HasDelegate: true
+    },
+    Query:
+query Users($role: Role) {
+  users(first: 10, role: $role) {
+    id
+    name
+  }
+}
+  },
+  NodeCount: 184
+}

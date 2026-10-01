@@ -231,23 +231,22 @@ public class ValidatorParityTests
     /// <summary>BlazorQL's answer, errors only — deprecation warnings have no counterpart.</summary>
     static IReadOnlyList<string> Mine(string query) =>
     [
-        .. new SchemaValidator(index)
+        .. new SchemaValidator(Index())
             .Validate(DocumentInfo.Parse(query))
             .Where(_ => _.IsError)
             .Select(_ => _.Message)
     ];
 
     static readonly SampleSchema schema = new();
-    static SchemaIndex index = null!;
+    static string introspection = null!;
 
     /// <summary>
     /// The bridge that makes this a differential test rather than two fixtures: BlazorQL's own
-    /// introspection query, executed against the same schema object GraphQL.NET validates over,
-    /// parsed by the same <see cref="SchemaIndex"/> the IDE builds at runtime. The draft additions
-    /// are left off because GraphQL.NET does not serve them.
+    /// introspection query, executed against the same schema object GraphQL.NET validates over.
+    /// The draft additions are left off because GraphQL.NET does not serve them.
     /// </summary>
-    [Before(HookType.Class)]
-    public static async Task BuildIndex()
+    [Before(Class)]
+    public static async Task Introspect()
     {
         var result = await new DocumentExecuter().ExecuteAsync(new()
         {
@@ -257,9 +256,19 @@ public class ValidatorParityTests
 
         await Assert.That(result.Errors?.Count ?? 0).IsEqualTo(0);
 
-        using var document = JsonDocument.Parse(new GraphQLSerializer().Serialize(result));
-        index = SchemaIndex.Parse(document.RootElement.GetProperty("data"))!;
-        await Assert.That(index).IsNotNull();
+        introspection = new GraphQLSerializer().Serialize(result);
+        await Assert.That(Index()).IsNotNull();
+    }
+
+    /// <summary>
+    /// The introspection response, parsed by the same <see cref="SchemaIndex"/> the IDE builds at
+    /// runtime. A new one for each case: the cases run in parallel, and an index shared between
+    /// them races as it fills its lookup tables.
+    /// </summary>
+    static SchemaIndex Index()
+    {
+        using var document = JsonDocument.Parse(introspection);
+        return SchemaIndex.Parse(document.RootElement.GetProperty("data"))!;
     }
 
     static string Describe(IEnumerable<(string Rule, string Number, string Message)> errors) =>

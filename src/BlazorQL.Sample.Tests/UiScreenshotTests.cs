@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// Verify.Playwright captures of the sample at a fixed viewport. These pngs are the images the
 /// docs embed — an <c>&lt;img&gt;</c> in readme/docs points straight at a <c>*.verified.png</c>, so
 /// a published screenshot cannot drift from the UI: a change fails the snapshot, and accepting the
@@ -48,6 +47,44 @@ public class UiScreenshotTests :
         {
             await toggle.ClickAsync();
         }
+
+        await Verify(page)
+            .PageScreenshotOptions(new(), screenshotOnly: true);
+    }
+
+    // The query builder over a query with arguments, a variable, a nested object and a union member —
+    // most of what the tree can show at once.
+    [Test]
+    public async Task QueryBuilder()
+    {
+        var page = await NewSizedPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+        await ForceTheme(page, "light");
+
+        await page.SetEditorValueAsync(
+            """
+            query Example($greeting: String) {
+              person {
+                name
+                age(delay: 100)
+                friends {
+                  name
+                }
+              }
+              hasArgs(string: $greeting, enum: GREEN)
+              union {
+                ... on First {
+                  name
+                }
+              }
+            }
+            """);
+        await page.ClickAsync("[data-testid='sidebar-builder']");
+        // The tree follows the editor by its change debounce; until then it shows the Demo query.
+        await page.WaitForFunctionAsync(
+            "() => document.querySelector(\"[data-testid='builder-operation-name']\")?.value === 'Example'",
+            null,
+            new() {Timeout = 10_000});
 
         await Verify(page)
             .PageScreenshotOptions(new(), screenshotOnly: true);

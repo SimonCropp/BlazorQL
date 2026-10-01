@@ -5,9 +5,9 @@
 /// </summary>
 public class VariablesCheckerTests
 {
-    static readonly SchemaIndex schema = ContextScannerTests.LoadFixture();
+    readonly SchemaIndex schema = ContextScannerTests.LoadFixture();
 
-    static IReadOnlyList<string> Check(string query, string? variables)
+    IReadOnlyList<string> Check(string query, string? variables)
     {
         var operation = DocumentInfo.Parse(query).OperationNode(null);
         if (operation is null)

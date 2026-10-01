@@ -4,7 +4,8 @@
 /// </summary>
 public class DocExplorerTests
 {
-    static readonly SchemaIndex schema = LoadSchema();
+    // Per test: an index shared between tests run in parallel races as it fills its lookup tables.
+    readonly SchemaIndex schema = LoadSchema();
 
     static SchemaIndex LoadSchema()
     {
@@ -13,7 +14,7 @@ public class DocExplorerTests
         return SchemaIndex.Parse(document.RootElement)!;
     }
 
-    static IRenderedComponent<DocExplorer> Render(BunitContext context, DocExplorerNavigator? navigator = null) =>
+    IRenderedComponent<DocExplorer> Render(BunitContext context, DocExplorerNavigator? navigator = null) =>
         context.Render<DocExplorer>(_ => _
             .Add(component => component.Schema, schema)
             .Add(component => component.Navigator, navigator));

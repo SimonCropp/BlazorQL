@@ -2,7 +2,7 @@ namespace BlazorQL;
 
 /// <summary>
 /// The pane the sidebar toggles open: a titled host for whichever plugin <see cref="Kind"/>
-/// selects — the documentation explorer or the execution history.
+/// selects — the documentation explorer, the execution history, or the query builder.
 /// </summary>
 public partial class PluginPane
 {
@@ -44,8 +44,19 @@ public partial class PluginPane
     [Parameter]
     public EventCallback<HistoryItem> OnHistorySelect { get; set; }
 
+    /// <summary>The operation editor's text, which the query builder renders its tree from.</summary>
+    [Parameter]
+    public string Query { get; set; } = "";
+
+    /// <summary>Raised with an edit the query builder made — the parent applies it to the operation editor.</summary>
+    [Parameter]
+    public EventCallback<Func<string, string?>> OnBuilderEdit { get; set; }
+
     string Title =>
-        Kind == PluginKind.Docs
-            ? "Documentation Explorer"
-            : "History";
+        Kind switch
+        {
+            PluginKind.Docs => "Documentation Explorer",
+            PluginKind.Builder => "Query Builder",
+            _ => "History"
+        };
 }

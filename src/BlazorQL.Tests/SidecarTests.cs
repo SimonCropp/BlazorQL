@@ -30,7 +30,7 @@ public class SidecarTests
         await Assert.That(entry.Name).IsEqualTo("People");
         await Assert.That(entry.Query).IsEqualTo(request.Query);
         await Assert.That(entry.VariablesJson).Contains("\"id\": \"abc123\"");
-        await Assert.That(entry.Headers.Single()).IsEqualTo(new KeyValuePair<string, string>("authorization", "Bearer token"));
+        await Assert.That(entry.Headers.Single()).IsEqualTo(new("authorization", "Bearer token"));
         await Assert.That(entry.Documents.Single()).Contains("\"name\": \"Mark\"");
         await Assert.That(entry.DocumentCount).IsEqualTo(1);
         await Assert.That(entry.Completed).IsTrue();

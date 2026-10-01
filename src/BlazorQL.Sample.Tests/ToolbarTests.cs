@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The M7 toolbar operations over the published sample: prettify, merge, copy, fill-leaves on
 /// execute, share links, the response copy/download overlay, the status footer, and the global
 /// re-fetch shortcut.

@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The M4 layout shell: tabs, editor tools, plugin pane toggles, theming, and the variables/headers
 /// wiring into execution — all over the published sample.
 /// </summary>

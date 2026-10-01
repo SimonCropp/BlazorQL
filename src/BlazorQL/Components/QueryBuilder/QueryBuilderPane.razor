@@ -1,0 +1,432 @@
+@namespace BlazorQL
+
+@if (Schema is null)
+{
+    <div class="blazorql-plugin-placeholder">No GraphQL schema available</div>
+}
+else if (Document is null)
+{
+    <div class="blazorql-builder-notice" data-testid="builder-notice">
+        The operation does not parse, so there is nothing for the builder to show. Fix it in the
+        editor and the tree comes back.
+        @if (SyntaxError is not null)
+        {
+            <div class="blazorql-builder-error">@SyntaxError</div>
+        }
+    </div>
+}
+else
+{
+    <div class="blazorql-builder" data-testid="builder">
+        @for (var index = 0; index < Document.Definitions.Count; index++)
+        {
+            var definition = index;
+            @switch (Document.Definitions[index])
+            {
+                case GraphQLOperationDefinition operation:
+                    @OperationSection(definition, operation)
+                    break;
+                case GraphQLFragmentDefinition fragment:
+                    @FragmentSection(definition, fragment)
+                    break;
+            }
+        }
+        @if (PendingKind is { } pendingKind &&
+             QueryBuilder.RootType(Schema, pendingKind) is { } pendingRoot)
+        {
+            @PendingSection(pendingKind, pendingRoot)
+        }
+        <div class="blazorql-builder-add">
+            @foreach (var kind in Kinds)
+            {
+                <button type="button"
+                        class="blazorql-builder-add-button"
+                        data-testid="builder-add"
+                        data-kind="@Keyword(kind)"
+                        title="Start a new @Keyword(kind)"
+                        @onclick="() => Begin(kind)">+ @Keyword(kind)</button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+
+    RenderFragment OperationSection(int definition, GraphQLOperationDefinition operation) =>
+        @<section class="blazorql-builder-definition" data-testid="builder-operation" @key="definition">
+            <div class="blazorql-builder-header">
+                <span class="blazorql-builder-keyword">@Keyword(operation.Operation)</span>
+                <input class="blazorql-builder-name"
+                       data-testid="builder-operation-name"
+                       aria-label="Operation name"
+                       placeholder="anonymous"
+                       spellcheck="false"
+                       value="@(operation.Name?.StringValue)"
+                       @onchange="_ => Rename(definition, _)" />
+                <button type="button"
+                        class="blazorql-builder-remove"
+                        data-testid="builder-remove-operation"
+                        title="Remove this operation"
+                        aria-label="Remove this operation"
+                        @onclick="() => RemoveOperation(definition)">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M6 6l12 12M18 6L6 18"/>
+                    </svg>
+                </button>
+            </div>
+            @if (QueryBuilder.RootType(Schema!, operation) is { } root)
+            {
+                @Selection(definition, [], root, operation.SelectionSet, variables: true, self: null)
+            }
+            else
+            {
+                <div class="blazorql-plugin-placeholder">The schema has no @Keyword(operation.Operation) type.</div>
+            }
+        </section>;
+
+    RenderFragment FragmentSection(int definition, GraphQLFragmentDefinition fragment)
+    {
+        var name = fragment.FragmentName.Name.StringValue;
+        var typeName = fragment.TypeCondition.Type.Name.StringValue;
+        return @<section class="blazorql-builder-definition" data-testid="builder-fragment-definition" @key="definition">
+            <div class="blazorql-builder-header">
+                <span class="blazorql-builder-keyword">fragment</span>
+                <span class="blazorql-builder-spread">@name</span>
+                <span class="blazorql-builder-keyword">on</span>
+                <span class="blazorql-builder-type">@typeName</span>
+            </div>
+            @if (Schema!.Find(typeName) is { } type &&
+                 QueryBuilder.IsComposite(type))
+            {
+                @Selection(definition, [], type, fragment.SelectionSet, variables: false, self: name)
+            }
+            else
+            {
+                <div class="blazorql-plugin-placeholder">The schema has no type @typeName to select from.</div>
+            }
+        </section>;
+    }
+
+    RenderFragment PendingSection(OperationType kind, IntrospectionType root) =>
+        @<section class="blazorql-builder-definition blazorql-builder-pending" data-testid="builder-pending">
+            <div class="blazorql-builder-header">
+                <span class="blazorql-builder-keyword">@Keyword(kind)</span>
+                <span class="blazorql-builder-pending-name">@QueryBuilder.NewOperationName(Document, kind)</span>
+                @if (HasOperations)
+                {
+                    <button type="button"
+                            class="blazorql-builder-remove"
+                            data-testid="builder-cancel"
+                            title="Do not add this @Keyword(kind)"
+                            aria-label="Do not add this @Keyword(kind)"
+                            @onclick="Cancel">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M6 6l12 12M18 6L6 18"/>
+                        </svg>
+                    </button>
+                }
+            </div>
+            <div class="blazorql-builder-fields">
+                @foreach (var field in VisibleFields(root, null))
+                {
+                    <div class="blazorql-builder-node" @key="field.Name">
+                        <button type="button"
+                                class="blazorql-builder-toggle"
+                                role="checkbox"
+                                aria-checked="false"
+                                data-testid="builder-field"
+                                data-name="@field.Name"
+                                title="@Title(field)"
+                                @onclick="() => Start(kind, field.Name)">
+                            @Caret(IsComposite(field.Type), false)
+                            @Check(false)
+                            <span class="blazorql-builder-field">@field.Name</span>
+                        </button>
+                    </div>
+                }
+            </div>
+        </section>;
+
+    // The members of a type, as rows: its fields, the possible types of an abstract one as inline
+    // fragments, the document's fragments on it as spreads, and __typename last.
+    RenderFragment Selection(int definition, BuilderStep[] path, IntrospectionType type, GraphQLSelectionSet? set, bool variables, string? self) =>
+        @<div class="blazorql-builder-fields">
+            @foreach (var field in VisibleFields(type, set))
+            {
+                @FieldNode(definition, path, field, set, variables, self)
+            }
+            @foreach (var possible in type.PossibleTypes ?? [])
+            {
+                if (possible.Name is { } possibleName)
+                {
+                    @InlineFragmentNode(definition, path, possibleName, set, variables, self)
+                }
+            }
+            @foreach (var fragment in SpreadableFragments(type, self))
+            {
+                @SpreadNode(definition, path, fragment, set)
+            }
+            @TypenameNode(definition, path, set)
+        </div>;
+
+    RenderFragment FieldNode(int definition, BuilderStep[] parent, IntrospectionField field, GraphQLSelectionSet? set, bool variables, string? self)
+    {
+        var selected = QueryBuilder.Field(set, field.Name);
+        var fieldType = Schema!.Find(field.Type.Unwrap().Name);
+        var composite = QueryBuilder.IsComposite(fieldType);
+        var arguments = selected is null ? [] : VisibleArguments(field, selected).ToList();
+        BuilderStep[] path = [.. parent, BuilderStep.Field(field.Name)];
+        return @<div class="blazorql-builder-node" @key="field.Name">
+            <button type="button"
+                    class="blazorql-builder-toggle"
+                    role="checkbox"
+                    aria-checked="@Checked(selected is not null)"
+                    data-testid="builder-field"
+                    data-name="@field.Name"
+                    title="@Title(field)"
+                    @onclick="() => Toggle(definition, path)">
+                @Caret(composite, selected is not null)
+                @Check(selected is not null)
+                <span class="blazorql-builder-field">@field.Name</span>
+            </button>
+            @if (selected is not null &&
+                 (arguments.Count > 0 || composite))
+            {
+                <div class="blazorql-builder-children">
+                    @foreach (var argument in arguments)
+                    {
+                        @ArgumentNode(definition, path, selected, argument, variables)
+                    }
+                    @if (composite)
+                    {
+                        @Selection(definition, path, fieldType!, selected.SelectionSet, variables, self)
+                    }
+                </div>
+            }
+        </div>;
+    }
+
+    RenderFragment InlineFragmentNode(int definition, BuilderStep[] parent, string typeName, GraphQLSelectionSet? set, bool variables, string? self)
+    {
+        var selected = QueryBuilder.InlineFragment(set, typeName);
+        var type = Schema!.Find(typeName);
+        BuilderStep[] path = [.. parent, BuilderStep.Fragment(typeName)];
+        return @<div class="blazorql-builder-node" @key="@($"on {typeName}")">
+            <button type="button"
+                    class="blazorql-builder-toggle"
+                    role="checkbox"
+                    aria-checked="@Checked(selected is not null)"
+                    data-testid="builder-inline-fragment"
+                    data-name="@typeName"
+                    title="Select members of @typeName"
+                    @onclick="() => Toggle(definition, path)">
+                @Caret(true, selected is not null)
+                @Check(selected is not null)
+                <span class="blazorql-builder-keyword">... on</span>
+                <span class="blazorql-builder-type">@typeName</span>
+            </button>
+            @if (selected is not null &&
+                 type is not null)
+            {
+                <div class="blazorql-builder-children">
+                    @Selection(definition, path, type, selected.SelectionSet, variables, self)
+                </div>
+            }
+        </div>;
+    }
+
+    RenderFragment SpreadNode(int definition, BuilderStep[] path, string fragment, GraphQLSelectionSet? set) =>
+        @<div class="blazorql-builder-node" @key="@($"...{fragment}")">
+            <button type="button"
+                    class="blazorql-builder-toggle"
+                    role="checkbox"
+                    aria-checked="@Checked(QueryBuilder.Spreads(set, fragment))"
+                    data-testid="builder-spread"
+                    data-name="@fragment"
+                    title="Spread the fragment @fragment"
+                    @onclick="() => ToggleSpread(definition, path, fragment)">
+                @Caret(false, false)
+                @Check(QueryBuilder.Spreads(set, fragment))
+                <span class="blazorql-builder-spread">...@fragment</span>
+            </button>
+        </div>;
+
+    RenderFragment TypenameNode(int definition, BuilderStep[] parent, GraphQLSelectionSet? set)
+    {
+        var selected = QueryBuilder.Field(set, typename) is not null;
+        BuilderStep[] path = [.. parent, BuilderStep.Field(typename)];
+        return @<div class="blazorql-builder-node blazorql-builder-meta" @key="typename">
+            <button type="button"
+                    class="blazorql-builder-toggle"
+                    role="checkbox"
+                    aria-checked="@Checked(selected)"
+                    data-testid="builder-field"
+                    data-name="@typename"
+                    title="The name of the object's type"
+                    @onclick="() => Toggle(definition, path)">
+                @Caret(false, false)
+                @Check(selected)
+                <span class="blazorql-builder-field">@typename</span>
+            </button>
+        </div>;
+    }
+
+    RenderFragment ArgumentNode(int definition, BuilderStep[] path, GraphQLField selected, IntrospectionInputValue argument, bool variables)
+    {
+        var value = QueryBuilder.Argument(selected, argument.Name)?.Value;
+        string[] input = [argument.Name];
+        var isVariable = value is GraphQLVariable;
+        return @<div class="blazorql-builder-node" @key="@($"({argument.Name}")">
+            <div class="blazorql-builder-row">
+                <button type="button"
+                        class="blazorql-builder-toggle"
+                        role="checkbox"
+                        aria-checked="@Checked(value is not null)"
+                        data-testid="builder-argument"
+                        data-name="@argument.Name"
+                        title="@Title(argument)"
+                        @onclick="() => ToggleArgument(definition, path, input)">
+                    @Caret(false, false)
+                    @Check(value is not null)
+                    <span class="blazorql-builder-argument">@argument.Name:</span>
+                </button>
+                @if (value is not null)
+                {
+                    @ValueEditor(definition, path, input, argument.Type, value)
+                    @if (variables)
+                    {
+                        <button type="button"
+                                class="blazorql-builder-variable @(isVariable ? "blazorql-active" : null)"
+                                data-testid="builder-variable"
+                                aria-pressed="@Checked(isVariable)"
+                                title="@(isVariable ? "Write the value in the operation instead" : "Pass the value as a variable")"
+                                aria-label="@(isVariable ? "Write the value in the operation instead" : "Pass the value as a variable")"
+                                @onclick="() => ToggleVariable(definition, path, argument.Name)">$</button>
+                    }
+                }
+            </div>
+            @if (value is GraphQLObjectValue objectValue &&
+                 InputObject(argument.Type) is { } inputType)
+            {
+                @InputFields(definition, path, input, inputType, objectValue)
+            }
+        </div>;
+    }
+
+    RenderFragment InputFields(int definition, BuilderStep[] path, string[] parent, IntrospectionType inputType, GraphQLObjectValue objectValue) =>
+        @<div class="blazorql-builder-children">
+            @foreach (var inputField in VisibleInputFields(inputType, objectValue))
+            {
+                @InputFieldNode(definition, path, parent, inputField, objectValue)
+            }
+        </div>;
+
+    RenderFragment InputFieldNode(int definition, BuilderStep[] path, string[] parent, IntrospectionInputValue inputField, GraphQLObjectValue objectValue)
+    {
+        var value = QueryBuilder.InputField(objectValue, inputField.Name)?.Value;
+        string[] input = [.. parent, inputField.Name];
+        return @<div class="blazorql-builder-node" @key="inputField.Name">
+            <div class="blazorql-builder-row">
+                <button type="button"
+                        class="blazorql-builder-toggle"
+                        role="checkbox"
+                        aria-checked="@Checked(value is not null)"
+                        data-testid="builder-argument"
+                        data-name="@inputField.Name"
+                        title="@Title(inputField)"
+                        @onclick="() => ToggleArgument(definition, path, input)">
+                    @Caret(false, false)
+                    @Check(value is not null)
+                    <span class="blazorql-builder-argument">@inputField.Name:</span>
+                </button>
+                @if (value is not null)
+                {
+                    @ValueEditor(definition, path, input, inputField.Type, value)
+                }
+            </div>
+            @if (value is GraphQLObjectValue nested &&
+                 InputObject(inputField.Type) is { } nestedType)
+            {
+                @InputFields(definition, path, input, nestedType, nested)
+            }
+        </div>;
+    }
+
+    // What a value is edited with: a list of the values an enum or a boolean can take, a text box for
+    // anything typed, and the value as written for what the builder does not edit — a variable, a
+    // list, an object of a type it cannot see. An input object's fields are rows of their own.
+    RenderFragment? ValueEditor(int definition, BuilderStep[] path, string[] input, TypeRef type, GraphQLValue value)
+    {
+        var named = Schema!.Find(type.Unwrap().Name);
+        var key = Key(definition, path, input);
+        switch (value)
+        {
+            case GraphQLVariable variable:
+                return @<span class="blazorql-builder-variable-name" data-testid="builder-value">$@variable.Name.StringValue</span>;
+            case GraphQLObjectValue when named?.Kind == "INPUT_OBJECT":
+                return null;
+            case GraphQLListValue or GraphQLObjectValue:
+                return @<code class="blazorql-builder-literal" data-testid="builder-value">@QueryBuilder.Print(value)</code>;
+        }
+
+        if (named?.Kind == "ENUM" ||
+            named?.Name == "Boolean")
+        {
+            var current = value is GraphQLNullValue ? null : QueryBuilder.Print(value);
+            var options = named.Kind == "ENUM"
+                ? (named.EnumValues ?? []).Where(_ => !_.IsDeprecated || _.Name == current).Select(_ => _.Name).ToList()
+                : ["true", "false"];
+            return @<select class="blazorql-builder-select"
+                            data-testid="builder-value"
+                            aria-label="@(string.Join('.', input))"
+                            @onchange="_ => SetValue(definition, path, input, type, _.Value)">
+                @if (current is null || !options.Contains(current))
+                {
+                    <option value="" selected></option>
+                }
+                @foreach (var option in options)
+                {
+                    <option value="@option" selected="@(option == current)">@option</option>
+                }
+            </select>;
+        }
+
+        if (named?.Kind is not "SCALAR")
+        {
+            return @<code class="blazorql-builder-literal" data-testid="builder-value">@QueryBuilder.Print(value)</code>;
+        }
+
+        return @<input class="blazorql-builder-input @(invalid.Contains(key) ? "blazorql-invalid" : null)"
+                       data-testid="builder-value"
+                       aria-label="@(string.Join('.', input))"
+                       aria-invalid="@(invalid.Contains(key) ? "true" : null)"
+                       inputmode="@InputMode(named.Name)"
+                       spellcheck="false"
+                       placeholder="@(value is GraphQLNullValue ? "null" : named.Name)"
+                       value="@QueryBuilder.Display(value)"
+                       @onchange="_ => SetValue(definition, path, input, type, _.Value)" />;
+    }
+
+    // A spacer where there is nothing to expand, so every name starts in the same column.
+    static RenderFragment Caret(bool composite, bool expanded)
+    {
+        if (!composite)
+        {
+            return @<span class="blazorql-builder-caret" aria-hidden="true"></span>;
+        }
+
+        return @<svg class="blazorql-builder-caret @(expanded ? "blazorql-expanded" : null)" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"/>
+        </svg>;
+    }
+
+    static RenderFragment Check(bool selected) =>
+        @<svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"/>
+            @if (selected)
+            {
+                <path d="M4.5 8.2l2.4 2.4 4.6-4.9"/>
+            }
+        </svg>;
+
+}

@@ -159,8 +159,11 @@ public abstract class BrowserFixture
     {
         foreach (var started in hosts.Values)
         {
-            if (started.IsValueCreated &&
-                started.Value.IsCompletedSuccessfully)
+            if (started is
+                {
+                    IsValueCreated: true,
+                    Value.IsCompletedSuccessfully: true
+                })
             {
                 await started.Value.Result.DisposeAsync();
             }
