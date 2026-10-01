@@ -52,6 +52,31 @@ public class UiScreenshotTests :
             .PageScreenshotOptions(new(), screenshotOnly: true);
     }
 
+    // A search with more results than the dropdown's capped height holds. Each row keeps its height
+    // and the list scrolls, rather than every row being squashed to fit.
+    [Test]
+    public async Task DocExplorerSearch()
+    {
+        var page = await NewSizedPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+        await ForceTheme(page, "light");
+
+        await page.ClickAsync("[data-testid='sidebar-docs']");
+        await page.WaitForSelectorAsync("[data-testid='doc-search']", 10);
+        await page.FillAsync("[data-testid='doc-search'] input", "e");
+        await page.WaitForSelectorAsync(".blazorql-doc-search-result", 10);
+
+        var results = page.Locator(".blazorql-doc-search-results");
+        await Assert.That(await results.EvaluateAsync<bool>("_ => _.scrollHeight > _.clientHeight")).IsTrue();
+        // A squashed row is shorter than what it holds; the screenshot alone is too forgiving to say so.
+        var squashed = await page.Locator(".blazorql-doc-search-result")
+            .EvaluateAllAsync<int>("_ => _.filter(row => row.clientHeight < row.scrollHeight).length");
+        await Assert.That(squashed).IsEqualTo(0);
+
+        await Verify(page)
+            .PageScreenshotOptions(new(), screenshotOnly: true);
+    }
+
     // The query builder over a query with arguments, a variable, a nested object and a union member —
     // most of what the tree can show at once.
     [Test]

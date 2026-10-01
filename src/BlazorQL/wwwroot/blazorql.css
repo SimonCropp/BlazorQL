@@ -359,6 +359,9 @@ html[data-theme='dark'] .blazorql {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* Overflow hidden lets a flex item shrink below its content, so a long result list squashed
+       every row to fit the capped height instead of scrolling. */
+    flex-shrink: 0;
 }
 
 .blazorql-doc-search-result:hover {
