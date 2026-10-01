@@ -707,6 +707,53 @@ public class QueryBuilderTests
         await Assert.That(QueryBuilder.ToggleVariable(schema, """fragment F on Query { user(id: "1") { id } }""", 0, Path("user"), "id"))
             .IsNull();
 
+    // ---- Variables document ----
+
+    string? VariablesAfter(string before, string after, string variables) =>
+        QueryBuilder.VariablesEdit(schema, before, after, 0)?.Invoke(variables);
+
+    // The literal the argument held is the value the variable goes in with.
+    [Test]
+    public async Task AVariableTheEditDeclaresGoesIntoTheVariables()
+    {
+        var before = """query Q { user(id: "7") { id } }""";
+        var after = QueryBuilder.ToggleVariable(schema, before, 0, Path("user"), "id")!;
+        await Assert.That(VariablesAfter(before, after, "")).IsEqualTo(
+            """
+            {
+              "id": "7"
+            }
+            """.ReplaceLineEndings("\n"));
+    }
+
+    [Test]
+    public async Task AVariableTheEditDropsComesOutOfTheVariables()
+    {
+        var before = """query Q($id: ID! = "7") { user(id: $id) { id } }""";
+        var after = QueryBuilder.ToggleVariable(schema, before, 0, Path("user"), "id")!;
+        await Assert.That(VariablesAfter(before, after, """{"id": "9", "other": 1}"""))
+            .IsEqualTo(
+                """
+                {
+                  "other": 1
+                }
+                """.ReplaceLineEndings("\n"));
+    }
+
+    // A value somebody typed is kept, and a document that is not JSON is left alone.
+    [Test]
+    public async Task TheVariablesKeepAValueAlreadyThere()
+    {
+        var before = """query Q { user(id: "7") { id } }""";
+        var after = QueryBuilder.ToggleVariable(schema, before, 0, Path("user"), "id")!;
+        await Assert.That(VariablesAfter(before, after, """{"id": "9"}""")).Contains("\"9\"");
+        await Assert.That(VariablesAfter(before, after, "{ not json")).IsNull();
+    }
+
+    [Test]
+    public async Task AnEditThatDeclaresNothingLeavesTheVariablesAlone() =>
+        await Assert.That(QueryBuilder.VariablesEdit(schema, "query Q { version }", "query Q { version user(id: \"1\") { id } }", 0)).IsNull();
+
     // ---- Operations ----
 
     // The welcome text is comments only, which parses as a document with nothing in it. The new

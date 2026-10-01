@@ -2048,6 +2048,43 @@ public partial class BlazorQLIde :
         SchedulePersist();
     }
 
+    /// <summary>
+    /// Keeps the variables document in step with a builder edit that declared or dropped a variable.
+    /// Written whole, as one undoable edit, since the document is rewritten as JSON.
+    /// </summary>
+    async Task ApplyBuilderVariablesEdit(Func<string, string?> edit)
+    {
+        if (editorTools?.VariablesEditor is not { } editor ||
+            variablesModel is null)
+        {
+            return;
+        }
+
+        var text = await variablesModel.GetValue(EndOfLinePreference.LF, false);
+        var edited = edit(text);
+        if (edited is null ||
+            edited == text)
+        {
+            return;
+        }
+
+        await editor.PushUndoStop();
+        await editor.ExecuteEdits(
+            "blazorql-builder",
+            [
+                new()
+                {
+                    Range = new LineIndex(text).Range(0, text.Length),
+                    Text = edited
+                }
+            ],
+            (List<Selection>?) null);
+        await editor.PushUndoStop();
+
+        tabs.Active.Variables = edited;
+        SchedulePersist();
+    }
+
     // ---- History + dialogs ----
 
     /// <summary>Clicking a history item loads it into the active tab's editors.</summary>

@@ -14,7 +14,8 @@
         case PluginKind.Builder:
             <QueryBuilderPane Schema="Schema"
                               Query="@Query"
-                              OnEdit="OnBuilderEdit" />
+                              OnEdit="OnBuilderEdit"
+                              OnVariablesEdit="OnBuilderVariablesEdit" />
             break;
         default:
             @if (History is not null)

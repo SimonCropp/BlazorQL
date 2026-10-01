@@ -27,6 +27,13 @@ public partial class QueryBuilderPane
     [Parameter]
     public EventCallback<Func<string, string?>> OnEdit { get; set; }
 
+    /// <summary>
+    /// Raised with an edit for the IDE to apply to the variables editor, when an operation edit
+    /// declared a variable or dropped one.
+    /// </summary>
+    [Parameter]
+    public EventCallback<Func<string, string?>> OnVariablesEdit { get; set; }
+
     // Parsed when the text changes rather than on every render: the IDE renders on every pane-drag
     // frame and every keystroke debounce, and the tree is drawn from the same parse each time.
     string? parsedText;
@@ -167,20 +174,45 @@ public partial class QueryBuilderPane
     static string Key(int definition, BuilderStep[] path, string[] input) =>
         $"{definition}/{string.Join('/', path.Select(_ => _.IsFragment ? "..." + _.Name : _.Name))}({string.Join('.', input)})";
 
+    /// <summary>
+    /// Raises an operation edit, then the variables edit that keeps the variables document in step
+    /// with whatever it declared or dropped — switching an argument to a variable, or taking out the
+    /// last field that read one.
+    /// </summary>
+    async Task Edit(Func<string, string?> edit, int definition)
+    {
+        Func<string, string?>? variablesEdit = null;
+        await OnEdit.InvokeAsync(text =>
+        {
+            var edited = edit(text);
+            if (edited is not null)
+            {
+                variablesEdit = QueryBuilder.VariablesEdit(Schema!, text, edited, definition);
+            }
+
+            return edited;
+        });
+
+        if (variablesEdit is not null)
+        {
+            await OnVariablesEdit.InvokeAsync(variablesEdit);
+        }
+    }
+
     Task Edit(Func<string, string?> edit) =>
         OnEdit.InvokeAsync(edit);
 
     Task Toggle(int definition, BuilderStep[] path) =>
-        Edit(_ => QueryBuilder.ToggleSelection(Schema!, _, definition, path));
+        Edit(_ => QueryBuilder.ToggleSelection(Schema!, _, definition, path), definition);
 
     Task ToggleSpread(int definition, BuilderStep[] path, string fragment) =>
-        Edit(_ => QueryBuilder.ToggleSpread(Schema!, _, definition, path, fragment));
+        Edit(_ => QueryBuilder.ToggleSpread(Schema!, _, definition, path, fragment), definition);
 
     Task ToggleArgument(int definition, BuilderStep[] path, string[] input) =>
-        Edit(_ => QueryBuilder.ToggleArgument(Schema!, _, definition, path, input));
+        Edit(_ => QueryBuilder.ToggleArgument(Schema!, _, definition, path, input), definition);
 
     Task ToggleVariable(int definition, BuilderStep[] path, string argument) =>
-        Edit(_ => QueryBuilder.ToggleVariable(Schema!, _, definition, path, argument));
+        Edit(_ => QueryBuilder.ToggleVariable(Schema!, _, definition, path, argument), definition);
 
     /// <summary>
     /// Writes what a value input holds, when it is a literal of the input's type. When it is not —
@@ -197,7 +229,7 @@ public partial class QueryBuilderPane
         }
 
         invalid.Remove(key);
-        return Edit(_ => QueryBuilder.SetArgument(Schema!, _, definition, path, input, literal));
+        return Edit(_ => QueryBuilder.SetArgument(Schema!, _, definition, path, input, literal), definition);
     }
 
     Task Rename(int definition, ChangeEventArgs args) =>

@@ -52,6 +52,10 @@ public partial class PluginPane
     [Parameter]
     public EventCallback<Func<string, string?>> OnBuilderEdit { get; set; }
 
+    /// <summary>Raised with the edit to the variables document that keeps it in step with a builder edit.</summary>
+    [Parameter]
+    public EventCallback<Func<string, string?>> OnBuilderVariablesEdit { get; set; }
+
     string Title =>
         Kind switch
         {
