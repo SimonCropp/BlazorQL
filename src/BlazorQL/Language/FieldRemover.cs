@@ -299,7 +299,8 @@ public static class FieldRemover
         return text[..start] + text[to..];
     }
 
-    static void CollectUsed(GraphQLSelectionSet? set, HashSet<string> used)
+    // The collectors are shared with QueryBuilder, which takes out the variables an edit orphaned.
+    internal static void CollectUsed(GraphQLSelectionSet? set, HashSet<string> used)
     {
         if (set is null)
         {
@@ -328,7 +329,7 @@ public static class FieldRemover
         }
     }
 
-    static void CollectUsed(GraphQLArguments? arguments, HashSet<string> used)
+    internal static void CollectUsed(GraphQLArguments? arguments, HashSet<string> used)
     {
         foreach (var argument in arguments?.Items ?? [])
         {
@@ -336,7 +337,7 @@ public static class FieldRemover
         }
     }
 
-    static void CollectUsed(GraphQLDirectives? directives, HashSet<string> used)
+    internal static void CollectUsed(GraphQLDirectives? directives, HashSet<string> used)
     {
         foreach (var directive in directives?.Items ?? [])
         {
@@ -345,7 +346,7 @@ public static class FieldRemover
     }
 
     /// <summary>A variable can be nested at any depth inside a list or input object literal.</summary>
-    static void CollectUsed(GraphQLValue value, HashSet<string> used)
+    internal static void CollectUsed(GraphQLValue value, HashSet<string> used)
     {
         switch (value)
         {

@@ -1,0 +1,194 @@
+﻿<div class="blazorql-builder" data-testid="builder">
+  <section class="blazorql-builder-definition" data-testid="builder-operation">
+    <div class="blazorql-builder-header">
+      <span class="blazorql-builder-keyword">query</span>
+      <input class="blazorql-builder-name" data-testid="builder-operation-name" aria-label="Operation name" placeholder="anonymous" spellcheck="false" value="Users" blazor:onchange="1">
+      <button type="button" class="blazorql-builder-remove" data-testid="builder-remove-operation" title="Remove this operation" aria-label="Remove this operation" blazor:onclick="2">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="blazorql-builder-fields">
+      <div class="blazorql-builder-node">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="user" title="user: User" blazor:onclick="3">
+          <svg class="blazorql-builder-caret " aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+          </svg>
+          <span class="blazorql-builder-field">user</span>
+        </button>
+      </div>
+      <div class="blazorql-builder-node">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="true" data-testid="builder-field" data-name="users" title="users: [User!]!" blazor:onclick="4">
+          <svg class="blazorql-builder-caret blazorql-expanded" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+            <path d="M4.5 8.2l2.4 2.4 4.6-4.9"></path>
+          </svg>
+          <span class="blazorql-builder-field">users</span>
+        </button>
+        <div class="blazorql-builder-children">
+          <div class="blazorql-builder-node">
+            <div class="blazorql-builder-row">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="true" data-testid="builder-argument" data-name="first" title="first: Int" blazor:onclick="5">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                  <path d="M4.5 8.2l2.4 2.4 4.6-4.9"></path>
+                </svg>
+                <span class="blazorql-builder-argument">first:</span>
+              </button>
+              <input class="blazorql-builder-input " data-testid="builder-value" aria-label="first" inputmode="numeric" spellcheck="false" placeholder="Int" value="10" blazor:onchange="6">
+              <button type="button" class="blazorql-builder-variable " data-testid="builder-variable" aria-pressed="false" title="Pass the value as a variable" aria-label="Pass the value as a variable" blazor:onclick="7">$</button>
+            </div>
+          </div>
+          <div class="blazorql-builder-node">
+            <div class="blazorql-builder-row">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-argument" data-name="filter" title="filter: UserFilter" blazor:onclick="8">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                </svg>
+                <span class="blazorql-builder-argument">filter:</span>
+              </button>
+            </div>
+          </div>
+          <div class="blazorql-builder-node">
+            <div class="blazorql-builder-row">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="true" data-testid="builder-argument" data-name="role" title="role: Role" blazor:onclick="9">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                  <path d="M4.5 8.2l2.4 2.4 4.6-4.9"></path>
+                </svg>
+                <span class="blazorql-builder-argument">role:</span>
+              </button>
+              <span class="blazorql-builder-variable-name" data-testid="builder-value">$role</span>
+              <button type="button" class="blazorql-builder-variable blazorql-active" data-testid="builder-variable" aria-pressed="true" title="Write the value in the operation instead" aria-label="Write the value in the operation instead" blazor:onclick="10">$</button>
+            </div>
+          </div>
+          <div class="blazorql-builder-fields">
+            <div class="blazorql-builder-node">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="true" data-testid="builder-field" data-name="id" title="id: ID!" blazor:onclick="11">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                  <path d="M4.5 8.2l2.4 2.4 4.6-4.9"></path>
+                </svg>
+                <span class="blazorql-builder-field">id</span>
+              </button>
+            </div>
+            <div class="blazorql-builder-node">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="true" data-testid="builder-field" data-name="name" title="name: String" blazor:onclick="12">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                  <path d="M4.5 8.2l2.4 2.4 4.6-4.9"></path>
+                </svg>
+                <span class="blazorql-builder-field">name</span>
+              </button>
+            </div>
+            <div class="blazorql-builder-node">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="friends" title="friends: UserConnection" blazor:onclick="13">
+                <svg class="blazorql-builder-caret " aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 6l6 6-6 6"></path>
+                </svg>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                </svg>
+                <span class="blazorql-builder-field">friends</span>
+              </button>
+            </div>
+            <div class="blazorql-builder-node">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="role" title="role: Role" blazor:onclick="14">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                </svg>
+                <span class="blazorql-builder-field">role</span>
+              </button>
+            </div>
+            <div class="blazorql-builder-node">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="score" title="score: Float" blazor:onclick="15">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                </svg>
+                <span class="blazorql-builder-field">score</span>
+              </button>
+            </div>
+            <div class="blazorql-builder-node blazorql-builder-meta">
+              <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="__typename" title="The name of the object's type" blazor:onclick="16">
+                <span class="blazorql-builder-caret" aria-hidden="true"></span>
+                <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+                  <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+                </svg>
+                <span class="blazorql-builder-field">__typename</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="blazorql-builder-node">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="search" title="search: [SearchResult!]!" blazor:onclick="17">
+          <svg class="blazorql-builder-caret " aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+          </svg>
+          <span class="blazorql-builder-field">search</span>
+        </button>
+      </div>
+      <div class="blazorql-builder-node">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="node" title="node: Node" blazor:onclick="18">
+          <svg class="blazorql-builder-caret " aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+          </svg>
+          <span class="blazorql-builder-field">node</span>
+        </button>
+      </div>
+      <div class="blazorql-builder-node">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="viewer" title="viewer: User" blazor:onclick="19">
+          <svg class="blazorql-builder-caret " aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 6l6 6-6 6"></path>
+          </svg>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+          </svg>
+          <span class="blazorql-builder-field">viewer</span>
+        </button>
+      </div>
+      <div class="blazorql-builder-node">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="version" title="version: String" blazor:onclick="20">
+          <span class="blazorql-builder-caret" aria-hidden="true"></span>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+          </svg>
+          <span class="blazorql-builder-field">version</span>
+        </button>
+      </div>
+      <div class="blazorql-builder-node blazorql-builder-meta">
+        <button type="button" class="blazorql-builder-toggle" role="checkbox" aria-checked="false" data-testid="builder-field" data-name="__typename" title="The name of the object's type" blazor:onclick="21">
+          <span class="blazorql-builder-caret" aria-hidden="true"></span>
+          <svg class="blazorql-builder-check" aria-hidden="true" viewBox="0 0 16 16">
+            <rect x="1.5" y="1.5" width="13" height="13" rx="3"></rect>
+          </svg>
+          <span class="blazorql-builder-field">__typename</span>
+        </button>
+      </div>
+    </div>
+  </section>
+  <div class="blazorql-builder-add">
+    <button type="button" class="blazorql-builder-add-button" data-testid="builder-add" data-kind="query" title="Start a new query" blazor:onclick="22">+ query</button>
+    <button type="button" class="blazorql-builder-add-button" data-testid="builder-add" data-kind="mutation" title="Start a new mutation" blazor:onclick="23">+ mutation</button>
+  </div>
+</div>
