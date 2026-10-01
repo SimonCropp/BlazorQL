@@ -169,6 +169,22 @@ public class QueryBuilderPaneTests
         await Assert.That(host.Text).IsEqualTo("{ users(first: 25) { id } }");
     }
 
+    // A list of scalars or enum values is typed as its items separated by commas.
+    [Test]
+    [Arguments("ids", "1, 2", """{ users(ids: ["1", "2"]) { id } }""")]
+    [Arguments("roles", "ADMIN, EDITOR", "{ users(roles: [ADMIN, EDITOR]) { id } }")]
+    public async Task WritesAListTypedIn(string argument, string typed, string expected)
+    {
+        await using var context = new BunitContext();
+        var host = Render(context, "{ users { id } }");
+
+        host.Click(Argument(argument));
+        await Assert.That(host.Text).IsEqualTo($"{{ users({argument}: []) {{ id }} }}");
+
+        host.Find("input[data-testid='builder-value']").Change(typed);
+        await Assert.That(host.Text).IsEqualTo(expected);
+    }
+
     // Letters in a number would be a literal the server refuses; the text is left alone and the input
     // says so.
     [Test]

@@ -171,6 +171,20 @@ public partial class QueryBuilderPane
             _ => null
         };
 
+    /// <summary>
+    /// Whether a list value can be edited as its items separated by commas: a list of scalars or enum
+    /// values, each a plain literal. A nested list, an input object, or a variable among the items is
+    /// shown as written instead, since the text input would lose it — as is a string holding a comma,
+    /// which would come back as two items.
+    /// </summary>
+    bool IsTypedAsText(TypeRef type, GraphQLValue value) =>
+        QueryBuilder.IsList(type) &&
+        Schema?.Find(type.Unwrap().Name)?.Kind is "SCALAR" or "ENUM" &&
+        value is GraphQLListValue list &&
+        (list.Values ?? []).All(_ =>
+            _ is not (GraphQLListValue or GraphQLObjectValue or GraphQLVariable or GraphQLNullValue) &&
+            !(_ is GraphQLStringValue text && text.Value.Span.Contains(',')));
+
     static string Key(int definition, BuilderStep[] path, string[] input) =>
         $"{definition}/{string.Join('/', path.Select(_ => _.IsFragment ? "..." + _.Name : _.Name))}({string.Join('.', input)})";
 

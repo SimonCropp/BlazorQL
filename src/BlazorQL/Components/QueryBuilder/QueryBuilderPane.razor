@@ -365,12 +365,14 @@ else
                 return @<span class="blazorql-builder-variable-name" data-testid="builder-value">$@variable.Name.StringValue</span>;
             case GraphQLObjectValue when named?.Kind == "INPUT_OBJECT":
                 return null;
-            case GraphQLListValue or GraphQLObjectValue:
+            case GraphQLListValue or GraphQLObjectValue when !IsTypedAsText(type, value):
                 return @<code class="blazorql-builder-literal" data-testid="builder-value">@QueryBuilder.Print(value)</code>;
         }
 
-        if (named?.Kind == "ENUM" ||
-            named?.Name == "Boolean")
+        var isList = QueryBuilder.IsList(type);
+        if (!isList &&
+            (named?.Kind == "ENUM" ||
+             named?.Name == "Boolean"))
         {
             var current = value is GraphQLNullValue ? null : QueryBuilder.Print(value);
             var options = named.Kind == "ENUM"
@@ -391,7 +393,7 @@ else
             </select>;
         }
 
-        if (named?.Kind is not "SCALAR")
+        if (named?.Kind is not ("SCALAR" or "ENUM"))
         {
             return @<code class="blazorql-builder-literal" data-testid="builder-value">@QueryBuilder.Print(value)</code>;
         }
@@ -400,9 +402,10 @@ else
                        data-testid="builder-value"
                        aria-label="@(string.Join('.', input))"
                        aria-invalid="@(invalid.Contains(key) ? "true" : null)"
-                       inputmode="@InputMode(named.Name)"
+                       inputmode="@(isList ? null : InputMode(named.Name))"
                        spellcheck="false"
-                       placeholder="@(value is GraphQLNullValue ? "null" : named.Name)"
+                       title="@(isList ? "Items separated by commas" : null)"
+                       placeholder="@(value is GraphQLNullValue ? "null" : isList ? $"{named.Name}, {named.Name}, …" : named.Name)"
                        value="@QueryBuilder.Display(value)"
                        @onchange="_ => SetValue(definition, path, input, type, _.Value)" />;
     }
