@@ -91,7 +91,7 @@ public class HttpFetcherTests
         // GraphQL errors ride non-200s as ordinary documents.
         await Assert.That(results).Count().IsEqualTo(1);
         await Assert.That(results[0].GetProperty("errors")[0].GetProperty("message").GetString()).IsEqualTo("boom");
-        await Assert.That(fetcher.LastStatus).IsEqualTo(new HttpFetchStatus(400, "Bad Request"));
+        await Assert.That(fetcher.LastStatus).IsEqualTo(new(400, "Bad Request"));
     }
 
     [Test]

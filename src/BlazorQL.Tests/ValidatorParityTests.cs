@@ -245,7 +245,7 @@ public class ValidatorParityTests
     /// introspection query, executed against the same schema object GraphQL.NET validates over.
     /// The draft additions are left off because GraphQL.NET does not serve them.
     /// </summary>
-    [Before(HookType.Class)]
+    [Before(Class)]
     public static async Task Introspect()
     {
         var result = await new DocumentExecuter().ExecuteAsync(new()

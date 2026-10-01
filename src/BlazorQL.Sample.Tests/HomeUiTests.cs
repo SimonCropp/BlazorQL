@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The sample's default page — an ordinary Blazor app consuming the GraphQL schema through the
 /// shared fetcher: its load-time query, mutation, and subscription, the sidecar capturing them,
 /// and the links into the query explorer.
