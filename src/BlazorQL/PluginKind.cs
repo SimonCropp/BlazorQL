@@ -4,5 +4,6 @@ namespace BlazorQL;
 public enum PluginKind
 {
     Docs,
-    History
+    History,
+    Builder
 }

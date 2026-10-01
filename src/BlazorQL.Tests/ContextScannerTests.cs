@@ -5,7 +5,7 @@
 /// </summary>
 public class ContextScannerTests
 {
-    static readonly SchemaIndex fixture = LoadFixture();
+    readonly SchemaIndex fixture = LoadFixture();
 
     /// <summary>
     /// The shared doc-explorer fixture has no mutation or subscription root, no enum-typed or
@@ -61,8 +61,13 @@ public class ContextScannerTests
         }
         """;
 
-    static readonly SchemaIndex roots = Parse(RootsSchema);
+    readonly SchemaIndex roots = Parse(RootsSchema);
 
+    /// <summary>
+    /// A new index on every call, held in instance fields so that each test gets its own. Tests
+    /// run in parallel, and a <see cref="SchemaIndex"/> shared between them races as it fills its
+    /// lookup tables.
+    /// </summary>
     public static SchemaIndex LoadFixture() =>
         Parse(File.ReadAllText(
             Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json")));
@@ -74,7 +79,7 @@ public class ContextScannerTests
     }
 
     /// <summary>Scans <paramref name="marked"/> with the caret at its single <c>|</c>.</summary>
-    static ScanResult Scan(string marked, SchemaIndex? schema = null)
+    ScanResult Scan(string marked, SchemaIndex? schema = null)
     {
         var caret = marked.IndexOf('|');
         if (caret < 0)

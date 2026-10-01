@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The foundation smoke: the published sample boots with the BlazorMonaco editor stack — Monaco
 /// mounted, graphql/json languages present, and, decisively, a console free of errors, which is
 /// where asset and MIME failures land while the page otherwise looks fine.

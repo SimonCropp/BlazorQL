@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The M6 storage layer over the published sample: history recording and restoring, tab/query
 /// survival across a reload, theme persistence, and the settings dialog's clear-storage.
 /// </summary>

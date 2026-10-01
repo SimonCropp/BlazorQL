@@ -5,7 +5,8 @@
 /// </summary>
 public class QueryGeneratorTests
 {
-    static readonly SchemaIndex schema = LoadSchema();
+    // Per test: an index shared between tests run in parallel races as it fills its lookup tables.
+    readonly SchemaIndex schema = LoadSchema();
 
     static SchemaIndex LoadSchema()
     {

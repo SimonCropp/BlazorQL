@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The debug sidecar over the published sample: the floating launcher, capture of the app's
 /// requests, the detail view, the IDE deep link, the keyboard shortcut, and clearing. The sample
 /// renders it on its app page only — the query explorer is the IDE itself, so it never shows there.

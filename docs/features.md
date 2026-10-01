@@ -16,6 +16,15 @@ Navigable schema documentation: the root page lists root types and every schema 
 Every object, interface, and union type carries a generate-query button — next to its name on the root page, and in the header of its type page. It opens a new tab (or fills a blank one) with a document selecting every non-deprecated member of the type: a root operation type becomes the operation of its kind, any other type is fetched through the root query fields that return it, and a type no root field returns becomes a fragment. Required arguments become variables; nested composite fields take the same default selection as fill-leafs-on-execute.
 
 
+## Query builder
+
+<img src="../src/BlazorQL.Sample.Tests/UiScreenshotTests.QueryBuilder.verified.png" width="700" border="1" alt="The query builder beside the operation it mirrors: checked fields, an argument holding a variable, an enum argument, and a union member selected through an inline fragment">
+
+The schema as a tree of check boxes over the operation editor, in the manner of GraphiQL's explorer. Checking a field selects it — with placeholders for the arguments it cannot do without and, for an object, the same default selection fill-leafs-on-execute gives — and unchecking takes it out. A checked field opens on its arguments and its members. An argument is switched on with a placeholder and edited in place: a list for an enum or a boolean, a text box for anything else (a value that is not a literal of its type is refused rather than written), and an input object's fields as rows of their own. The `$` beside an argument turns its value into a variable the operation declares, with the literal kept as the variable's default, and back again. An interface or union offers an inline fragment per possible type, and a fragment the document defines can be spread wherever its type is selected.
+
+The tree is drawn from the editor's text rather than kept beside it, so typing shows up in the tree, and every operation and fragment in the document gets a section of its own. Each click is a splice at the spot it changes: the rest of the document — its layout, its comments — stays exactly as written, what is added is laid out the way the formatter would, and the click is one step of the editor's undo. A blank tab, or one holding only the welcome text, offers a query to start from, and the buttons under the tree start a mutation or subscription beside it. A document that does not parse is left alone until it does.
+
+
 ## Execution
 
 Ctrl-Enter runs the operation containing the caret; with several operations in the document the run button opens a picker. Subscriptions stream events into the response pane until stopped (the run button becomes a stop button, and switching tabs stops too). Incremental delivery (`@defer`/`@stream`) merges patches into the accumulated response live, in both the path-based and pending/completed-id wire formats. Before a run, missing leaf selections are filled in automatically and highlighted amber for a few seconds.

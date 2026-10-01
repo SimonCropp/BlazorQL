@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The sample's endpoint box: applying an endpoint swaps the IDE's fetcher, which re-introspects.
 /// A dead endpoint fails visibly; clearing it restores the in-browser schema. Console errors are
 /// deliberately not asserted here — the dead endpoint logs network failures.

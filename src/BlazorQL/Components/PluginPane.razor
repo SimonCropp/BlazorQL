@@ -2,16 +2,25 @@
 
 <div class="blazorql-plugin-pane" data-testid="plugin-pane" style="@Style">
     <div class="blazorql-plugin-title">@Title</div>
-    @if (Kind == PluginKind.Docs)
+    @switch (Kind)
     {
-        <DocExplorer Schema="Schema"
-                     SdlProvider="SdlProvider"
-                     Navigator="Navigator"
-                     OnGenerateQuery="OnGenerateQuery"
-                     OnCopyGenerated="OnCopyGenerated" />
-    }
-    else if (History is not null)
-    {
-        <HistoryPane Store="History" OnSelect="OnHistorySelect" />
+        case PluginKind.Docs:
+            <DocExplorer Schema="Schema"
+                         SdlProvider="SdlProvider"
+                         Navigator="Navigator"
+                         OnGenerateQuery="OnGenerateQuery"
+                         OnCopyGenerated="OnCopyGenerated" />
+            break;
+        case PluginKind.Builder:
+            <QueryBuilderPane Schema="Schema"
+                              Query="@Query"
+                              OnEdit="OnBuilderEdit" />
+            break;
+        default:
+            @if (History is not null)
+            {
+                <HistoryPane Store="History" OnSelect="OnHistorySelect" />
+            }
+            break;
     }
 </div>

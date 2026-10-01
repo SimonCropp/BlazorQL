@@ -969,6 +969,248 @@ html[data-theme='dark'] .blazorql {
     font: inherit;
 }
 
+/* ---- Query builder ---- */
+
+/* Monospace throughout: the tree is the operation, and reads best looking like it. */
+.blazorql-builder {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.85rem;
+}
+
+.blazorql-builder-notice {
+    color: var(--blazorql-muted);
+}
+
+.blazorql-builder-error {
+    margin-top: 0.5rem;
+    color: var(--blazorql-error);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.8rem;
+}
+
+.blazorql-builder-definition {
+    margin-bottom: 0.7rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--blazorql-border);
+}
+
+.blazorql-builder-header {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 0;
+    margin-bottom: 0.25rem;
+}
+
+.blazorql-builder-keyword {
+    color: light-dark(#b11a04, #ff8a7a);
+}
+
+.blazorql-builder-field {
+    color: light-dark(#1f61a0, #55b9f3);
+}
+
+.blazorql-builder-argument {
+    color: light-dark(#8b2bb9, #c792ea);
+}
+
+.blazorql-builder-type {
+    color: light-dark(#ca9800, #ffc21d);
+}
+
+.blazorql-builder-spread {
+    color: light-dark(#0b7fc7, #79c0ff);
+}
+
+.blazorql-builder-variable-name {
+    color: light-dark(#397d13, #7ee787);
+}
+
+.blazorql-builder-literal,
+.blazorql-builder-pending-name,
+.blazorql-builder-meta .blazorql-builder-field {
+    color: var(--blazorql-muted);
+}
+
+.blazorql-builder-name {
+    flex: 1;
+    min-width: 0;
+    max-width: 16rem;
+    padding: 0.1rem 0.35rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: light-dark(#d2054e, #ff7eb6);
+    font: inherit;
+}
+
+.blazorql-builder-name:hover,
+.blazorql-builder-name:focus {
+    border-color: var(--blazorql-border);
+    background: var(--blazorql-bg);
+}
+
+.blazorql-builder-remove {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.4rem;
+    height: 1.4rem;
+    margin-left: auto;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    cursor: pointer;
+}
+
+.blazorql-builder-remove svg {
+    width: 0.85rem;
+    height: 0.85rem;
+}
+
+.blazorql-builder-remove:hover {
+    background: color-mix(in srgb, var(--blazorql-error) 14%, transparent);
+    color: var(--blazorql-error);
+}
+
+.blazorql-builder-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    min-width: 0;
+}
+
+/* The whole label is the check box: name, caret and box toggle together. */
+.blazorql-builder-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: none;
+    padding: 0.1rem 0.3rem 0.1rem 0.1rem;
+    border: none;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.blazorql-builder-toggle:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 10%, transparent);
+}
+
+.blazorql-builder-toggle:focus-visible {
+    outline: 2px solid var(--blazorql-accent);
+    outline-offset: -2px;
+}
+
+.blazorql-builder-caret {
+    display: inline-block;
+    flex: none;
+    width: 0.75rem;
+    height: 0.75rem;
+    color: var(--blazorql-muted);
+}
+
+.blazorql-builder-caret.blazorql-expanded {
+    transform: rotate(90deg);
+}
+
+.blazorql-builder-check {
+    flex: none;
+    width: 0.85rem;
+    height: 0.85rem;
+    fill: none;
+    stroke: var(--blazorql-muted);
+    stroke-width: 1.3;
+}
+
+.blazorql-builder-toggle[aria-checked='true'] .blazorql-builder-check rect {
+    fill: var(--blazorql-accent);
+    stroke: var(--blazorql-accent);
+}
+
+.blazorql-builder-toggle[aria-checked='true'] .blazorql-builder-check path {
+    stroke: var(--blazorql-bg);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* One level in, hung from a rule under the parent's caret. */
+.blazorql-builder-children {
+    margin-left: 0.5rem;
+    padding-left: 0.55rem;
+    border-left: 1px solid var(--blazorql-border);
+}
+
+.blazorql-builder-input,
+.blazorql-builder-select {
+    min-width: 0;
+    padding: 0.05rem 0.35rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: var(--blazorql-bg);
+    color: light-dark(#d64292, #ff9ac1);
+    font: inherit;
+    font-size: 0.8rem;
+}
+
+.blazorql-builder-input {
+    flex: 1;
+    max-width: 14rem;
+}
+
+.blazorql-builder-input.blazorql-invalid {
+    border-color: var(--blazorql-error);
+}
+
+.blazorql-builder-variable {
+    flex: none;
+    padding: 0 0.3rem;
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-muted);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.blazorql-builder-variable:hover {
+    color: var(--blazorql-text);
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
+.blazorql-builder-variable.blazorql-active {
+    color: light-dark(#397d13, #7ee787);
+    border-color: currentColor;
+}
+
+.blazorql-builder-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.blazorql-builder-add-button {
+    border: 1px solid var(--blazorql-border);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--blazorql-text);
+    font: inherit;
+    font-size: 0.8rem;
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+}
+
+.blazorql-builder-add-button:hover {
+    background: color-mix(in srgb, var(--blazorql-accent) 12%, transparent);
+}
+
 /* ---- Dialogs ---- */
 
 .blazorql-dialog-overlay {

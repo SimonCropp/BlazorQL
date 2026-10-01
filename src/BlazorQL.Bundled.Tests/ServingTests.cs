@@ -99,7 +99,7 @@ public class ServingTests :
         using var compressed = await Get(client, bootScript, brotli: true);
         using var identity = await Get(client, bootScript, brotli: false);
 
-        await Assert.That(compressed.Headers.ETag).IsNotEqualTo(identity.Headers.ETag);
+        await Assert.That(compressed.Headers.ETag)!.IsNotEqualTo(identity.Headers.ETag);
     }
 
     /// <summary>

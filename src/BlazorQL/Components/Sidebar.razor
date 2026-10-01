@@ -24,6 +24,19 @@
                 <path d="M12 7v5l3.5 2"/>
             </svg>
         </button>
+        <button type="button"
+                class="blazorql-sidebar-button @(Visible == PluginKind.Builder ? "blazorql-active" : null)"
+                data-testid="sidebar-builder"
+                title="Show Query Builder"
+                aria-label="Show Query Builder"
+                @onclick="() => OnToggle.InvokeAsync(PluginKind.Builder)">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="7" height="5" rx="1.5"/>
+                <rect x="14" y="9.5" width="7" height="5" rx="1.5"/>
+                <rect x="14" y="16" width="7" height="5" rx="1.5"/>
+                <path d="M6.5 8v10.5H14M6.5 12H14"/>
+            </svg>
+        </button>
     </div>
     <div class="blazorql-sidebar-group">
         <button type="button"

@@ -795,6 +795,7 @@ public partial class BlazorQLIde :
         {
             "docs" => PluginKind.Docs,
             "history" => PluginKind.History,
+            "builder" => PluginKind.Builder,
             _ => null
         };
 
@@ -912,6 +913,9 @@ public partial class BlazorQLIde :
                 break;
             case PluginKind.History:
                 storage.Set("visiblePlugin", "history");
+                break;
+            case PluginKind.Builder:
+                storage.Set("visiblePlugin", "builder");
                 break;
             default:
                 storage.Remove("visiblePlugin");
@@ -1970,6 +1974,78 @@ public partial class BlazorQLIde :
 
         await operationEditor.SetValue(removed);
         statusLine = $"Removed {error.PathText} from the operation.";
+    }
+
+    // ---- Query builder ----
+
+    /// <summary>
+    /// Applies a query builder edit to what the operation editor holds right now — which can be a
+    /// keystroke or two ahead of the tab the tree was drawn from — as one step of the editor's undo.
+    /// </summary>
+    /// <remarks>
+    /// Only the span that changed is replaced, through ExecuteEdits rather than SetValue: SetValue
+    /// would wipe the undo stack, which is the obvious way back from a click on the wrong box, and put
+    /// the caret back at the start of the document. Read with LF line ends, which is what the edits
+    /// splice and what the offsets are counted in; monaco writes the model's own line ends back.
+    /// </remarks>
+    async Task ApplyBuilderEdit(Func<string, string?> edit)
+    {
+        if (operationEditor is null ||
+            operationModel is null)
+        {
+            return;
+        }
+
+        var text = await operationModel.GetValue(EndOfLinePreference.LF, false);
+        var edited = edit(text);
+        if (edited is null ||
+            edited == text)
+        {
+            return;
+        }
+
+        var limit = Math.Min(text.Length, edited.Length);
+        var prefix = 0;
+        while (prefix < limit &&
+               text[prefix] == edited[prefix])
+        {
+            prefix++;
+        }
+
+        var suffix = 0;
+        while (suffix < limit - prefix &&
+               text[text.Length - 1 - suffix] == edited[edited.Length - 1 - suffix])
+        {
+            suffix++;
+        }
+
+        var inserted = edited[prefix..^suffix];
+        await operationEditor.PushUndoStop();
+        await operationEditor.ExecuteEdits(
+            "blazorql-builder",
+            [
+                new()
+                {
+                    Range = new LineIndex(text).Range(prefix, text.Length - suffix),
+                    Text = inserted
+                }
+            ],
+            (List<Selection>?) null);
+        await operationEditor.PushUndoStop();
+
+        // What went in is brought into view; a removal leaves the view where the reader was. By line
+        // only: revealing the span itself scrolls sideways to the end of a long argument list, and
+        // leaves every shorter line looking empty.
+        if (inserted.Length > 0)
+        {
+            var (line, _) = new LineIndex(edited).LineColumn(prefix);
+            await operationEditor.RevealLineInCenterIfOutsideViewport(line, null);
+        }
+
+        // Recorded now rather than when the editor's change debounce lands, so the tree redraws
+        // from the edited text on this render instead of flickering back to the old one first.
+        tabs.Active.Query = edited;
+        SchedulePersist();
     }
 
     // ---- History + dialogs ----

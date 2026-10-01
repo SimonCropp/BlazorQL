@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-/// <summary>
+﻿/// <summary>
 /// The core loop against the in-browser schema: schema-aware completion and validation from the
 /// language worker, execution through the local GraphQL.NET fetcher, and subscription streaming —
 /// all with no server anywhere.
