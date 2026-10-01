@@ -4,6 +4,11 @@ namespace BlazorQL;
 /// A parsed introspection result with name-to-type lookup — what the documentation explorer
 /// navigates over.
 /// </summary>
+/// <remarks>
+/// Not safe to share between threads. The lookups build their tables on first ask, into plain
+/// dictionaries, which is all the browser's one thread needs. Code that runs in parallel — tests
+/// included — wants an index of its own for each thread.
+/// </remarks>
 public sealed class SchemaIndex
 {
     readonly Dictionary<string, IntrospectionType> byName;

@@ -6,10 +6,10 @@
 /// </summary>
 public class CompletionEngineTests
 {
-    static readonly SchemaIndex fixture = ContextScannerTests.LoadFixture();
-    static readonly SchemaIndex roots = ContextScannerTests.Parse(ContextScannerTests.RootsSchema);
+    readonly SchemaIndex fixture = ContextScannerTests.LoadFixture();
+    readonly SchemaIndex roots = ContextScannerTests.Parse(ContextScannerTests.RootsSchema);
 
-    static IReadOnlyList<CompletionEntry> Complete(string marked, SchemaIndex? schema = null)
+    IReadOnlyList<CompletionEntry> Complete(string marked, SchemaIndex? schema = null)
     {
         var caret = marked.IndexOf('|');
         if (caret < 0)
@@ -20,10 +20,10 @@ public class CompletionEngineTests
         return CompletionEngine.Complete(schema ?? fixture, marked.Remove(caret, 1), caret);
     }
 
-    static string[] Labels(string marked, SchemaIndex? schema = null) =>
+    string[] Labels(string marked, SchemaIndex? schema = null) =>
         [.. Complete(marked, schema).Select(_ => _.Label)];
 
-    static string[] Kinds(string marked, SchemaIndex? schema = null) =>
+    string[] Kinds(string marked, SchemaIndex? schema = null) =>
         [.. Complete(marked, schema).Select(_ => _.Kind)];
 
     /// <summary>One line per entry, in the order the engine produced them.</summary>

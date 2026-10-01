@@ -4,10 +4,10 @@
 /// </summary>
 public class HoverEngineTests
 {
-    static readonly SchemaIndex fixture = ContextScannerTests.LoadFixture();
-    static readonly SchemaIndex roots = ContextScannerTests.Parse(ContextScannerTests.RootsSchema);
+    readonly SchemaIndex fixture = ContextScannerTests.LoadFixture();
+    readonly SchemaIndex roots = ContextScannerTests.Parse(ContextScannerTests.RootsSchema);
 
-    static string? Hover(string marked, SchemaIndex? schema = null)
+    string? Hover(string marked, SchemaIndex? schema = null)
     {
         var caret = marked.IndexOf('|');
         if (caret < 0)
