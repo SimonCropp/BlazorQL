@@ -2,7 +2,7 @@
 public class SchemaIndexTests
 {
     static string SchemaJson() =>
-        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
+        File.ReadAllText(Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json));
 
     [Test]
     public async Task ParsesAWrappedIntrospectionResult()

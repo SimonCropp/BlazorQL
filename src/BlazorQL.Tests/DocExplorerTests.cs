@@ -9,7 +9,7 @@ public class DocExplorerTests
 
     static SchemaIndex LoadSchema()
     {
-        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json));
         using var document = JsonDocument.Parse(json);
         return SchemaIndex.Parse(document.RootElement)!;
     }

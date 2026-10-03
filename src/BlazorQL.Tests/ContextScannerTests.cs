@@ -70,7 +70,7 @@ public class ContextScannerTests
     /// </summary>
     public static SchemaIndex LoadFixture() =>
         Parse(File.ReadAllText(
-            Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json")));
+            Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json)));
 
     public static SchemaIndex Parse(string json)
     {

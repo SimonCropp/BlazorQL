@@ -10,7 +10,7 @@ public class SchemaValidatorTests
     static SchemaValidator Validator()
     {
         var json = File.ReadAllText(
-            Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
+            Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json));
         using var document = JsonDocument.Parse(json);
         return new(SchemaIndex.Parse(document.RootElement)!);
     }

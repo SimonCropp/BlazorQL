@@ -12,6 +12,7 @@
     <PackageReference Include="Verify.Bunit" />
     <PackageReference Include="DiffEngine" />
     <PackageReference Include="MarkdownSnippets.MsBuild" PrivateAssets="all" />
+    <PackageReference Include="ProjectFiles" PrivateAssets="all" />
     <!--
       Test-only. GraphQL.NET is the reference implementation SchemaValidator is measured against
       (see ValidatorParityTests); it is deliberately not a dependency of the shipped RCL, which

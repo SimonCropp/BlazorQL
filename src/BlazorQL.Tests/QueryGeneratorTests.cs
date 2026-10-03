@@ -10,7 +10,7 @@ public class QueryGeneratorTests
 
     static SchemaIndex LoadSchema()
     {
-        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, "DocExplorerTests.schema.json"));
+        var json = File.ReadAllText(Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json));
         return Parse(json);
     }
 
