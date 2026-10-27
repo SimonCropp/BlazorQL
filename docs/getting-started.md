@@ -30,7 +30,9 @@ The editors are Monaco, delivered by the BlazorMonaco package the component depe
 </body>
 ```
 
-`blazorql-boot.js` is a one-liner shipped in the package: `autostart="false"` plus its `require` call removes the race between the AMD loader publishing Monaco and Blazor rendering the first editor. It is a file rather than an inline script so the page runs under `script-src 'self'` — inline it instead and the app needs `'unsafe-inline'` or a nonce. See the sample's `wwwroot/index.html` for the full page.
+`blazorql-boot.js` is shipped in the package: `autostart="false"` plus its `require` call removes the race between the AMD loader publishing Monaco and Blazor rendering the first editor. It is a file rather than an inline script so the page runs under `script-src 'self'` — inline it instead and the app needs `'unsafe-inline'` or a nonce. See the sample's `wwwroot/index.html` for the full page.
+
+It also keeps a failed start from looking like a slow one. If the page has a loading element at `#app .loading`, a boot failure — or a browser with WebAssembly turned off, as Lockdown Mode does on an iPhone — replaces its text with the reason, instead of leaving it up with the error only in the console. Set `window.blazorqlVersion` in a script before it and the version is shown under the loading text too.
 
 If the app sends a `Content-Security-Policy` header, it needs widening before any of this runs — a `'self'` policy blocks the .NET runtime, Monaco's icon font and its language workers. See [Content Security Policy](csp.md).
 

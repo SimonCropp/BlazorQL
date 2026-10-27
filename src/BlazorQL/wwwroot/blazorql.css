@@ -1436,3 +1436,32 @@ html[data-theme='dark'] .blazorql {
     min-width: 0;
     min-height: 0;
 }
+
+/* ---- Loading screen ---- */
+
+/* What blazorql-boot.js writes into the host page's #app .loading: the build's version under the
+   loading text, and, if the app cannot start, why. Outside .blazorql because the component has not
+   rendered yet, so the palette's custom properties do not exist. */
+.loading-message {
+    margin: 0;
+}
+
+.loading-version {
+    margin: 0.25rem 0 0;
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.loading-error {
+    max-width: min(40rem, calc(100vw - 2rem));
+    margin: 0.75rem 0 0;
+    color: CanvasText;
+    font: 0.85rem ui-monospace, SFMono-Regular, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    user-select: text;
+}
+
+.loading.failed .spinner {
+    display: none;
+}
