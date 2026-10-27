@@ -10,6 +10,11 @@
       deserializes to nothing in a trimmed browser build.
     -->
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <!--
+      Marks the assembly trimmable for consuming apps, so a partial-trim app trims it without a
+      TrimmableAssembly item of its own. BlazorMonaco, which it depends on, is not affected.
+    -->
+    <IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
   <ItemGroup>
     <SupportedPlatform Include="browser" />

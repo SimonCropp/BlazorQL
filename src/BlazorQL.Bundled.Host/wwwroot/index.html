@@ -12,14 +12,20 @@
         html, body { height: 100%; margin: 0; }
         #app { height: 100%; display: flex; flex-direction: column; }
         #app > .blazorql { flex: 1; min-height: 0; }
-        .loading { font: 1rem system-ui, sans-serif; padding: 2rem; }
+        .loading { flex: 1; display: grid; place-items: center; align-content: center; text-align: center; font: 1rem system-ui, sans-serif; padding: 2rem; }
         #blazor-error-ui { display: none; position: fixed; bottom: 0; width: 100%; padding: 0.6rem 1.25rem; background: #ffe0e0; color: #4a0000; z-index: 1000; }
     </style>
 </head>
 
 <body>
     <div id="app">
-        <div class="loading">Loading…</div>
+        <div class="loading">
+            <!-- In the markup rather than left to blazorql-boot.js, which only runs once Monaco has downloaded. -->
+            <div class="spinner blazorql-loading-spinner"></div>
+            <p class="loading-message">Loading…</p>
+            <p class="loading-version"></p>
+            <p class="loading-error" hidden></p>
+        </div>
     </div>
     <div id="blazor-error-ui">
         An unhandled error has occurred.
@@ -30,8 +36,11 @@
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/loader.js"></script>
     <script src="_content/BlazorMonaco/lib/monaco-editor/min/vs/editor/editor.main.js"></script>
     <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <!-- Written by the build (src/VersionScript.targets): window.blazorqlVersion. -->
+    <script src="js/version.js"></script>
     <!--
-        Starts Blazor once Monaco has published itself, which the tag above cannot do on its own.
+        Starts Blazor once Monaco has published itself, which the tag above cannot do on its own,
+        and writes the version, or why the app could not start, onto the loading screen.
         A file rather than an inline block, so script-src 'self' covers it. See docs/csp.md.
     -->
     <script src="_content/BlazorQL/blazorql-boot.js"></script>

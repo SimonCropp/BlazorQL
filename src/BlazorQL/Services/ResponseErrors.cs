@@ -39,14 +39,7 @@ public static class ResponseErrors
         try
         {
             using var document = JsonDocument.Parse(text);
-            if (document.RootElement.ValueKind != JsonValueKind.Object ||
-                !document.RootElement.TryGetProperty("errors", out var errors) ||
-                errors.ValueKind != JsonValueKind.Array)
-            {
-                return [];
-            }
-
-            return [.. errors.EnumerateArray().Select(Read).OfType<ResponseError>()];
+            return Parse(document.RootElement);
         }
         catch (JsonException)
         {
@@ -54,6 +47,23 @@ public static class ResponseErrors
             // page, most often.
             return [];
         }
+    }
+
+    /// <summary>
+    /// The same, from a document already parsed. An executed response arrives as one, and parsing
+    /// its rendered text again would cost as much as the first parse did - on a large response,
+    /// a couple of hundred milliseconds in the browser.
+    /// </summary>
+    public static IReadOnlyList<ResponseError> Parse(JsonElement response)
+    {
+        if (response.ValueKind != JsonValueKind.Object ||
+            !response.TryGetProperty("errors", out var errors) ||
+            errors.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return [.. errors.EnumerateArray().Select(Read).OfType<ResponseError>()];
     }
 
     static ResponseError? Read(JsonElement error)

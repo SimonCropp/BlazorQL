@@ -1,0 +1,31 @@
+<Project>
+
+  <!--
+    js/version.js: window.blazorqlVersion (v1.0.1+b4bbab2), for index.html's loading screen, which
+    blazorql-boot.js writes it onto before .NET is running - a page the browser kept from an earlier
+    deploy is then plain to see. Written to obj and linked into wwwroot, so it is a static web asset
+    like any other, in every build and publish (and so brotli-compressed, and embedded by
+    BundledHost.targets), and nothing generated lands in the source tree. Rewriting index.html after
+    publish instead would leave its .br beside it stale.
+  -->
+  <Target Name="WriteVersionScript"
+          BeforeTargets="ResolveProjectStaticWebAssets"
+          DependsOnTargets="InitializeSourceControlInformation">
+    <PropertyGroup>
+      <_BlazorQLShortSha>$(SourceRevisionId)</_BlazorQLShortSha>
+      <_BlazorQLShortSha Condition="$(SourceRevisionId.Length) &gt; 7">$(SourceRevisionId.Substring(0, 7))</_BlazorQLShortSha>
+      <_BlazorQLVersionText>v$(Version)</_BlazorQLVersionText>
+      <_BlazorQLVersionText Condition="'$(_BlazorQLShortSha)' != ''">$(_BlazorQLVersionText)+$(_BlazorQLShortSha)</_BlazorQLVersionText>
+      <_BlazorQLVersionScript>$(IntermediateOutputPath)version.js</_BlazorQLVersionScript>
+    </PropertyGroup>
+    <WriteLinesToFile File="$(_BlazorQLVersionScript)"
+                      Lines="window.blazorqlVersion = '$(_BlazorQLVersionText)'%3B"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+    <ItemGroup>
+      <Content Include="$(_BlazorQLVersionScript)" Link="wwwroot\js\version.js" />
+      <FileWrites Include="$(_BlazorQLVersionScript)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

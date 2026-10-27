@@ -19,6 +19,7 @@
     <BundledHostInput Include="$(MSBuildThisFileDirectory)..\Directory.Build.props;
                                $(MSBuildThisFileDirectory)..\Directory.Packages.props;
                                $(MSBuildThisFileDirectory)..\MonacoAssets.targets;
+                               $(MSBuildThisFileDirectory)..\VersionScript.targets;
                                $(MSBuildThisFileDirectory)BundledHost.targets" />
   </ItemGroup>
 

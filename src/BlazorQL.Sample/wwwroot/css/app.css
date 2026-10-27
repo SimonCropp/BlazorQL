@@ -12,7 +12,9 @@ html, body {
 .loading {
     display: grid;
     place-items: center;
+    align-content: center;
     height: 100%;
+    text-align: center;
     color: color-mix(in srgb, currentColor 60%, transparent);
 }
 

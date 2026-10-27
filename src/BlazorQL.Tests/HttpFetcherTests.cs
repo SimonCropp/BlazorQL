@@ -198,4 +198,33 @@ public class HttpFetcherTests
 
         await Assert.That(handler.Request!.Headers.NonValidated["Accept"].ToString()).IsEqualTo("application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8");
     }
+
+    /// <summary>
+    /// Streaming costs an interop round trip per chunk in the browser, so only a request that can
+    /// be answered in parts asks for it: a document with @defer or @stream, or an Accept the user
+    /// typed that names multipart.
+    /// </summary>
+    [Test]
+    [Arguments("{ id }", null, false)]
+    [Arguments("{ a { b ... @defer { c } } }", null, true)]
+    [Arguments("{ list @stream(initialCount: 1) { id } }", null, true)]
+    [Arguments("{ a { ... @ , defer { c } } }", null, true)]
+    [Arguments("{ a @deferred }", null, false)]
+    [Arguments("{ id }", "multipart/mixed;subscriptionSpec=1.0", true)]
+    [Arguments("{ id }", "application/json", false)]
+    public async Task StreamsOnlyWhatCanArriveInParts(string query, string? accept, bool streams)
+    {
+        var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, """{"data":null}"""));
+        var fetcher = new HttpFetcher(new(handler), url);
+        var headers = new Dictionary<string, string>();
+        if (accept is not null)
+        {
+            headers["Accept"] = accept;
+        }
+
+        await Collect(fetcher, new(query), headers);
+
+        handler.Request!.Options.TryGetValue(new HttpRequestOptionsKey<bool>("WebAssemblyEnableStreamingResponse"), out var streaming);
+        await Assert.That(streaming).IsEqualTo(streams);
+    }
 }

@@ -41,4 +41,5 @@
     <TrimmableAssembly Include="Markdig" />
   </ItemGroup>
   <Import Project="../MonacoAssets.targets" />
+  <Import Project="../VersionScript.targets" />
 </Project>
