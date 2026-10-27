@@ -8,11 +8,13 @@
 // starting Blazor removes the race in both directions; the errorback still starts the app if
 // Monaco genuinely fails to load.
 //
-// The loading screen also says which build it is (window.blazorqlVersion, from js/version.js when
-// the page loads it) and why it stopped if the app cannot start: a boot failure is otherwise only in
-// the console, which a phone does not show, and the loading text stays up. Any index.html works: the
-// script looks for #app .loading and adds the elements it writes to; a page without one only boots.
-// Once the app has rendered, the loading screen is gone and nothing more is written.
+// The loading screen also gets a spinner, says which build it is (window.blazorqlVersion, from
+// js/version.js when the page loads it) and why it stopped if the app cannot start: a boot failure
+// is otherwise only in the console, which a phone does not show, and the spinner turns on. Any
+// index.html works: the script looks for #app .loading and adds the elements it writes to; a page
+// without one only boots. This runs after Monaco's script tags, so a page that wants the spinner
+// from the first paint puts it in its own markup. Once the app has rendered, the loading screen is
+// gone and nothing more is written.
 //
 // A file rather than an inline script so that no part of the page needs 'unsafe-inline' or a
 // nonce: script-src 'self' covers it. See docs/csp.md.
@@ -38,6 +40,14 @@
             message.className = 'loading-message';
             message.append(...loading.childNodes);
             loading.append(message);
+        }
+
+        // A page that brings its own spinner keeps it. Ours is styled through its second class
+        // only, so a .spinner the page styles elsewhere is left alone.
+        if (!loading.querySelector('.spinner')) {
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner blazorql-loading-spinner';
+            loading.prepend(spinner);
         }
 
         part('loading-version').textContent = window.blazorqlVersion ?? '';

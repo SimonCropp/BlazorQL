@@ -14,6 +14,8 @@
 <body>
     <div id="app">
         <div class="loading">
+            <!-- In the markup rather than left to blazorql-boot.js, which only runs once Monaco has downloaded. -->
+            <div class="spinner blazorql-loading-spinner"></div>
             <p class="loading-message">Loading BlazorQL…</p>
             <p class="loading-version"></p>
             <p class="loading-error" hidden></p>

@@ -1439,9 +1439,20 @@ html[data-theme='dark'] .blazorql {
 
 /* ---- Loading screen ---- */
 
-/* What blazorql-boot.js writes into the host page's #app .loading: the build's version under the
-   loading text, and, if the app cannot start, why. Outside .blazorql because the component has not
+/* What blazorql-boot.js writes into the host page's #app .loading: a spinner, the build's version
+   under the loading text, and, if the app cannot start, why. Outside .blazorql because the component has not
    rendered yet, so the palette's custom properties do not exist. */
+.blazorql-loading-spinner {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+    border: 4px solid light-dark(#d8dbe0, #2c3039);
+    border-top-color: light-dark(#6c69ce, #908aff);
+    border-radius: 50%;
+    animation: blazorql-spin 1s linear infinite;
+}
+
 .loading-message {
     margin: 0;
 }
