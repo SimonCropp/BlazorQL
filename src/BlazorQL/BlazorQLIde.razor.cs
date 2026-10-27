@@ -1904,7 +1904,7 @@ public partial class BlazorQLIde :
     /// Its errors, when the caller already has them from the parsed document; otherwise they are
     /// parsed out of <paramref name="text"/> when the pane first asks.
     /// </param>
-    async ValueTask SetResponse(string text, IReadOnlyList<ResponseError>? errors = null)
+    ValueTask SetResponse(string text, IReadOnlyList<ResponseError>? errors = null)
     {
         // Recorded here rather than read back out of monaco by OnResponseContentChanged: the round
         // trip marshals the whole document across the interop boundary for a string this side
@@ -1924,8 +1924,10 @@ public partial class BlazorQLIde :
             // written into the interop call's JSON, which escapes every quote in it - and a JSON
             // response is mostly quotes, so a large one took longer to send than to render. A byte
             // array crosses as-is and the browser decodes it natively.
-            await module!.Invoke("setModelText", responseModelUri, Encoding.UTF8.GetBytes(text));
+            return module!.Invoke("setModelText", responseModelUri, Encoding.UTF8.GetBytes(text));
         }
+
+        return ValueTask.CompletedTask;
     }
 
     /// <summary>Whether the response pane shows anything — gates the copy/download overlay.</summary>
