@@ -5,7 +5,7 @@ namespace BlazorQL;
 /// <c>multipart/mixed</c> incremental-delivery response (@defer/@stream, per deferSpec 20220824)
 /// yields each part as it streams in.
 /// </summary>
-public sealed class HttpFetcher(HttpClient http, string url) :
+public sealed partial class HttpFetcher(HttpClient http, string url) :
     IGraphQLFetcher
 {
     const string accept = "application/graphql-response+json, application/json;q=0.9, multipart/mixed;deferSpec=20220824;q=0.8";
@@ -30,7 +30,7 @@ public sealed class HttpFetcher(HttpClient http, string url) :
         using var message = new HttpRequestMessage(HttpMethod.Post, Url);
         // Lets the browser hand back the body as it streams, instead of buffering it — a no-op
         // outside WASM, essential for multipart parts arriving over time.
-        message.SetBrowserResponseStreamingEnabled(true);
+        message.SetBrowserResponseStreamingEnabled(MayAnswerInParts(request, headers));
 
         var body = JsonSerializer.Serialize(request, WebJson.Default.GraphQLRequest);
         message.Content = new StringContent(body, Encoding.UTF8, "application/json");
@@ -95,6 +95,27 @@ public sealed class HttpFetcher(HttpClient http, string url) :
             yield return ParseDocument(buffered, response);
         }
     }
+
+    /// <summary>
+    /// Whether the response can come back in parts, which is the only reason to stream it.
+    /// </summary>
+    /// <remarks>
+    /// Streaming is not free. The browser hands a streamed body over one chunk per interop round
+    /// trip, and for a 6 MB response that is 250-600 ms against a few for one buffered copy - paid
+    /// on every large result and on the schema. Only incremental delivery answers in parts, and a
+    /// server only uses it for a document that asks with @defer or @stream; an Accept the user typed
+    /// can ask for parts some other way, so one naming multipart keeps streaming too. A false
+    /// positive (the directive in a comment or a string) only streams. A multipart body that
+    /// arrives anyway is still read, just all at once.
+    /// </remarks>
+    internal static bool MayAnswerInParts(GraphQLRequest request, IReadOnlyDictionary<string, string> headers) =>
+        IncrementalDirective().IsMatch(request.Query) ||
+        headers.Any(_ => string.Equals(_.Key, "Accept", StringComparison.OrdinalIgnoreCase) &&
+                         _.Value.Contains("multipart", StringComparison.OrdinalIgnoreCase));
+
+    // Commas and whitespace are both insignificant between tokens, so "@ defer" is the same directive.
+    [GeneratedRegex(@"@[\s,]*(defer|stream)\b")]
+    private static partial Regex IncrementalDirective();
 
     /// <summary>Whether a buffered part holds nothing but whitespace — a boundary's trailing newline.</summary>
     static bool IsBlank(MemoryStream buffered)

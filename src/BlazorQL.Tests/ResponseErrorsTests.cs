@@ -73,6 +73,20 @@ public class ResponseErrorsTests
         await Assert.That(ResponseErrors.Parse("""{"errors":[]}""")).IsEmpty();
     }
 
+    /// <summary>An executed response is read from the document it already is, not reparsed.</summary>
+    [Test]
+    public async Task ReadsAParsedDocumentAsItsText()
+    {
+        const string text = """{"errors":[{"message":"one","path":["a",0,"b"]},{"message":"two"}],"data":null}""";
+        using var document = JsonDocument.Parse(text);
+
+        var fromText = ResponseErrors.Parse(text);
+        var fromDocument = ResponseErrors.Parse(document.RootElement);
+
+        await Assert.That(fromDocument.Select(_ => (_.Message, _.PathText))).IsEquivalentTo(fromText.Select(_ => (_.Message, _.PathText)), CollectionOrdering.Matching);
+        await Assert.That(fromDocument).Count().IsEqualTo(2);
+    }
+
     /// <summary>The pane holds whatever came back, which is not always a graphql document.</summary>
     [Test]
     public async Task IgnoresWhatIsNotAResponse()

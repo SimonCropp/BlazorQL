@@ -1707,7 +1707,7 @@ public partial class BlazorQLIde :
                 }
 
                 merger.Add(payload);
-                await SetResponse(merger.Render());
+                await SetResponse(merger.Render(), merger.PlainErrors);
             }
 
             if (merger.HasErrors)
@@ -1899,15 +1899,32 @@ public partial class BlazorQLIde :
         return headers;
     }
 
-    async ValueTask SetResponse(string text)
+    /// <param name="text">The response as the pane shows it.</param>
+    /// <param name="errors">
+    /// Its errors, when the caller already has them from the parsed document; otherwise they are
+    /// parsed out of <paramref name="text"/> when the pane first asks.
+    /// </param>
+    async ValueTask SetResponse(string text, IReadOnlyList<ResponseError>? errors = null)
     {
         // Recorded here rather than read back out of monaco by OnResponseContentChanged: the round
         // trip marshals the whole document across the interop boundary for a string this side
         // already holds, and a subscription pays it per event.
         tabs.Active.Response = text;
-        if (responseEditor is not null)
+        if (errors is not null)
         {
-            await responseEditor.SetValue(text);
+            responseErrorsFor = text;
+            responseErrors = errors;
+        }
+
+        // Before the response editor has its model, the swap that gives it one reads the text
+        // recorded above.
+        if (responseModel is not null)
+        {
+            // As UTF-8 bytes rather than through the editor's SetValue. A string argument is
+            // written into the interop call's JSON, which escapes every quote in it - and a JSON
+            // response is mostly quotes, so a large one took longer to send than to render. A byte
+            // array crosses as-is and the browser decodes it natively.
+            await module!.Invoke("setModelText", responseModelUri, Encoding.UTF8.GetBytes(text));
         }
     }
 
@@ -1916,9 +1933,10 @@ public partial class BlazorQLIde :
         ready && !string.IsNullOrWhiteSpace(tabs.Active.Response);
 
     /// <summary>
-    /// The errors the current response carried. Recomputed from the response text rather than
-    /// cached alongside it, so a response arriving by any route — executed, merged from an
-    /// incremental payload, restored from storage — is covered by the same code.
+    /// The errors the current response carried. Parsed from the response text unless the caller
+    /// of <see cref="SetResponse"/> had them already, so a response arriving by any route —
+    /// executed, merged from an incremental payload, restored from storage — is covered by the same
+    /// code.
     /// </summary>
     IReadOnlyList<ResponseError> ResponseFieldErrors
     {
@@ -1936,14 +1954,15 @@ public partial class BlazorQLIde :
             if (!ReferenceEquals(responseErrorsFor, text))
             {
                 responseErrorsFor = text;
-                field = ResponseErrors.Parse(text);
+                responseErrors = ResponseErrors.Parse(text);
             }
 
-            return field;
+            return responseErrors;
         }
-    } = [];
+    }
 
     string? responseErrorsFor;
+    IReadOnlyList<ResponseError> responseErrors = [];
 
     /// <summary>
     /// Takes the field an error points at out of the operation. Useful after a broad exploratory

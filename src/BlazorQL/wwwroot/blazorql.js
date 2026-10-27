@@ -195,6 +195,16 @@ export function systemDark() {
     }
 }
 
+// ---- Large text ----
+
+// Replaces a model's text with UTF-8 bytes, decoded here. A byte array crosses the interop boundary
+// as it is, where a string is escaped into the call's JSON on the .NET side - slow in the browser's
+// interpreter for a large response, which is mostly quotes. A model that is not there yet has
+// nothing to show: its owner creates it from the same text.
+export function setModelText(uri, bytes) {
+    monaco.editor.getModel(monaco.Uri.parse(uri))?.setValue(new TextDecoder().decode(bytes));
+}
+
 export function dispose() {
     for (const detach of pointerTrackers.splice(0)) {
         detach();

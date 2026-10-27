@@ -29,6 +29,23 @@ public sealed class IncrementalMerger
             ? element.ValueKind == JsonValueKind.Object && element.TryGetProperty("errors", out _)
             : result?.ContainsKey("errors") is true;
 
+    /// <summary>
+    /// The errors of the accumulated document, read from the payload it already is. Null for a
+    /// merged tree, which leaves its rendered text to answer.
+    /// </summary>
+    internal IReadOnlyList<ResponseError>? PlainErrors
+    {
+        get
+        {
+            if (plain is {} element)
+            {
+                return ResponseErrors.Parse(element);
+            }
+
+            return null;
+        }
+    }
+
     /// <summary>The accumulated response, serialized.</summary>
     public string Render()
     {
