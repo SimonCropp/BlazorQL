@@ -9,7 +9,7 @@ namespace BlazorQL;
 /// </remarks>
 public sealed class SidecarEntry
 {
-    readonly object sync = new();
+    readonly Lock sync = new();
     readonly List<string> documents = [];
     int documentCount;
     TimeSpan duration;

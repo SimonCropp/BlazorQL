@@ -7,7 +7,7 @@ namespace BlazorQL;
 /// </summary>
 public sealed class SidecarStore(SidecarOptions options)
 {
-    readonly object sync = new();
+    readonly Lock sync = new();
     readonly List<SidecarEntry> entries = [];
     int nextId;
 

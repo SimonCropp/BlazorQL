@@ -6,8 +6,8 @@
         <section class="blazorql-dialog-section">
             <div class="blazorql-dialog-section-text">
                 <div class="blazorql-dialog-section-title">Persist headers</div>
-                <div class="blazorql-dialog-section-description">Save headers upon reloading.</div>
-                <span class="blazorql-dialog-warning">Only enable if you trust this device.</span>
+                <div class="blazorql-dialog-section-description">Keep request headers in this browser's local storage so they survive a page reload. Turning this off deletes any saved headers.</div>
+                <span class="blazorql-dialog-warning">Headers often carry credentials such as Authorization tokens. They are stored unencrypted and readable by anyone with access to this browser profile, so only enable this on a device you trust.</span>
             </div>
             <div class="blazorql-dialog-button-group" role="group" aria-label="Persist headers">
                 <button type="button"

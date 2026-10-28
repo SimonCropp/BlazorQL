@@ -9,8 +9,8 @@ public class DialogTests
 
         await Assert.That(cut.Find("[data-testid='settings-dialog']").GetAttribute("role")).IsEqualTo("dialog");
         await Assert.That(cut.Markup).Contains("Persist headers");
-        await Assert.That(cut.Markup).Contains("Save headers upon reloading.");
-        await Assert.That(cut.Markup).Contains("Only enable if you trust this device.");
+        await Assert.That(cut.Markup).Contains("so they survive a page reload");
+        await Assert.That(cut.Markup).Contains("stored unencrypted");
         await Assert.That(cut.Markup).Contains("Theme");
         await Assert.That(cut.Markup).Contains("Clear storage");
     }
@@ -23,7 +23,7 @@ public class DialogTests
             .Add(component => component.ShowPersistHeaders, false));
 
         await Assert.That(cut.Markup).DoesNotContain("Persist headers");
-        await Assert.That(cut.Markup).DoesNotContain("Only enable if you trust this device.");
+        await Assert.That(cut.Markup).DoesNotContain("stored unencrypted");
     }
 
     [Test]
