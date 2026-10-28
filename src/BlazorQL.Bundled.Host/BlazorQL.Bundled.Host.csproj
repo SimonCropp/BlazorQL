@@ -17,6 +17,13 @@
     -->
     <EnableDefaultCompressionFormats>false</EnableDefaultCompressionFormats>
     <PublishCompressionFormats>brotli</PublishCompressionFormats>
+    <!--
+      Trimming feature switches, ~120 KB of brotli between them. Nothing in the IDE emits or
+      listens to metrics, EventSource or HTTP activity.
+    -->
+    <MetricsSupport>false</MetricsSupport>
+    <EventSourceSupport>false</EventSourceSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
   </PropertyGroup>
   <ItemGroup>
     <!--
