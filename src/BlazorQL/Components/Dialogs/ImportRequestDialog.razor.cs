@@ -8,7 +8,9 @@ namespace BlazorQL;
 /// </summary>
 public partial class ImportRequestDialog
 {
+#pragma warning disable CA1823
     const string placeholder = "curl 'https://example.com/graphql' -H 'authorization: Bearer …' --data-raw '{\"query\":\"…\"}'";
+#pragma warning restore CA1823
 
     /// <summary>
     /// False drops the header counts from the summary: with the headers editor disabled the IDE

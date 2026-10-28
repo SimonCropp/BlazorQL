@@ -20,7 +20,7 @@ public class DialogTests
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.ShowPersistHeaders, false));
+            .Add(_ => _.ShowPersistHeaders, false));
 
         await Assert.That(cut.Markup).DoesNotContain("Persist headers");
         await Assert.That(cut.Markup).DoesNotContain("stored unencrypted");
@@ -31,7 +31,7 @@ public class DialogTests
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.ShowTheme, false));
+            .Add(_ => _.ShowTheme, false));
 
         await Assert.That(cut.FindAll("[data-testid='theme-system']")).IsEmpty();
         await Assert.That(cut.FindAll("[data-testid='theme-light']")).IsEmpty();
@@ -44,8 +44,8 @@ public class DialogTests
         using var context = new BunitContext();
         Theme? selected = null;
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.Theme, Theme.Dark)
-            .Add(component => component.OnThemeSelected, theme => selected = theme));
+            .Add(_ => _.Theme, Theme.Dark)
+            .Add(_ => _.OnThemeSelected, theme => selected = theme));
 
         await Assert.That(cut.Find("[data-testid='theme-dark']").ClassList).Contains("blazorql-active");
 
@@ -59,7 +59,7 @@ public class DialogTests
         using var context = new BunitContext();
         bool? persisted = null;
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.OnPersistHeadersChanged, value => persisted = value));
+            .Add(_ => _.OnPersistHeadersChanged, value => persisted = value));
 
         cut.Find("[data-testid='persist-headers-on']").Click();
         await Assert.That(persisted).IsTrue();
@@ -74,7 +74,7 @@ public class DialogTests
         using var context = new BunitContext();
         var cleared = false;
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.ClearStorageAction, () =>
+            .Add(_ => _.ClearStorageAction, () =>
             {
                 cleared = true;
                 return true;
@@ -95,7 +95,7 @@ public class DialogTests
     {
         using var context = new BunitContext();
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.ClearStorageAction, () => false));
+            .Add(_ => _.ClearStorageAction, () => false));
 
         cut.Find("[data-testid='clear-storage']").Click();
         await Assert.That(cut.Find("[data-testid='clear-storage']").TextContent).IsEqualTo("Failed");
@@ -107,7 +107,7 @@ public class DialogTests
         using var context = new BunitContext();
         var closed = 0;
         var cut = context.Render<SettingsDialog>(_ => _
-            .Add(component => component.OnClose, () => closed++));
+            .Add(_ => _.OnClose, () => closed++));
 
         cut.Find(".blazorql-dialog-overlay").KeyDown("Escape");
         await Assert.That(closed).IsEqualTo(1);

@@ -7,8 +7,8 @@ public class TabBarTests
         using var context = new BunitContext();
         var raised = 0;
         var cut = context.Render<TabBar>(_ => _
-            .Add(component => component.Store, Store())
-            .Add(component => component.OnImport, () => raised++));
+            .Add(_ => _.Store, Store())
+            .Add(_ => _.OnImport, () => raised++));
 
         cut.Find("[data-testid='tab-import']").Click();
 
@@ -24,7 +24,7 @@ public class TabBarTests
     {
         using var context = new BunitContext();
         var cut = context.Render<TabBar>(_ => _
-            .Add(component => component.Store, Store()));
+            .Add(_ => _.Store, Store()));
         var button = cut.Find("[data-testid='tab-import']");
 
         await Assert.That(button.GetAttribute("title")).IsEqualTo("Import request into a new tab");
@@ -37,8 +37,8 @@ public class TabBarTests
         using var context = new BunitContext();
         var raised = 0;
         var cut = context.Render<TabBar>(_ => _
-            .Add(component => component.Store, Store())
-            .Add(component => component.OnAdd, () => raised++));
+            .Add(_ => _.Store, Store())
+            .Add(_ => _.OnAdd, () => raised++));
 
         cut.Find("[data-testid='tab-add']").Click();
 
@@ -51,8 +51,8 @@ public class TabBarTests
         using var context = new BunitContext();
         var raised = 0;
         var cut = context.Render<TabBar>(_ => _
-            .Add(component => component.Store, Store())
-            .Add(component => component.OnDuplicate, () => raised++));
+            .Add(_ => _.Store, Store())
+            .Add(_ => _.OnDuplicate, () => raised++));
 
         cut.Find("[data-testid='tab-duplicate']").Click();
 
@@ -65,7 +65,7 @@ public class TabBarTests
     {
         using var context = new BunitContext();
         var cut = context.Render<TabBar>(_ => _
-            .Add(component => component.Store, Store()));
+            .Add(_ => _.Store, Store()));
         var button = cut.Find("[data-testid='tab-duplicate']");
 
         await Assert.That(button.GetAttribute("title")).IsEqualTo("Duplicate tab");

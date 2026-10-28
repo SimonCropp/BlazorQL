@@ -28,7 +28,7 @@ public class QueryBuilderPaneTests
 
         /// <summary>What the IDE does once an edit lands: the tab records the text, and the pane redraws from it.</summary>
         public void Refresh() =>
-            Pane.Render(_ => _.Add(component => component.Query, Text));
+            Pane.Render(_ => _.Add(_ => _.Query, Text));
 
         public IElement Find(string selector) =>
             Pane.Find(selector);
@@ -47,9 +47,9 @@ public class QueryBuilderPaneTests
             Text = text
         };
         host.Pane = context.Render<QueryBuilderPane>(_ => _
-            .Add(component => component.Schema, BuilderSchema.Create())
-            .Add(component => component.Query, text)
-            .Add(component => component.OnEdit, host.Apply));
+            .Add(_ => _.Schema, BuilderSchema.Create())
+            .Add(_ => _.Query, text)
+            .Add(_ => _.OnEdit, host.Apply));
         return host;
     }
 

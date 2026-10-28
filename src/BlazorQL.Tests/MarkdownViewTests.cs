@@ -9,8 +9,8 @@ public class MarkdownViewTests
     {
         using var context = new BunitContext();
         return context.Render<MarkdownView>(_ => _
-                .Add(component => component.Content, content)
-                .Add(component => component.Preview, preview))
+                .Add(_ => _.Content, content)
+                .Add(_ => _.Preview, preview))
             .Markup;
     }
 

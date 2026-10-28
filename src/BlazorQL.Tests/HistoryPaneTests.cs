@@ -11,7 +11,7 @@ public class HistoryPaneTests
     }
 
     static IRenderedComponent<HistoryPane> Render(BunitContext context, HistoryStore store) =>
-        context.Render<HistoryPane>(_ => _.Add(component => component.Store, store));
+        context.Render<HistoryPane>(_ => _.Add(_ => _.Store, store));
 
     static IReadOnlyList<string> ItemTexts(IRenderedComponent<HistoryPane> cut) =>
         [.. cut.FindAll("[data-testid='history-item']").Select(_ => _.TextContent)];
@@ -47,8 +47,8 @@ public class HistoryPaneTests
         var store = BuildStore();
         HistoryItem? selected = null;
         var cut = context.Render<HistoryPane>(_ => _
-            .Add(component => component.Store, store)
-            .Add(component => component.OnSelect, item => selected = item));
+            .Add(_ => _.Store, store)
+            .Add(_ => _.OnSelect, item => selected = item));
 
         cut.FindAll("[data-testid='history-item']")[0].Click();
         await Assert.That(selected).IsSameReferenceAs(store.Items[0]);

@@ -25,7 +25,9 @@ public partial class BlazorQLSidecar :
     protected override void OnInitialized() =>
         Store.Changed += OnChanged;
 
+#pragma warning disable CA1822
     void OnChanged() =>
+#pragma warning restore CA1822
         InvokeAsync(StateHasChanged);
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

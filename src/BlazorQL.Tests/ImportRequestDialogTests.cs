@@ -63,7 +63,7 @@ public class ImportRequestDialogTests
     {
         using var context = new BunitContext();
         var cut = context.Render<ImportRequestDialog>(_ => _
-            .Add(component => component.HeadersEnabled, false));
+            .Add(_ => _.HeadersEnabled, false));
 
         Paste(cut, curl);
 
@@ -89,7 +89,7 @@ public class ImportRequestDialogTests
         using var context = new BunitContext();
         IReadOnlyList<ImportedRequest> imported = [];
         var cut = context.Render<ImportRequestDialog>(_ => _
-            .Add(component => component.OnImport, requests => imported = requests));
+            .Add(_ => _.OnImport, requests => imported = requests));
 
         Paste(cut, curl);
         cut.Find("[data-testid='import-confirm']").Click();
@@ -131,7 +131,7 @@ public class ImportRequestDialogTests
         using var context = new BunitContext();
         var raised = 0;
         var cut = context.Render<ImportRequestDialog>(_ => _
-            .Add(component => component.OnImport, _ => raised++));
+            .Add(_ => _.OnImport, _ => raised++));
 
         Paste(cut, curl);
         cut.Find("[data-testid='import-text']").KeyDown(Key.Enter);
@@ -147,7 +147,7 @@ public class ImportRequestDialogTests
         using var context = new BunitContext();
         var raised = 0;
         var cut = context.Render<ImportRequestDialog>(_ => _
-            .Add(component => component.OnImport, _ => raised++));
+            .Add(_ => _.OnImport, _ => raised++));
 
         Paste(cut, "hello world");
         cut.Find("[data-testid='import-text']").KeyDown(Key.Enter + Key.Control);
@@ -165,7 +165,7 @@ public class ImportRequestDialogTests
         using var context = new BunitContext();
         var closed = 0;
         var cut = context.Render<ImportRequestDialog>(_ => _
-            .Add(component => component.OnClose, () => closed++));
+            .Add(_ => _.OnClose, () => closed++));
 
         cut.Find(".blazorql-dialog-overlay").KeyDown("Escape");
         cut.Find(".blazorql-dialog-overlay").Click();

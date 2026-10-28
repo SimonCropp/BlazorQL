@@ -16,8 +16,8 @@ public class DocExplorerTests
 
     IRenderedComponent<DocExplorer> Render(BunitContext context, DocExplorerNavigator? navigator = null) =>
         context.Render<DocExplorer>(_ => _
-            .Add(component => component.Schema, schema)
-            .Add(component => component.Navigator, navigator));
+            .Add(_ => _.Schema, schema)
+            .Add(_ => _.Navigator, navigator));
 
     static void NavigateToType(IRenderedComponent<DocExplorer> cut, string name) =>
         cut.FindAll(".blazorql-type-link").First(_ => _.TextContent == name).Click();
@@ -206,8 +206,8 @@ public class DocExplorerTests
         await using var context = new BunitContext();
         string? generated = null;
         var cut = context.Render<DocExplorer>(_ => _
-            .Add(component => component.Schema, schema)
-            .Add(component => component.OnGenerateQuery, query => generated = query));
+            .Add(_ => _.Schema, schema)
+            .Add(_ => _.OnGenerateQuery, query => generated = query));
 
         // Only types a selection can be built over carry the button.
         var buttons = cut.FindAll("[data-testid='doc-generate']").Select(_ => _.GetAttribute("aria-label")).ToList();
@@ -226,8 +226,8 @@ public class DocExplorerTests
         await using var context = new BunitContext();
         string? generated = null;
         var cut = context.Render<DocExplorer>(_ => _
-            .Add(component => component.Schema, schema)
-            .Add(component => component.OnGenerateQuery, query => generated = query));
+            .Add(_ => _.Schema, schema)
+            .Add(_ => _.OnGenerateQuery, query => generated = query));
         NavigateToType(cut, "Query");
 
         await cut.Find(".blazorql-docs-header [data-testid='doc-generate']").ClickAsync(new());

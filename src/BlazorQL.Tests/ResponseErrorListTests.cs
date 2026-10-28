@@ -9,10 +9,10 @@ public class ResponseErrorListTests
         context.Render<ResponseErrorList>(
             _ =>
             {
-                _.Add(component => component.Errors, errors);
+                _.Add(_ => _.Errors, errors);
                 if (onRemove is { } callback)
                 {
-                    _.Add(component => component.OnRemove, callback);
+                    _.Add(_ => _.OnRemove, callback);
                 }
             });
 
