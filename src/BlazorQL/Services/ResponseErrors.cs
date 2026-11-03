@@ -9,7 +9,7 @@ namespace BlazorQL;
 public sealed record ResponseError(string Message, IReadOnlyList<string> Path)
 {
     /// <summary>The path as the response spells it, for showing next to the message.</summary>
-    public string PathText { get; } = string.Join(".", Path);
+    public string PathText { get; } = string.Join('.', Path);
 
     /// <summary>
     /// Whether this error names a field, which is what the remove action needs. An error raised
