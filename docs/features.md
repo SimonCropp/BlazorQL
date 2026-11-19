@@ -66,7 +66,7 @@ Browser-controlled headers are dropped rather than imported — cookies, `origin
 
 ## Sharing
 
-The share button copies a link carrying the query and variables in the url fragment — never headers, and a fragment never reaches a server. Opening the link restores the editors.
+The share button copies a link carrying the query and variables in the url fragment — never headers, and a fragment never reaches a server. Opening the link opens the query in a tab of its own, or switches to a tab that already holds exactly that query and variables, so it never writes over an open tab. The fragment is taken off the url once applied, so a reload does not open the link again.
 
 
 ## Settings

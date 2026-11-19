@@ -112,28 +112,35 @@ public class ToolbarTests :
         await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
+    /// <summary>
+    /// Share copies the link and leaves the page's own url alone — a fragment written there was
+    /// opened again by the next reload. The link opened elsewhere restores the query and then comes
+    /// off that page's url too.
+    /// </summary>
     [Test]
-    public async Task ShareLinkRoundTripsThroughTheHash()
+    public async Task ShareCopiesALinkThatOpensTheQuery()
     {
-        var page = await NewPageAsync();
+        var page = await NewPageAsync(new() {Permissions = ["clipboard-read", "clipboard-write"]});
         await page.GoToAppAsync(BaseUrl);
 
         await page.SetEditorValueAsync("query Shared { isTest }");
         await page.ClickAsync("[data-testid='share']");
 
         await page.WaitForFunctionAsync(
-            "() => location.hash.startsWith('#q=')",
+            "async () => (await navigator.clipboard.readText()).includes('#q=')",
             null,
             new() {Timeout = 10_000});
+        var shareUrl = await page.EvaluateAsync<string>("() => navigator.clipboard.readText()");
+        await Assert.That(await page.EvaluateAsync<string>("() => location.hash")).IsEmpty();
 
-        // Reloading the share url restores the query — the hash wins over storage.
-        var shareUrl = await page.EvaluateAsync<string>("() => location.href");
         var second = await NewPageAsync();
         await second.GotoAsync(shareUrl);
-        await second.WaitForSelectorAsync(".monaco-editor", 60);
-        await second.WaitForSelectorAsync("[data-testid='blazorql'][data-ready]", 90);
+        await second.WaitForIdeReadyAsync();
         await WaitForOperationTextAsync(second, "query Shared");
 
+        // A fresh browser, so the link took over the welcome tab rather than opening beside it.
+        await Assert.That(await second.Locator(".blazorql-tab-button").CountAsync()).IsEqualTo(1);
+        await Assert.That(await second.EvaluateAsync<string>("() => location.hash")).IsEmpty();
         await Assert.That(ConsoleErrors()).IsEmpty();
     }
 

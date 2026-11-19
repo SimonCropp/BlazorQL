@@ -817,9 +817,15 @@ public partial class BlazorQLIde :
     }
 
     /// <summary>
-    /// Loads a <c>#q=</c> share link into the active tab, before the editors take their initial
-    /// values. A malformed fragment is ignored silently.
+    /// Opens a <c>#q=</c> share link in a tab of its own (see <see cref="TabStore.Open"/>), before
+    /// the editors take their initial values, then takes the fragment off the url. A malformed
+    /// fragment is ignored silently and left where it is.
     /// </summary>
+    /// <remarks>
+    /// The fragment has to go once it has been applied: left in place, every reload would open the
+    /// link again, over whatever the user has done since. The opened tab is persisted first, so
+    /// the url stops carrying it only once storage does.
+    /// </remarks>
     async Task ApplySharedLink()
     {
         var hash = await module!.Invoke<string>("getHash");
@@ -828,13 +834,14 @@ public partial class BlazorQLIde :
             return;
         }
 
-        var tab = tabs.Active;
-        tab.Query = shared.Query;
-        tab.Variables = shared.Variables;
+        tabs.Open(shared.Query, shared.Variables, DefaultHeaders ?? "", DefaultQuery ?? WelcomeQuery);
         if (!string.IsNullOrWhiteSpace(shared.Variables))
         {
             toolsExpanded = true;
         }
+
+        statePersist.Now();
+        await module.Invoke("clearHash");
     }
 
     void RestorePane(PaneState pane, string key)
@@ -1517,7 +1524,10 @@ public partial class BlazorQLIde :
         await module!.Invoke("copyText", query);
     }
 
-    /// <summary>Writes the query + variables into the location hash and copies the resulting link.</summary>
+    /// <summary>
+    /// Copies a link to this page carrying the query and variables in its fragment. The page's own
+    /// url is left alone: a fragment written there would be opened again by the next reload.
+    /// </summary>
     async Task ShareQuery()
     {
         if (operationEditor is null)
@@ -1529,7 +1539,7 @@ public partial class BlazorQLIde :
             ? await variablesEditor.GetValue()
             : "";
         var shared = new SharedQuery(await operationEditor.GetValue(), variables);
-        var href = await module!.Invoke<string>("setHash", ShareLinkCodec.Encode(shared));
+        var href = await module!.Invoke<string>("shareUrl", ShareLinkCodec.Encode(shared));
         await module.Invoke("copyText", href);
     }
 

@@ -45,6 +45,40 @@ public sealed partial class TabStore
         return copy;
     }
 
+    /// <summary>
+    /// Opens a share link's query and variables without writing over anything the user has: a tab
+    /// already holding exactly them is activated, and otherwise a new tab is appended for them. The
+    /// one exception is a store whose only tab still holds <paramref name="seed"/> and nothing else
+    /// — the welcome text a first boot starts with — which the link takes over, so arriving through
+    /// a link opens one tab rather than two.
+    /// </summary>
+    /// <remarks>
+    /// The link is applied on boot, after storage has restored the user's tabs, so whichever tab is
+    /// active holds their work. Writing the link into it would replace that work with the link's
+    /// snapshot, and the next persist would make the loss permanent.
+    /// </remarks>
+    public TabState Open(string query, string variables, string headers, string seed)
+    {
+        var existing = tabs.FindIndex(_ => _.Query == query && _.Variables == variables);
+        if (existing >= 0)
+        {
+            ActiveIndex = existing;
+            return tabs[existing];
+        }
+
+        if (tabs is [{Variables: "", RenameOverride: null} only] &&
+            only.Query == seed)
+        {
+            only.Query = query;
+            only.Variables = variables;
+            return only;
+        }
+
+        var tab = Add(query, headers);
+        tab.Variables = variables;
+        return tab;
+    }
+
     /// <summary>Where the tab with <paramref name="id"/> is now, or -1 once it has been closed.</summary>
     public int IndexOf(Guid id) =>
         tabs.FindIndex(_ => _.Id == id);

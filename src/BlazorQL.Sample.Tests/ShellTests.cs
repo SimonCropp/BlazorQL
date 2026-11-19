@@ -1,4 +1,6 @@
-﻿/// <summary>
+﻿using System.Text.Json;
+
+/// <summary>
 /// The M4 layout shell: tabs, editor tools, plugin pane toggles, theming, and the variables/headers
 /// wiring into execution — all over the published sample.
 /// </summary>
@@ -99,6 +101,61 @@ public class ShellTests :
             """,
             null,
             new() {Timeout = 30_000});
+
+    /// <summary>
+    /// A share link opens beside the user's tabs rather than over the active one, and comes off the
+    /// url once applied. It used to be written into the active tab on every boot for as long as it
+    /// stayed in the url, so each reload replaced that tab's work with the link's snapshot.
+    /// </summary>
+    [Test]
+    public async Task AShareLinkOpensBesideTheUsersTabsAndOnlyOnce()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync("query Mine { id }");
+        await WaitForStoredTabsAsync(page, "tabs.length === 1 && tabs[0].query.includes('query Mine')");
+
+        // Put the link in the url and boot from it, without a navigation the router would see.
+        await page.EvaluateAsync(
+            "fragment => history.replaceState(history.state, '', location.pathname + '#' + fragment)",
+            ShareFragment("query Shared { isTest }", ""));
+        await page.ReloadAsync();
+        await page.WaitForIdeReadyAsync();
+
+        await WaitForModelsAsync(page, "text('operation').includes('query Shared')");
+        await WaitForStoredTabsAsync(
+            page,
+            """
+            tabs.length === 2 &&
+            tabs[0].query.includes('query Mine') &&
+            tabs[1].query.includes('query Shared')
+            """);
+        await Assert.That(await page.EvaluateAsync<string>("() => location.hash")).IsEmpty();
+
+        // Nothing left in the url to open again: the reload comes back to the same two tabs.
+        await page.ReloadAsync();
+        await page.WaitForIdeReadyAsync();
+        await WaitForModelsAsync(page, "text('operation').includes('query Shared')");
+
+        var titles = await page.Locator(".blazorql-tab-button").AllInnerTextsAsync();
+        await Assert.That(string.Join(", ", titles)).IsEqualTo("Mine, Shared");
+        await Assert.That(ConsoleErrors()).IsEmpty();
+    }
+
+    /// <summary>
+    /// A <c>q=</c> share fragment — base64url(UTF8(JSON)). The test project deliberately references
+    /// no BlazorQL assembly, so this mirrors the codec rather than calling it.
+    /// </summary>
+    static string ShareFragment(string query, string variables)
+    {
+        var json = JsonSerializer.Serialize(new {query, variables});
+        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(json))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+        return "q=" + payload;
+    }
 
     /// <summary>
     /// Duplicating copies the active tab into a new tab directly to its right — not at the end of the
