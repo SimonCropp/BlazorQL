@@ -202,4 +202,113 @@ public class TabStoreTests
         store.Close(2);
         await Assert.That(store.IndexOf(two.Id)).IsEqualTo(-1);
     }
+
+    /// <summary>
+    /// A share link arrives on boot, after storage has restored the user's tabs, so the active tab
+    /// holds their work. The link used to be written into it, and the next persist made that
+    /// permanent.
+    /// </summary>
+    [Test]
+    public async Task OpenNeverWritesOverTheActiveTab()
+    {
+        var store = new TabStore();
+        var mine = store.Add("query Mine { id }");
+        mine.Variables = """{"mine": 1}""";
+
+        var opened = store.Open("query Shared { id }", """{"shared": 1}""", "x-default: 1", "welcome");
+
+        using (Assert.Multiple())
+        {
+            await Assert.That(store.Tabs).Count().IsEqualTo(2);
+            await Assert.That(mine.Query).IsEqualTo("query Mine { id }");
+            await Assert.That(mine.Variables).IsEqualTo("""{"mine": 1}""");
+            await Assert.That(store.ActiveIndex).IsEqualTo(1);
+            await Assert.That(store.Active).IsSameReferenceAs(opened);
+            await Assert.That(opened.Query).IsEqualTo("query Shared { id }");
+            await Assert.That(opened.Variables).IsEqualTo("""{"shared": 1}""");
+            // What any new tab starts with.
+            await Assert.That(opened.Headers).IsEqualTo("x-default: 1");
+        }
+    }
+
+    /// <summary>Opening the same link twice, or one for a tab already open, does not pile up copies.</summary>
+    [Test]
+    public async Task OpenSwitchesToATabAlreadyHoldingTheLink()
+    {
+        var store = new TabStore();
+        store.Add("one");
+        var shared = store.Add("query Shared { id }");
+        shared.Variables = "{}";
+        store.Add("three");
+
+        var opened = store.Open("query Shared { id }", "{}", "", "welcome");
+
+        using (Assert.Multiple())
+        {
+            await Assert.That(store.Tabs).Count().IsEqualTo(3);
+            await Assert.That(store.ActiveIndex).IsEqualTo(1);
+            await Assert.That(opened).IsSameReferenceAs(shared);
+        }
+    }
+
+    [Test]
+    public async Task OpenTellsTabsApartByTheirVariables()
+    {
+        var store = new TabStore();
+        var first = store.Add("query Shared($id: ID) { node(id: $id) { id } }");
+        first.Variables = """{"id": "1"}""";
+
+        store.Open("query Shared($id: ID) { node(id: $id) { id } }", """{"id": "2"}""", "", "welcome");
+
+        using (Assert.Multiple())
+        {
+            await Assert.That(store.Tabs).Count().IsEqualTo(2);
+            await Assert.That(first.Variables).IsEqualTo("""{"id": "1"}""");
+            await Assert.That(store.ActiveIndex).IsEqualTo(1);
+        }
+    }
+
+    /// <summary>
+    /// A first visit through a link: storage was empty, so the only tab is the seeded welcome text,
+    /// and the link takes it over rather than opening beside it. Its headers are kept: the link
+    /// carries none.
+    /// </summary>
+    [Test]
+    public async Task OpenTakesOverAnUntouchedWelcomeTab()
+    {
+        var store = new TabStore();
+        var welcome = store.Add("welcome", "x-default: 1");
+
+        var opened = store.Open("query Shared { id }", "{}", "x-default: 1", "welcome");
+
+        using (Assert.Multiple())
+        {
+            await Assert.That(store.Tabs).Count().IsEqualTo(1);
+            await Assert.That(opened).IsSameReferenceAs(welcome);
+            await Assert.That(welcome.Query).IsEqualTo("query Shared { id }");
+            await Assert.That(welcome.Variables).IsEqualTo("{}");
+            await Assert.That(welcome.Headers).IsEqualTo("x-default: 1");
+        }
+    }
+
+    /// <summary>The welcome tab is only free to take while the user has done nothing with it.</summary>
+    [Test]
+    public async Task OpenLeavesAWelcomeTabTheUserHasTouched()
+    {
+        var withVariables = new TabStore();
+        withVariables.Add("welcome").Variables = """{"a": 1}""";
+        withVariables.Open("query Shared { id }", "", "", "welcome");
+
+        var renamed = new TabStore();
+        renamed.Add("welcome").RenameOverride = "Keep";
+        renamed.Open("query Shared { id }", "", "", "welcome");
+
+        using (Assert.Multiple())
+        {
+            await Assert.That(withVariables.Tabs).Count().IsEqualTo(2);
+            await Assert.That(withVariables.Tabs[0].Query).IsEqualTo("welcome");
+            await Assert.That(renamed.Tabs).Count().IsEqualTo(2);
+            await Assert.That(renamed.Tabs[0].Query).IsEqualTo("welcome");
+        }
+    }
 }

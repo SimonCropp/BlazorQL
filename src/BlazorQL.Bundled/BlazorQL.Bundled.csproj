@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>BlazorQL</RootNamespace>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <Description>Hosts the BlazorQL GraphQL IDE in any ASP.NET Core app from a single assembly: the whole WebAssembly application is embedded, so there are no static files to deploy and no Blazor SDK to adopt.</Description>

@@ -42,11 +42,18 @@ export function getHash() {
     return location.hash;
 }
 
-/// Replaces the location's fragment (no history entry) and returns the resulting href — what the
-/// share button copies.
-export function setHash(fragment) {
-    history.replaceState(null, '', location.pathname + location.search + '#' + fragment);
-    return location.href;
+/// This page's url with the given fragment — what the share button copies. The location itself is
+/// not touched.
+export function shareUrl(fragment) {
+    const url = new URL(location.href);
+    url.hash = fragment;
+    return url.href;
+}
+
+/// Takes the fragment off the location once a share link has been applied, without a history entry.
+/// The router's own history state is carried across rather than dropped.
+export function clearHash() {
+    history.replaceState(history.state, '', location.pathname + location.search);
 }
 
 export function downloadText(name, text, mimeType) {

@@ -44,7 +44,7 @@ sealed class Debouncer(int delayMs = 500) :
             // Nothing awaits this task, so an exception here has nowhere else to go: a GetValue
             // after the editor was torn down, or a failed interop call, would otherwise be an
             // update that silently never happened.
-            Console.Error.WriteLine($"BlazorQL: a debounced action failed. {exception}");
+            await Console.Error.WriteLineAsync($"BlazorQL: a debounced action failed. {exception}", token);
         }
     }
 
