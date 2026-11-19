@@ -84,7 +84,12 @@ public partial class Home :
             await foreach (var document in Fetcher.FetchAsync(request, headers, cancellation.Token))
             {
                 greetings.Add(document.GetProperty("data").GetProperty("message").GetString()!);
+                // BL0012 is wrong here: the click handler renders only at its first await and when
+                // it completes, which for a subscription is when the feed stops. Each greeting has to
+                // be rendered as it arrives.
+#pragma warning disable BL0012
                 StateHasChanged();
+#pragma warning restore BL0012
             }
         }
         catch (OperationCanceledException)

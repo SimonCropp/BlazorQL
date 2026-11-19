@@ -1087,6 +1087,11 @@ public partial class BlazorQLIde :
         return ErrorJson("Introspection failed: the result carries no schema.");
     }
 
+    // BL0012 sees only the Sidebar's OnRefetch binding, where the event callback renders anyway.
+    // OnGlobalShortcut also calls this, through InvokeAsync, and nothing renders on that path unless
+    // asked: the spinner would never appear, and the loaded schema would not show until something
+    // else rendered.
+#pragma warning disable BL0012
     async Task RefetchSchema()
     {
         refetching = true;
@@ -1101,6 +1106,7 @@ public partial class BlazorQLIde :
             StateHasChanged();
         }
     }
+#pragma warning restore BL0012
 
     // ---- Theme ----
 
@@ -1166,7 +1172,6 @@ public partial class BlazorQLIde :
         visiblePlugin = PluginKind.Docs;
         PersistVisiblePlugin();
         docNavigator.NavigateTo(schemaReference);
-        StateHasChanged();
     }
 
     // ---- Editor tools ----
