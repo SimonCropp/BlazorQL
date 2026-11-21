@@ -40,6 +40,43 @@ public class MarkdownViewTests
         await Assert.That(Targets(markup)).IsEmpty();
     }
 
+    /// <summary>
+    /// The angle-bracket autolink — <c>&lt;scheme:anything&gt;</c>, core CommonMark rather than the
+    /// bare-url extension — takes any scheme at all, and is a node of its own rather than a link.
+    /// </summary>
+    [Test]
+    [Arguments("javascript:alert(document.cookie)")]
+    [Arguments("JavaScript:alert(1)")]
+    [Arguments("vbscript:msgbox(1)")]
+    [Arguments("data:text/html,alert(1)")]
+    public async Task AnAutolinkThatWouldRunCodeIsLeftAsText(string url)
+    {
+        var markup = Render($"See <{url}> for more.");
+
+        await Assert.That(markup).Contains($"See {url} for more.");
+        await Assert.That(markup).DoesNotContain("<a");
+    }
+
+    [Test]
+    public async Task AnAutolinkInAPreviewIsCheckedToo()
+    {
+        var markup = Render("See <javascript:alert(1)>", preview: true);
+
+        await Assert.That(markup).Contains("See javascript:alert(1)");
+        await Assert.That(markup).DoesNotContain("<a");
+    }
+
+    [Test]
+    [Arguments("<https://example.com/spec>", "https://example.com/spec")]
+    [Arguments("<mailto:someone@example.com>", "mailto:someone@example.com")]
+    [Arguments("<someone@example.com>", "mailto:someone@example.com")]
+    public async Task AnOrdinaryAutolinkSurvives(string autolink, string target)
+    {
+        var markup = Render($"See {autolink} for more.");
+
+        await Assert.That(Targets(markup)).IsEquivalentTo([target], CollectionOrdering.Matching);
+    }
+
     [Test]
     public async Task AnImageThatWouldRunCodeLosesItsTarget()
     {

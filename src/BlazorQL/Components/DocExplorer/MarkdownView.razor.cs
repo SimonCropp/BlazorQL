@@ -54,10 +54,16 @@ public partial class MarkdownView
     }
 
     /// <summary>
-    /// Empties a link or image target a browser would run rather than fetch. Disabling raw HTML
-    /// keeps a description from writing its own tags; it says nothing about where the tags markdown
-    /// itself produces may point. See <see cref="UrlSafety"/>.
+    /// Takes away every target a browser would run rather than fetch. Disabling raw HTML keeps a
+    /// description from writing its own tags; it says nothing about where the tags markdown itself
+    /// produces may point. See <see cref="UrlSafety"/>.
     /// </summary>
+    /// <remarks>
+    /// Markdown makes an <c>href</c> from two node types, and both are checked. A link or image
+    /// keeps its text and loses its target. An angle-bracket autolink, <c>&lt;scheme:anything&gt;</c>,
+    /// takes any scheme at all and is not a <see cref="LinkInline"/>; its text is its target, so
+    /// emptying the target would empty the text too. It is replaced by that text instead.
+    /// </remarks>
     static void Sanitize(MarkdownDocument document)
     {
         foreach (var link in document.Descendants<LinkInline>())
@@ -66,6 +72,16 @@ public partial class MarkdownView
             {
                 link.Url = "";
             }
+        }
+
+        // Collected first: replacing a node while walking the tree would cut the walk short.
+        var autolinks = document
+            .Descendants<AutolinkInline>()
+            .Where(_ => !_.IsEmail && !UrlSafety.IsRenderable(_.Url))
+            .ToList();
+        foreach (var autolink in autolinks)
+        {
+            autolink.ReplaceBy(new LiteralInline(autolink.Url));
         }
     }
 }
