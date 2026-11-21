@@ -131,6 +131,16 @@ public class QueryBuilderPaneTests
     }
 
     [Test]
+    public async Task ExplainsTextNestedTooDeepToParse()
+    {
+        await using var context = new BunitContext();
+        var host = Render(context, DocumentInfoTests.TooDeep);
+
+        await Assert.That(host.Find("[data-testid='builder-notice']").TextContent).Contains("does not parse");
+        await Assert.That(host.Pane.FindAll("[data-testid='builder']")).IsEmpty();
+    }
+
+    [Test]
     public async Task ShowsTheArgumentsOfASelectedField()
     {
         await using var context = new BunitContext();

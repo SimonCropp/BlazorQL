@@ -57,6 +57,24 @@ public class SidecarTests
         await Assert.That(entries[2].Name).IsEqualTo("<anonymous>");
     }
 
+    /// <summary>
+    /// The sidecar sits in front of the host app's own requests, so a document the parser refuses
+    /// for its depth has to be recorded and passed through, not thrown back at the app.
+    /// </summary>
+    [Test]
+    public async Task PassesADocumentTooDeepToParseThrough()
+    {
+        var store = NewStore();
+        var fetcher = new SidecarFetcher(new FakeFetcher("""{"data":{}}"""), store);
+
+        var documents = await Drain(fetcher, new(DocumentInfoTests.TooDeep), noHeaders);
+
+        await Assert.That(documents).Count().IsEqualTo(1);
+        var entry = store.Entries.Single();
+        await Assert.That(entry.Query).IsEqualTo(DocumentInfoTests.TooDeep);
+        await Assert.That(entry.Name).IsEqualTo("<anonymous>");
+    }
+
     [Test]
     public async Task RecordsFailureAndRethrows()
     {
