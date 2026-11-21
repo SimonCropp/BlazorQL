@@ -1999,11 +1999,14 @@ public partial class BlazorQLIde :
         }
 
         var text = await operationEditor.GetValue();
-        var removed = FieldRemover.Remove(text, error.Path);
+        // The tab records the operation a run chose whenever the document held more than one, and
+        // the error belongs to that operation alone.
+        var removed = FieldRemover.Remove(text, error.Path, tabs.Active.OperationName);
         if (removed is null)
         {
-            // The path does not resolve against what the editor holds now, or the field is all the
-            // operation selects. Either way there is no edit to make that leaves a valid document.
+            // The operation that ran is gone, the path does not resolve against what the editor
+            // holds now, or the field is all the operation selects. Either way there is no edit to
+            // make that leaves a valid document.
             statusLine = $"Could not remove {error.PathText} from the operation.";
             return;
         }
