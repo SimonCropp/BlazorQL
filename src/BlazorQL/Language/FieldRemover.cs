@@ -21,6 +21,8 @@ public static class FieldRemover
     /// the field is the only thing the operation selects, and taking it out would leave an empty
     /// operation rather than a smaller one.
     /// </summary>
+    /// <param name="text">The operation editor's document.</param>
+    /// <param name="path">The error's response path, list indices left out.</param>
     /// <param name="operationName">
     /// The operation the run chose, null for a run that named none. A document with one operation
     /// can only have run that one, so the name only decides between several.
