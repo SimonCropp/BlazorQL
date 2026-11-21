@@ -35,12 +35,9 @@ public sealed class SplitFetcher(IGraphQLFetcher other, IGraphQLFetcher subscrip
 
     static bool IsSubscription(GraphQLRequest request)
     {
-        GraphQLDocument document;
-        try
-        {
-            document = Parser.Parse(request.Query);
-        }
-        catch (GraphQLSyntaxErrorException)
+        // DocumentInfo rather than the parser itself: it answers for nesting past the parser's depth
+        // limit too, which is an exception of its own and not a syntax error.
+        if (DocumentInfo.Parse(request.Query).Document is not { } document)
         {
             return false;
         }

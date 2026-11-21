@@ -296,6 +296,26 @@ public class RequestImporterTests
         await Assert.That(error).IsNotNullOrEmpty();
     }
 
+    /// <summary>
+    /// Both ways a query arrives: inside a JSON body, and as the body itself — which starts with a
+    /// brace, so it is tried as JSON first and as a document second.
+    /// </summary>
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task AQueryNestedTooDeepToParseIsRefusedRatherThanThrown(bool inJson)
+    {
+        var text = inJson
+            ? $$"""{"query":"{{DocumentInfoTests.TooDeep}}"}"""
+            : DocumentInfoTests.TooDeep;
+
+        var (ok, requests, error) = RequestImporter.Import(text);
+
+        await Assert.That(ok).IsFalse();
+        await Assert.That(requests).IsEmpty();
+        await Assert.That(error).IsNotNullOrEmpty();
+    }
+
     static Task VerifyRequest(ImportedRequest request) =>
         Verify(
             $"""

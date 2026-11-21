@@ -40,6 +40,14 @@ public class SplitFetcherTests
     public async Task AnUnparseableDocumentGoesToTheOtherFetcher() =>
         await Assert.That(split.For(new("subscription {"))).IsSameReferenceAs(other);
 
+    /// <summary>
+    /// The parser refuses nesting past its depth limit with an exception that is not a syntax error.
+    /// The host app's own requests come through here, so that refusal must route rather than throw.
+    /// </summary>
+    [Test]
+    public async Task ADocumentTooDeepToParseGoesToTheOtherFetcher() =>
+        await Assert.That(split.For(new($"subscription {DocumentInfoTests.TooDeep}"))).IsSameReferenceAs(other);
+
     sealed class RecordingFetcher :
         IGraphQLFetcher
     {

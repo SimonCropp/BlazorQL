@@ -131,6 +131,10 @@ public class SchemaValidatorTests
     public async Task ReportsASyntaxError() =>
         await Assert.That(Errors("{ person {")).Contains(_ => _.Contains("Syntax Error"));
 
+    [Test]
+    public async Task ReportsADocumentTooDeepToParse() =>
+        await Assert.That(Errors(DocumentInfoTests.TooDeep)).Count().IsEqualTo(1);
+
     // FieldsOnCorrectType
 
     [Test]
