@@ -16,8 +16,9 @@ builder.Services.AddBlazorQLSidecar(_ => _.IdeRoute = "explorer");
 // The whole schema lives in the browser: GraphQL.NET executes it inside the WASM app itself, so
 // the sample deploys to static hosting with subscriptions intact. Both pages resolve this one
 // fetcher, and the sidecar decorator records every request — the sample app's and the query
-// explorer's alike — into the debug panel.
-builder.Services.AddSingleton<IGraphQLFetcher>(_ =>
+// explorer's alike — into the debug panel. Scoped, as the sidecar's store is, so under Blazor
+// Server each user's requests land in their own panel.
+builder.Services.AddScoped<IGraphQLFetcher>(_ =>
     new SidecarFetcher(new LocalSchemaFetcher(), _.GetRequiredService<SidecarStore>()));
 // end-snippet
 

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+
 /// <summary>
 /// The debug sidecar's capture: the <see cref="SidecarFetcher"/> decorator recording requests,
 /// documents, failures, and cancellation into the <see cref="SidecarStore"/>, plus the store's
@@ -215,6 +217,52 @@ public class SidecarTests
 
         await Assert.That(BlazorQLSidecar.IdeHref(entry, "")).StartsWith("#q=");
         await Assert.That(BlazorQLSidecar.IdeHref(entry, null)).IsNull();
+    }
+
+    /// <summary>
+    /// The store holds every captured request's headers — authorization included — and responses.
+    /// Under Blazor Server one provider serves every user, each in a scope of their own (a circuit),
+    /// so the store has to live in that scope: one shared across the process would show each user
+    /// everyone's traffic. Under WebAssembly the app has the one scope, so nothing changes there.
+    /// </summary>
+    [Test]
+    public async Task EachScopeHasAStoreOfItsOwn()
+    {
+        await using var provider = new ServiceCollection()
+            .AddBlazorQLSidecar()
+            .BuildServiceProvider(validateScopes: true);
+        await using var first = provider.CreateAsyncScope();
+        await using var second = provider.CreateAsyncScope();
+
+        var store = first.ServiceProvider.GetRequiredService<SidecarStore>();
+
+        await Assert.That(first.ServiceProvider.GetRequiredService<SidecarStore>()).IsSameReferenceAs(store);
+        await Assert.That(second.ServiceProvider.GetRequiredService<SidecarStore>()).IsNotSameReferenceAs(store);
+    }
+
+    /// <summary>
+    /// What a user sends is recorded in their store alone. The fetcher is resolved in the same scope
+    /// as the panel, which is the registration the docs give.
+    /// </summary>
+    [Test]
+    public async Task OneUsersRequestsNeverReachAnothersStore()
+    {
+        await using var provider = new ServiceCollection()
+            .AddBlazorQLSidecar()
+            .AddScoped<IGraphQLFetcher>(_ =>
+                new SidecarFetcher(new FakeFetcher("""{"data":{}}"""), _.GetRequiredService<SidecarStore>()))
+            .BuildServiceProvider(validateScopes: true);
+        await using var alice = provider.CreateAsyncScope();
+        await using var bob = provider.CreateAsyncScope();
+
+        var fetcher = (SidecarFetcher) alice.ServiceProvider.GetRequiredService<IGraphQLFetcher>();
+        await Drain(fetcher, new("{ secret }"), new Dictionary<string, string>
+        {
+            ["authorization"] = "Bearer alice"
+        });
+
+        await Assert.That(alice.ServiceProvider.GetRequiredService<SidecarStore>().Entries).Count().IsEqualTo(1);
+        await Assert.That(bob.ServiceProvider.GetRequiredService<SidecarStore>().Entries).IsEmpty();
     }
 
     static SidecarStore NewStore(Action<SidecarOptions>? configure = null)
