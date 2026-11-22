@@ -58,6 +58,44 @@ public class ExecutionTests :
         await Assert.That(ConsoleErrors()).IsEmpty();
     }
 
+    /// <summary>
+    /// The response editor is read-only, and the IDE already holds every text it writes there. A
+    /// content-change handler on it had BlazorMonaco stringify each change, the whole response
+    /// included, and send it to .NET to be ignored: megabytes per run, per streamed part and per
+    /// tab switch. With no handler there is no listener, and the response actions still appear.
+    /// </summary>
+    [Test]
+    public async Task AResponseIsNotSentBackToDotNet()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        // Count the content events the response editor raises into .NET, through the reference
+        // BlazorMonaco holds for it.
+        await page.EvaluateAsync(
+            """
+            () => {
+                window.responseContentEvents = 0;
+                const holder = blazorMonaco.editors.find(_ => _.editor.getModel()?.uri.path.includes('response'));
+                const original = holder.dotnetRef.invokeMethodAsync.bind(holder.dotnetRef);
+                holder.dotnetRef.invokeMethodAsync = (method, eventName, ...rest) => {
+                    if (eventName === 'OnDidChangeModelContent') {
+                        window.responseContentEvents++;
+                    }
+                    return original(method, eventName, ...rest);
+                };
+            }
+            """);
+
+        await page.SetEditorValueAsync("{ id isTest image }");
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForSelectorAsync("[data-testid='response-copy']", new() {Timeout = 30_000});
+
+        await Assert.That(await page.GetModelValueAsync("response")).Contains("abc123");
+        await Assert.That(await page.EvaluateAsync<int>("() => window.responseContentEvents")).IsEqualTo(0);
+        await Assert.That(ConsoleErrors()).IsEmpty();
+    }
+
     [Test]
     public async Task StreamsASubscription()
     {
