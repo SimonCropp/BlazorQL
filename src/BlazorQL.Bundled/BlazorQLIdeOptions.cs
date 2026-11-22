@@ -58,8 +58,9 @@ public sealed class BlazorQLIdeOptions
     public string DocumentTitle { get; set; } = "GraphQL IDE";
 
     /// <summary>
-    /// Overrides the base path baked into the page. Only needed behind a reverse proxy that strips
-    /// a prefix without sending X-Forwarded-Prefix; prefer UseForwardedHeaders where you can.
+    /// Overrides the base path baked into the page, and the one the bare mount redirects to. Only
+    /// needed behind a reverse proxy that strips a prefix without sending X-Forwarded-Prefix; prefer
+    /// UseForwardedHeaders where you can.
     /// </summary>
     public string? BasePathOverride { get; set; }
 

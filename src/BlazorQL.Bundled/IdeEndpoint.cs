@@ -244,7 +244,11 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
         await response.Body.WriteAsync(page, context.RequestAborted);
     }
 
-    string BaseHref(HttpContext context, string mountPath)
+    /// <summary>
+    /// The mount's public path, with its trailing slash: the page's base href, and where the bare mount
+    /// redirects to.
+    /// </summary>
+    internal string BaseHref(HttpContext context, string mountPath)
     {
         if (options.BasePathOverride is {Length: > 0} over)
         {
