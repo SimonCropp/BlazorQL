@@ -450,7 +450,7 @@ public static partial class QueryBuilder
         }
 
         const string unit = "  ";
-        var name = NewOperationName(DocumentInfo.Parse(text).Document, kind);
+        var name = NewOperationName(ParseDocument(text), kind);
         var operation = $"{Keyword(kind)} {name} {{\n{unit}{Print(selection, unit, unit)}\n}}";
         var kept = text.TrimEnd();
         if (kept.Length == 0)
@@ -465,7 +465,7 @@ public static partial class QueryBuilder
 
     /// <summary>The definition an edit addresses, in the text as it now stands.</summary>
     static ASTNode? Parse(string text, int definition) =>
-        DocumentInfo.Parse(text).Document?.Definitions.ElementAtOrDefault(definition) is { } node and (GraphQLOperationDefinition or GraphQLFragmentDefinition)
+        ParseDocument(text)?.Definitions.ElementAtOrDefault(definition) is { } node and (GraphQLOperationDefinition or GraphQLFragmentDefinition)
             ? node
             : null;
 
@@ -976,7 +976,7 @@ public static partial class QueryBuilder
 
     /// <summary>
     /// Removes a span, taking its line with it when it had the line to itself — the indentation before
-    /// it and the newline after — so a removal never leaves a blank line behind. Sharing its line, it
+    /// it, a comment after it, and the newline — so a removal never leaves a blank line behind. Sharing its line, it
     /// takes the separator after it instead, or before it at the end of the line, so the neighbours stay
     /// one space apart.
     /// </summary>
@@ -987,6 +987,19 @@ public static partial class QueryBuilder
                text[after] is ' ' or '\t' or ',')
         {
             after++;
+        }
+
+        // A comment after a span that has the line to itself is the span's, and goes with it rather
+        // than staying behind on a line of its own.
+        if (after < text.Length &&
+            text[after] == '#' &&
+            StartsLine(text, start))
+        {
+            while (after < text.Length &&
+                   text[after] is not ('\r' or '\n'))
+            {
+                after++;
+            }
         }
 
         var endsLine = after == text.Length || text[after] is '\r' or '\n';
@@ -1309,7 +1322,7 @@ public static partial class QueryBuilder
 
     static string DropOrphanedVariable(string text, int definition, string name)
     {
-        if (DocumentInfo.Parse(text).Document is not { } document ||
+        if (ParseDocument(text) is not { } document ||
             document.Definitions.ElementAtOrDefault(definition) is not GraphQLOperationDefinition {Variables: { } variables} operation ||
             variables.Items.FirstOrDefault(_ => _.Variable.Name.StringValue == name) is not { } declaration)
         {

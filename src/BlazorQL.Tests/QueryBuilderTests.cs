@@ -740,6 +740,172 @@ public class QueryBuilderTests
         await Assert.That(QueryBuilder.ToggleVariable(schema, """fragment F on Query { user(id: "1") { id } }""", 0, Path("user"), "id"))
             .IsNull();
 
+    // ---- Trailing comments ----
+    //
+    // The parser's end for a node runs on through a comment that follows it on the line, and the
+    // line break after. A splice that trusts that end merges the line into the next one and takes the
+    // comment with it, so each edit below sits next to one.
+
+    [Test]
+    public async Task SettingAValueKeepsTheCommentAfterIt() =>
+        await Assert.That(SetArgument(
+                """
+                {
+                  users(first: 1 # page size
+                  ) {
+                    id
+                  }
+                }
+                """,
+                ["users"],
+                ["first"],
+                new GraphQLIntValue(25)))
+            .IsEqualTo(
+                """
+                {
+                  users(first: 25 # page size
+                  ) {
+                    id
+                  }
+                }
+                """);
+
+    [Test]
+    public async Task TurningAValueIntoAVariableKeepsTheCommentAfterIt() =>
+        await Assert.That(QueryBuilder.ToggleVariable(
+                schema,
+                """
+                query Q {
+                  user(id: "7" # who
+                  ) {
+                    id
+                  }
+                }
+                """,
+                0,
+                Path("user"),
+                "id"))
+            .IsEqualTo(
+                """
+                query Q($id: ID! = "7") {
+                  user(id: $id # who
+                  ) {
+                    id
+                  }
+                }
+                """);
+
+    [Test]
+    public async Task AddingAFieldAfterACommentedOneKeepsBothLines() =>
+        await Assert.That(Toggle(
+                """
+                {
+                  viewer {
+                    id # the key
+                  }
+                }
+                """,
+                "viewer",
+                "name"))
+            .IsEqualTo(
+                """
+                {
+                  viewer {
+                    id # the key
+                    name
+                  }
+                }
+                """);
+
+    [Test]
+    public async Task OpeningACommentedFieldKeepsItsComment() =>
+        await Assert.That(Toggle(
+                """
+                {
+                  viewer # me
+                  version
+                }
+                """,
+                "viewer",
+                "name"))
+            .IsEqualTo(
+                """
+                {
+                  viewer {
+                    name
+                  } # me
+                  version
+                }
+                """);
+
+    [Test]
+    public async Task RemovingTheLastArgumentKeepsTheCommentAfterIt() =>
+        await Assert.That(ToggleArgument(
+                """
+                {
+                  users(first: 1) # one page
+                  {
+                    id
+                  }
+                }
+                """,
+                ["users"],
+                "first"))
+            .IsEqualTo(
+                """
+                {
+                  users # one page
+                  {
+                    id
+                  }
+                }
+                """);
+
+    /// <summary>A comment on the field's own line is the field's, and goes with it.</summary>
+    [Test]
+    public async Task UncheckingAFieldTakesItsTrailingComment() =>
+        await Assert.That(Toggle(
+                """
+                {
+                  viewer {
+                    id
+                  }
+                  version # the build
+                }
+                """,
+                "version"))
+            .IsEqualTo(
+                """
+                {
+                  viewer {
+                    id
+                  }
+                }
+                """);
+
+    /// <summary>A hash inside a string is text, not a comment, and is no reason to stop early.</summary>
+    [Test]
+    public async Task AHashInsideAStringIsNotAComment() =>
+        await Assert.That(SetArgument(
+                """
+                {
+                  user(id: "#7") {
+                    id
+                  }
+                }
+                """,
+                ["user"],
+                ["id"],
+                new GraphQLStringValue("8")))
+            .IsEqualTo(
+                """
+                {
+                  user(id: "8") {
+                    id
+                  }
+                }
+                """);
+
     // ---- Variables document ----
 
     string? VariablesAfter(string before, string after, string variables) =>
