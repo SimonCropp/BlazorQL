@@ -5,20 +5,29 @@ namespace BlazorQL;
 /// </summary>
 /// <remarks>
 /// The path names response keys, so an aliased field matches on its alias, and list indices are no
-/// part of it — a list's selection set is written once however many elements come back. Two knock-on
-/// edits keep the result a document the server will still accept: removing the last selection in a
-/// set would leave an empty pair of braces, so the removal takes the parent field with it, and a
-/// variable left declared but unused is a validation error in its own right, so those go too.
+/// part of it — a list's selection set is written once however many elements come back. Knock-on
+/// edits keep the result a document the server will still accept. Removing the last selection in a
+/// set would leave an empty pair of braces, so the removal takes what owns the set with it — the
+/// parent field, the inline fragment, or the spread of the fragment. And what that leaves unused —
+/// a variable the operation no longer reads, a fragment nothing spreads any more — is a validation
+/// error in its own right, so it goes too.
 /// </remarks>
 public static class FieldRemover
 {
     /// <summary>
-    /// <paramref name="text"/> with the field at <paramref name="path"/> removed, or null when
-    /// there is no such removal to make: the path does not resolve (a response left over from an
-    /// edited query), or the field is the only thing the operation selects, and taking it out would
-    /// leave an empty operation rather than a smaller one.
+    /// <paramref name="text"/> with the field at <paramref name="path"/> removed from the operation
+    /// that ran, or null when there is no such removal to make: the operation is no longer in the
+    /// document, the path does not resolve in it (a response left over from an edited query), or
+    /// the field is the only thing the operation selects, and taking it out would leave an empty
+    /// operation rather than a smaller one.
     /// </summary>
-    public static string? Remove(string text, IReadOnlyList<string> path)
+    /// <param name="text">The operation editor's document.</param>
+    /// <param name="path">The error's response path, list indices left out.</param>
+    /// <param name="operationName">
+    /// The operation the run chose, null for a run that named none. A document with one operation
+    /// can only have run that one, so the name only decides between several.
+    /// </param>
+    public static string? Remove(string text, IReadOnlyList<string> path, string? operationName = null)
     {
         if (path.Count == 0)
         {
@@ -26,42 +35,65 @@ public static class FieldRemover
         }
 
         var info = DocumentInfo.Parse(text);
-        if (info.Document is null)
+        if (info.Document is null ||
+            Ran(info.Document, operationName) is not { } operation)
         {
             return null;
         }
 
-        var fragments = info.Fragments
-            .ToDictionary(_ => _.FragmentName.Name.StringValue, _ => _, StringComparer.Ordinal);
-
-        foreach (var operation in info.Document.Definitions.OfType<GraphQLOperationDefinition>())
+        List<Step> chain = [];
+        if (!Resolve(operation.SelectionSet, path, 0, Fragments(info.Document), chain, new(StringComparer.Ordinal)) ||
+            Target(chain) is not { } target)
         {
-            List<Step> chain = [];
-            if (!Resolve(operation.SelectionSet, path, 0, fragments, chain, new(StringComparer.Ordinal)))
-            {
-                continue;
-            }
-
-            var target = Target(chain);
-            if (target is null)
-            {
-                return null;
-            }
-
-            return RemoveUnusedVariables(Cut(text, target.Location.Start, target.Location.End));
+            return null;
         }
 
-        return null;
+        return RemoveOrphans(info.Document, Cut(text, target.Location.Start, target.Location.End));
     }
 
-    /// <summary>One field on the way down, with the set it was selected in.</summary>
-    readonly record struct Step(GraphQLSelectionSet Set, GraphQLField Field);
+    /// <summary>
+    /// The operation a response came from. The run named it when the document held several, and a
+    /// run that named none ran the anonymous one. Any other operation selecting the same path is not
+    /// what the error was about, so the path is never tried there.
+    /// </summary>
+    static GraphQLOperationDefinition? Ran(GraphQLDocument document, string? operationName)
+    {
+        var operations = document.Definitions.OfType<GraphQLOperationDefinition>().ToList();
+        if (operations is [var only])
+        {
+            return only;
+        }
+
+        return operations.FirstOrDefault(_ => _.Name?.StringValue == operationName);
+    }
 
     /// <summary>
-    /// Walks the path through the document, recording the fields it passes. Fragments are followed:
-    /// a path segment can perfectly well be satisfied by a field the query only mentions through a
-    /// spread. <paramref name="active"/> is the set of fragments already open on this branch, which
-    /// is what stops a cycle from being followed forever.
+    /// The fragments by name. Two of one name fail validation but parse, so the first is taken
+    /// rather than thrown over.
+    /// </summary>
+    static Dictionary<string, GraphQLFragmentDefinition> Fragments(GraphQLDocument document)
+    {
+        var fragments = new Dictionary<string, GraphQLFragmentDefinition>(StringComparer.Ordinal);
+        foreach (var fragment in document.Definitions.OfType<GraphQLFragmentDefinition>())
+        {
+            fragments.TryAdd(fragment.FragmentName.Name.StringValue, fragment);
+        }
+
+        return fragments;
+    }
+
+    /// <summary>
+    /// One selection on the way down — a field, an inline fragment, or a fragment spread — with the
+    /// set it was selected in.
+    /// </summary>
+    readonly record struct Step(GraphQLSelectionSet Set, ASTNode Selection);
+
+    /// <summary>
+    /// Walks the path through the document, recording the selections it passes. Fragments are
+    /// followed: a path segment can perfectly well be satisfied by a field the query only mentions
+    /// through a spread. They consume no segment, but they are steps all the same, because one can
+    /// be what has to go. <paramref name="active"/> is the set of fragments already open on this
+    /// branch, which is what stops a cycle from being followed forever.
     /// </summary>
     static bool Resolve(
         GraphQLSelectionSet? set,
@@ -104,11 +136,13 @@ public static class FieldRemover
                     continue;
 
                 case GraphQLInlineFragment inline:
+                    chain.Add(new(set, inline));
                     if (Resolve(inline.SelectionSet, path, depth, fragments, chain, active))
                     {
                         return true;
                     }
 
+                    chain.RemoveAt(chain.Count - 1);
                     continue;
 
                 case GraphQLFragmentSpread spread
@@ -122,6 +156,7 @@ public static class FieldRemover
                         continue;
                     }
 
+                    chain.Add(new(set, spread));
                     var found = Resolve(fragment.SelectionSet, path, depth, fragments, chain, active);
                     active.Remove(name);
                     if (found)
@@ -129,6 +164,7 @@ public static class FieldRemover
                         return true;
                     }
 
+                    chain.RemoveAt(chain.Count - 1);
                     continue;
             }
         }
@@ -137,11 +173,12 @@ public static class FieldRemover
     }
 
     /// <summary>
-    /// The field to actually cut. Removing the only selection in a set leaves braces around
-    /// nothing, so that case climbs to the parent instead; reaching the operation's own set means
-    /// there is no removal that leaves a valid document.
+    /// The selection to actually cut. Removing the only selection in a set leaves braces around
+    /// nothing, so that case climbs to whatever owns the set instead: the field it belongs to, the
+    /// inline fragment it is, or the spread of the fragment it is the body of. Reaching the
+    /// operation's own set means there is no removal that leaves a valid document.
     /// </summary>
-    static GraphQLField? Target(List<Step> chain)
+    static ASTNode? Target(List<Step> chain)
     {
         var index = chain.Count - 1;
         while (chain[index].Set.Selections.Count == 1)
@@ -154,7 +191,7 @@ public static class FieldRemover
             index--;
         }
 
-        return chain[index].Field;
+        return chain[index].Selection;
     }
 
     /// <summary>
@@ -207,66 +244,186 @@ public static class FieldRemover
     }
 
     /// <summary>
-    /// Drops variable definitions nothing references any more. An unused variable fails the spec's
-    /// NoUnusedVariables rule, so leaving one behind would trade a failing field for a document the
-    /// server rejects outright.
+    /// What a document's operations read: per operation, in document order, the variables it uses;
+    /// and every fragment some operation reaches.
     /// </summary>
-    static string RemoveUnusedVariables(string text)
+    sealed record Usage(
+        List<HashSet<string>> Variables,
+        HashSet<string> Reachable,
+        Dictionary<string, GraphQLFragmentDefinition> Fragments);
+
+    /// <summary>
+    /// Follows each operation through the fragments it spreads, as the validation rules do: a
+    /// variable belongs to its operation, so whether it is used is a question about the selections
+    /// that operation reaches, its own directives included — not about the document as a whole.
+    /// </summary>
+    static Usage Read(GraphQLDocument document)
     {
-        var document = DocumentInfo.Parse(text).Document;
-        if (document is null)
+        var fragments = Fragments(document);
+        var variables = new List<HashSet<string>>();
+        var reachable = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var operation in document.Definitions.OfType<GraphQLOperationDefinition>())
+        {
+            var used = new HashSet<string>(StringComparer.Ordinal);
+            var spread = new HashSet<string>(StringComparer.Ordinal);
+            CollectUsed(operation.Directives, used);
+            CollectReached(operation.SelectionSet, fragments, used, spread);
+            variables.Add(used);
+            reachable.UnionWith(spread);
+        }
+
+        return new(variables, reachable, fragments);
+    }
+
+    /// <summary>
+    /// The variables a selection set reads, following its spreads into the fragments they name.
+    /// <paramref name="spread"/> collects the fragments reached, and seeing one twice is what stops
+    /// a cycle.
+    /// </summary>
+    static void CollectReached(
+        GraphQLSelectionSet? set,
+        IReadOnlyDictionary<string, GraphQLFragmentDefinition> fragments,
+        HashSet<string> used,
+        HashSet<string> spread)
+    {
+        foreach (var selection in set?.Selections ?? [])
+        {
+            switch (selection)
+            {
+                case GraphQLField field:
+                    CollectUsed(field.Arguments, used);
+                    CollectUsed(field.Directives, used);
+                    CollectReached(field.SelectionSet, fragments, used, spread);
+                    break;
+
+                case GraphQLInlineFragment inline:
+                    CollectUsed(inline.Directives, used);
+                    CollectReached(inline.SelectionSet, fragments, used, spread);
+                    break;
+
+                case GraphQLFragmentSpread fragmentSpread:
+                    CollectUsed(fragmentSpread.Directives, used);
+                    var name = fragmentSpread.FragmentName.Name.StringValue;
+                    if (spread.Add(name) &&
+                        fragments.TryGetValue(name, out var fragment))
+                    {
+                        CollectReached(fragment.SelectionSet, fragments, used, spread);
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Takes out what the cut orphaned: each variable an operation read before and no longer does,
+    /// and each fragment some operation reached before and none does now. An unused variable fails
+    /// the spec's NoUnusedVariables rule, and an unused fragment NoUnusedFragments, so leaving one
+    /// behind would trade a failing field for a document the server rejects outright.
+    /// </summary>
+    /// <remarks>
+    /// Only what the cut orphaned. A variable or fragment that was already unused is the user's to
+    /// deal with — perhaps half way through an edit — and one in another operation is not what the
+    /// click was about. Operations pair up by position: a cut never removes one.
+    /// </remarks>
+    static string RemoveOrphans(GraphQLDocument original, string text)
+    {
+        if (DocumentInfo.Parse(text).Document is not { } document)
         {
             return text;
         }
 
-        var used = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var definition in document.Definitions)
+        var before = Read(original);
+        var after = Read(document);
+        List<(int Start, Func<string, string> Apply)> edits = [];
+
+        var operations = document.Definitions.OfType<GraphQLOperationDefinition>().ToList();
+        for (var i = 0; i < operations.Count; i++)
         {
-            switch (definition)
-            {
-                case GraphQLOperationDefinition operation:
-                    CollectUsed(operation.SelectionSet, used);
-                    break;
-
-                case GraphQLFragmentDefinition fragment:
-                    CollectUsed(fragment.SelectionSet, used);
-                    break;
-            }
-        }
-
-        // Right to left throughout, so an earlier cut's offsets are still good after a later one.
-        var operations = document.Definitions
-            .OfType<GraphQLOperationDefinition>()
-            .Where(_ => _.Variables is { Items.Count: > 0 })
-            .OrderByDescending(_ => _.Location.Start);
-
-        foreach (var operation in operations)
-        {
-            var variables = operation.Variables!;
-            var unused = variables.Items
-                .Where(_ => !used.Contains(_.Variable.Name.StringValue))
-                .ToList();
-
-            if (unused.Count == 0)
+            if (operations[i].Variables is not { Items.Count: > 0 } variables)
             {
                 continue;
             }
+
+            var orphaned = variables.Items
+                .Where(_ => before.Variables[i].Contains(_.Variable.Name.StringValue) &&
+                            !after.Variables[i].Contains(_.Variable.Name.StringValue))
+                .ToList();
 
             // Emptying the list would leave "query Name()", which does not parse, so the whole
             // parenthesised block goes instead of its last member.
-            if (unused.Count == variables.Items.Count)
+            if (orphaned.Count == variables.Items.Count)
             {
-                text = text[..variables.Location.Start] + text[variables.Location.End..];
+                edits.Add((variables.Location.Start, _ => _[..variables.Location.Start] + _[variables.Location.End..]));
                 continue;
             }
 
-            foreach (var variable in unused.OrderByDescending(_ => _.Location.Start))
+            foreach (var variable in orphaned)
             {
-                text = CutVariable(text, variable.Location.Start, variable.Location.End);
+                edits.Add((variable.Location.Start, _ => CutVariable(_, variable.Location.Start, variable.Location.End)));
             }
         }
 
+        foreach (var (name, fragment) in after.Fragments)
+        {
+            if (before.Reachable.Contains(name) &&
+                !after.Reachable.Contains(name))
+            {
+                edits.Add((fragment.Location.Start, _ => CutDefinition(_, fragment.Location.Start, fragment.Location.End)));
+            }
+        }
+
+        // Right to left, so an earlier cut's offsets are still good after a later one.
+        foreach (var edit in edits.OrderByDescending(_ => _.Start))
+        {
+            text = edit.Apply(text);
+        }
+
         return text;
+    }
+
+    /// <summary>
+    /// Cuts a whole definition with the blank lines after it — or, when nothing follows, with the
+    /// ones before it — so the definitions either side keep the one blank line between them rather
+    /// than growing a second. A definition that shares its line keeps the line's other content.
+    /// </summary>
+    static string CutDefinition(string text, int start, int end)
+    {
+        var to = end;
+        while (to < text.Length &&
+               char.IsWhiteSpace(text[to]))
+        {
+            to++;
+        }
+
+        var from = start;
+        if (to == text.Length)
+        {
+            while (from > 0 &&
+                   char.IsWhiteSpace(text[from - 1]))
+            {
+                from--;
+            }
+
+            // The document still ends the way it did.
+            var ending = text.EndsWith("\r\n", StringComparison.Ordinal) ? "\r\n" :
+                text.EndsWith('\n') ? "\n" : "";
+            return text[..from] + ending;
+        }
+
+        while (from > 0 &&
+               text[from - 1] is ' ' or '\t')
+        {
+            from--;
+        }
+
+        if (from > 0 &&
+            text[from - 1] != '\n')
+        {
+            from = start;
+        }
+
+        return text[..from] + text[to..];
     }
 
     /// <summary>

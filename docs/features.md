@@ -31,7 +31,7 @@ Ctrl-Enter runs the operation containing the caret; with several operations in t
 
 The status line under the response shows the outcome and elapsed time — the HTTP status code when the transport has one.
 
-An error that names a field gets a row of its own under the response, with the field's path and a button that takes it back out of the operation. Removing the last selection in a set takes the parent with it, and a variable nothing uses any more goes too, so what is left is still a document the server will accept. It is one row per error rather than one button for all of them: removal is not always the right answer — a field that failed for want of an argument wants the argument. Errors raised before execution reached a field have no path, and get no row; so do errors from a server that strips paths on the way out.
+An error that names a field gets a row of its own under the response, with the field's path and a button that takes it back out of the operation that ran — any other operation in the document is left as it is. Removing the last selection in a set takes whatever holds the set with it: the parent field, an inline fragment, or the spread of a fragment. A variable the operation no longer reads and a fragment nothing spreads any more go too, so what is left is still a document the server will accept. It is one row per error rather than one button for all of them: removal is not always the right answer — a field that failed for want of an argument wants the argument. Errors raised before execution reached a field have no path, and get no row; so do errors from a server that strips paths on the way out.
 
 
 ## Tabs, history, persistence
