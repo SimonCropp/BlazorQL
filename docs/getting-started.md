@@ -2,6 +2,8 @@
 
 BlazorQL ships as a Razor Class Library for Blazor WebAssembly. One component, one required parameter.
 
+The component runs under WebAssembly only. It reads its stored state (tabs, history, settings) with synchronous JS calls, which only WebAssembly's in-process runtime allows, so under Blazor Server, or the Auto render mode while it is still running on the server, it fails as it boots. To put the IDE in any other ASP.NET Core app, Blazor Server included, use [BlazorQL.Bundled](bundled.md), which serves the same IDE as a WebAssembly page of its own from one `MapBlazorQL` call.
+
 
 ## Install
 
@@ -79,4 +81,4 @@ On boot the component introspects through the fetcher, feeds the schema to the e
 | `ConfirmCloseTab` | — | Async veto for tab closes. |
 | `Logo` / `ToolbarContent` / `FooterContent` | — | Render fragments for the header logo, extra toolbar buttons, and the response footer. |
 
-One `<BlazorQLIde/>` per page. The language providers are registered with the page's monaco and routed to the live instance by model uri, so a second one on the same page would answer for the first. The registration is per JS runtime, which under Blazor Server means per circuit rather than per process.
+One `<BlazorQLIde/>` per page. The language providers are registered with the page's monaco and routed to the live instance by model uri, so a second one on the same page would answer for the first.
