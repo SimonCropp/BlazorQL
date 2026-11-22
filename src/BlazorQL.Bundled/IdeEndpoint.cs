@@ -218,14 +218,18 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
 
         var mount = Mount(context);
         var baseHref = BaseHref(context, mount.Path);
-        if (!pages.TryGetValue(baseHref, out var index))
+        var appBase = AppBase(context, mount.Path);
+        // Both, because one base href can split two ways: /a plus a mount of /b/ide, or /a/b plus
+        // /ide. The endpoint is under the app's half.
+        var key = $"{baseHref}\n{appBase}";
+        if (!pages.TryGetValue(key, out var index))
         {
-            index = Render(baseHref, options.StorageNamespace ?? ForMount(application, mount.Pattern));
+            index = Render(baseHref, appBase, options.StorageNamespace ?? ForMount(application, mount.Pattern));
             // Racing writers can carry the count a little past the cap, by no more than the number
             // of requests in flight. Locking to make it exact would cost more than the entries do.
             if (pages.Count < maxCachedPages)
             {
-                index = pages.GetOrAdd(baseHref, index);
+                index = pages.GetOrAdd(key, index);
             }
         }
 
@@ -261,11 +265,50 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
         return mount.HasValue ? mount.ToUriComponent() + "/" : "/";
     }
 
-    RenderedIndex Render(string baseHref, string storageNamespace)
+    /// <summary>
+    /// The app's public path, without a trailing slash: empty for an app at the origin's root. The
+    /// request's path base, or, behind a <see cref="BlazorQLIdeOptions.BasePathOverride"/> that ends
+    /// in the mount, the override less the mount. An override that does not end in the mount says
+    /// nothing about where the app is.
+    /// </summary>
+    string AppBase(HttpContext context, string mountPath)
+    {
+        if (options.BasePathOverride is {Length: > 0} over)
+        {
+            var trimmed = over.TrimEnd('/');
+            if (trimmed.EndsWith(mountPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed[..^mountPath.Length];
+            }
+        }
+
+        return context.Request.PathBase.ToUriComponent();
+    }
+
+    /// <summary>
+    /// A root-relative endpoint names a route of the app — MapGraphQL("/graphql") — so it goes under
+    /// the app's public path, the same as the IDE's own routes. Anything else is left for the
+    /// browser: an absolute url, a protocol-relative one, or a path relative to the page.
+    /// </summary>
+    [return: NotNullIfNotNull(nameof(url))]
+    static string? UnderApp(string? url, string appBase)
+    {
+        if (url is null ||
+            appBase.Length == 0 ||
+            !url.StartsWith('/') ||
+            url.StartsWith("//", StringComparison.Ordinal))
+        {
+            return url;
+        }
+
+        return appBase + url;
+    }
+
+    RenderedIndex Render(string baseHref, string appBase, string storageNamespace)
     {
         var config = new ClientConfig(
-            options.Endpoint,
-            options.SubscriptionEndpoint,
+            UnderApp(options.Endpoint, appBase),
+            UnderApp(options.SubscriptionEndpoint, appBase),
             options.DefaultQuery,
             options.DefaultHeaders,
             options.IsHeadersEditorEnabled,

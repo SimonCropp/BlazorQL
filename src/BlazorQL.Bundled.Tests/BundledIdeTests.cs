@@ -150,12 +150,45 @@ public class SubPathBundledIdeTests :
     protected override void Configure(BlazorQLIdeOptions options) =>
         options.Endpoint = "/graphql";
 
+    /// <summary>
+    /// UsePathBase answers a request without the prefix too, so the schema is gated to requests that
+    /// came through it — the way an IIS virtual directory only ever sees its own.
+    /// </summary>
+    protected override void MapSchema(WebApplication app)
+    {
+        app.Use((context, next) =>
+        {
+            if (context.Request.PathBase.HasValue)
+            {
+                return next();
+            }
+
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            return Task.CompletedTask;
+        });
+        base.MapSchema(app);
+    }
+
     [Test]
     public async Task BootsUnderAPathBase()
     {
         var page = await OpenIdeAsync();
 
         await Assert.That(page.Url).Contains("/app/blazorql/");
+        await Assert.That(ConsoleErrors()).IsEmpty();
+    }
+
+    /// <summary>"/graphql" is the app's route, so the IDE posts to /app/graphql and not the origin's.</summary>
+    [Test]
+    public async Task IntrospectsTheSchemaUnderThePathBase()
+    {
+        var page = await OpenIdeAsync();
+
+        await page.ClickAsync("[data-testid='sidebar-docs']");
+        await page.WaitForSelectorAsync(
+            "[data-testid='plugin-pane']:has-text('TestEnum')",
+            new() {Timeout = 30_000});
+
         await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }

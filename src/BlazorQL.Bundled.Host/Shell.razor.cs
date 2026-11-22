@@ -41,10 +41,11 @@ public partial class Shell
         url.StartsWith("wss://", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// Resolves a configured endpoint against the page it is being served from. Done in the browser
-    /// rather than on the server so that reverse proxies, forwarded headers and the mount path never
-    /// enter into it — and because HttpFetcher builds its own HttpClient with no BaseAddress, so a
-    /// relative uri would throw.
+    /// Resolves a configured endpoint against the page it is being served from. The server has
+    /// already put a root-relative endpoint under the app's path base, which only it knows; the
+    /// origin is left to the browser, so a proxy's host and scheme never enter into it. Needed
+    /// because HttpFetcher builds its own HttpClient with no BaseAddress, so a relative uri would
+    /// throw.
     /// </summary>
     /// <remarks>
     /// The already-absolute test looks for a transport scheme rather than asking for UriKind.Absolute.
