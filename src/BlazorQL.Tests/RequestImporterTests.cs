@@ -59,6 +59,49 @@ public class RequestImporterTests
         await VerifyRequest(requests[0]);
     }
 
+    /// <summary>
+    /// What Chrome's "Copy as PowerShell" actually writes whenever the request carried a User-Agent,
+    /// which is always: a web session built first, the user agent and cookies set on it, and only
+    /// then the Invoke-WebRequest that uses it. The paste never started with the cmdlet, so it was
+    /// never recognised.
+    /// </summary>
+    [Test]
+    public async Task APowerShellCommandWithItsSessionPreambleImports()
+    {
+        var (ok, requests, error) = RequestImporter.Import(powerShellWithSession);
+        var (_, plain, _) = RequestImporter.Import(powerShell);
+
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0]).IsEqualTo(plain[0]);
+    }
+
+    /// <summary>
+    /// DevTools writes every character outside printable ASCII as a <c>$([char]N)</c> subexpression,
+    /// one per UTF-16 unit, and wraps such a body in UTF8.GetBytes. The wrapper was read as a bare
+    /// word, and without it the subexpression went into the query as written.
+    /// </summary>
+    [Test]
+    [Arguments(true)]
+    [Arguments(false)]
+    public async Task APowerShellBodyOutsideAsciiImportsItsCharacters(bool wrapped)
+    {
+        var body = "\"{`\"query`\":`\"{ search(term: \\`\"Jos$([char]233) $([char]55357)$([char]56832)\\`\") { id } }`\"}\"";
+        var pasted =
+            $"""
+             Invoke-WebRequest -UseBasicParsing -Uri "https://example.com/graphql" `
+             -Method "POST" `
+             -ContentType "application/json" `
+             -Body {(wrapped ? $"([System.Text.Encoding]::UTF8.GetBytes({body}))" : body)}
+             """;
+
+        var (ok, requests, error) = RequestImporter.Import(pasted);
+
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Query).Contains("\"José 😀\"");
+    }
+
     [Test]
     public async Task AFetchSnippetImportsTheBodysMutation()
     {
@@ -391,6 +434,22 @@ public class RequestImporterTests
         """
         Invoke-WebRequest -UseBasicParsing -Uri "https://legislation.dfdev.lab/graphql" `
         -Method "POST" `
+        -Headers @{
+          "content-type"="application/json"
+          "df-client-version"="1.0.5233"
+          "authorization"="Bearer abc"
+        } `
+        -Body "{`"operationName`":`"EnableUser`",`"variables`":{`"input`":{`"id`":`"bca79fdd`"}},`"query`":`"mutation EnableUser(`$input:EnableUserStateInput){enableUser(input:`$input){success __typename}}`"}"
+        """;
+
+    const string powerShellWithSession =
+        """
+        $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+        $session.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/152.0.0.0 Safari/537.36"
+        $session.Cookies.Add((New-Object System.Net.Cookie("legislation", "JWT", "/", "legislation.dfdev.lab")))
+        Invoke-WebRequest -UseBasicParsing -Uri "https://legislation.dfdev.lab/graphql" `
+        -Method "POST" `
+        -WebSession $session `
         -Headers @{
           "content-type"="application/json"
           "df-client-version"="1.0.5233"

@@ -100,14 +100,21 @@ static class PowerShellReader
     }
 
     /// <summary>
-    /// A double-quoted string (backtick escapes), a single-quoted string (doubling escapes a
-    /// quote), or a bare run up to the next whitespace.
+    /// A double-quoted string (backtick escapes, and the <c>$([char]N)</c> subexpressions devtools
+    /// writes characters outside printable ASCII as), a single-quoted string (doubling escapes a
+    /// quote), a parenthesised expression wrapping a string, or a bare run up to the next whitespace.
     /// </summary>
     static string? ReadValue(string text, ref int index)
     {
         if (index >= text.Length)
         {
             return null;
+        }
+
+        if (text[index] == '(' &&
+            ReadWrapped(text, ref index) is { } wrapped)
+        {
+            return wrapped;
         }
 
         if (text[index] == '"')
@@ -122,6 +129,13 @@ static class PowerShellReader
                 {
                     builder.Append(Unescape(text[index + 1]));
                     index += 2;
+                    continue;
+                }
+
+                if (text[index] == '$' &&
+                    ReadCharSubexpression(text, ref index) is { } character)
+                {
+                    builder.Append(character);
                     continue;
                 }
 
@@ -171,6 +185,91 @@ static class PowerShellReader
         return index > start
             ? text[start..index]
             : null;
+    }
+
+    /// <summary>
+    /// <c>$([char]233)</c>, one UTF-16 unit, so a character past the basic plane arrives as its two
+    /// surrogates in turn and comes out whole. Null, leaving the index alone, for any other
+    /// <c>$</c>: the string then carries it as written.
+    /// </summary>
+    static char? ReadCharSubexpression(string text, ref int index)
+    {
+        const string prefix = "$([char]";
+        if (!text.AsSpan(index).StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var digits = index + prefix.Length;
+        var end = digits;
+        while (end < text.Length &&
+               char.IsAsciiDigit(text[end]))
+        {
+            end++;
+        }
+
+        if (end == digits ||
+            end >= text.Length ||
+            text[end] != ')' ||
+            !ushort.TryParse(text.AsSpan(digits, end - digits), NumberStyles.None, CultureInfo.InvariantCulture, out var code))
+        {
+            return null;
+        }
+
+        index = end + 1;
+        return (char) code;
+    }
+
+    /// <summary>
+    /// A string inside a parenthesised expression, which is how devtools passes a body holding
+    /// anything outside printable ASCII: <c>-Body ([System.Text.Encoding]::UTF8.GetBytes("..."))</c>.
+    /// The expression around the string only says how to encode it, so the string is the value, and
+    /// the closing parentheses are consumed with it. Null, leaving the index alone, when no string
+    /// opens before the parentheses close.
+    /// </summary>
+    static string? ReadWrapped(string text, ref int index)
+    {
+        var depth = 0;
+        var scan = index;
+        while (scan < text.Length &&
+               text[scan] is not ('"' or '\''))
+        {
+            if (text[scan] == '(')
+            {
+                depth++;
+            }
+            else if (text[scan] == ')' &&
+                     --depth == 0)
+            {
+                return null;
+            }
+
+            scan++;
+        }
+
+        if (scan >= text.Length)
+        {
+            return null;
+        }
+
+        var value = ReadValue(text, ref scan);
+        while (depth > 0 &&
+               scan < text.Length)
+        {
+            if (text[scan] == ')')
+            {
+                depth--;
+            }
+            else if (!char.IsWhiteSpace(text[scan]))
+            {
+                break;
+            }
+
+            scan++;
+        }
+
+        index = scan;
+        return value;
     }
 
     static char Unescape(char escape) =>

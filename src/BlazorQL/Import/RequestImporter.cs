@@ -39,11 +39,9 @@ public static class RequestImporter
             return FromCaptured(CurlReader.Read(tokens));
         }
 
-        if (StartsWithWord(text, "invoke-webrequest") ||
-            StartsWithWord(text, "invoke-restmethod") ||
-            StartsWithWord(text, "iwr"))
+        if (PowerShellCommand(text) is { } command)
         {
-            return FromCaptured(PowerShellReader.Read(text));
+            return FromCaptured(PowerShellReader.Read(command));
         }
 
         if (text.Contains("fetch(", StringComparison.Ordinal))
@@ -169,6 +167,43 @@ public static class RequestImporter
     }
 
     static readonly string[] prompts = ["$ ", "> ", "# "];
+
+    static bool IsCmdlet(string text) =>
+        StartsWithWord(text, "invoke-webrequest") ||
+        StartsWithWord(text, "invoke-restmethod") ||
+        StartsWithWord(text, "iwr") ||
+        StartsWithWord(text, "irm");
+
+    /// <summary>
+    /// The PowerShell command in the paste, from its cmdlet on. Chrome's "Copy as PowerShell" puts
+    /// a web session ahead of it whenever the request carried a User-Agent, which is always:
+    /// <c>$session = New-Object ...</c>, then the user agent and cookies set on it. So a paste that
+    /// starts with a variable is looked through, line by line, for the line the cmdlet starts.
+    /// </summary>
+    static string? PowerShellCommand(string text)
+    {
+        if (IsCmdlet(text))
+        {
+            return text;
+        }
+
+        if (!text.StartsWith('$'))
+        {
+            return null;
+        }
+
+        var lineStart = 0;
+        while ((lineStart = text.IndexOf('\n', lineStart) + 1) > 0)
+        {
+            var line = text[lineStart..].TrimStart(' ', '\t');
+            if (IsCmdlet(line))
+            {
+                return line;
+            }
+        }
+
+        return null;
+    }
 
     // A leading command word, allowing for "curl.exe".
     static bool StartsWithWord(string text, string word)
