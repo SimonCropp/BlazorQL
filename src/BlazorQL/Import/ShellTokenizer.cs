@@ -322,7 +322,9 @@ static class ShellTokenizer
 
     static int AppendHex(string text, int index, StringBuilder current, int maxDigits)
     {
-        var value = 0;
+        // Eight hex digits do not fit an int, and an overflow went negative, past the range check
+        // below and into ConvertFromUtf32, which threw.
+        long value = 0;
         var digits = 0;
         while (digits < maxDigits &&
                index < text.Length &&
@@ -338,15 +340,23 @@ static class ShellTokenizer
             return index;
         }
 
+        // Past the last code point there is no character at all, so it is shown as the replacement
+        // character, the way any invalid sequence is, rather than truncated into some other one.
+        if (value > 0x10FFFF)
+        {
+            current.Append('�');
+            return index;
+        }
+
         // A lone surrogate is not a scalar value, so it cannot go through ConvertFromUtf32 — but it
         // is still exactly the char that was asked for.
-        if (value is >= 0xD800 and <= 0xDFFF or > 0x10FFFF)
+        if (value is >= 0xD800 and <= 0xDFFF)
         {
             current.Append((char) value);
             return index;
         }
 
-        current.Append(char.ConvertFromUtf32(value));
+        current.Append(char.ConvertFromUtf32((int) value));
         return index;
     }
 }
