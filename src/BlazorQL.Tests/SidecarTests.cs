@@ -40,6 +40,77 @@ public class SidecarTests
         await Assert.That(entry.Error).IsNull();
     }
 
+    /// <summary>
+    /// Most captured responses are never opened, introspection among them, and pretty-printing up
+    /// front turned a 6 MB schema into a 28 MB string held for the life of the entry. Capturing now
+    /// keeps the document as it arrived; the text is made when something reads it.
+    /// </summary>
+    [Test]
+    public async Task CapturingADocumentDoesNotFormatIt()
+    {
+        var items = string.Join(",", Enumerable.Range(0, 20_000).Select(_ => $$"""{"id":"{{_}}","name":"item {{_}}"}"""));
+        using var source = JsonDocument.Parse($$$"""{"data":{"items":[{{{items}}}]}}""");
+        var document = source.RootElement.Clone();
+        var entry = new SidecarEntry
+        {
+            Started = DateTimeOffset.Now,
+            Query = "{ items { id name } }",
+            Kind = "query",
+            Name = "<anonymous>",
+            Headers = []
+        };
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        entry.AddDocument(document, maxKept: 10, TimeSpan.Zero);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        // The formatted text of this document is well over a megabyte of UTF-16.
+        await Assert.That(allocated).IsLessThan(16 * 1024);
+        await Assert.That(entry.Documents.Single()).Contains("\"name\": \"item 19999\"");
+    }
+
+    /// <summary>Formatted once, on first read, and the same text from then on.</summary>
+    [Test]
+    public async Task ADocumentIsFormattedOnceWhenRead()
+    {
+        var store = NewStore();
+        var fetcher = new SidecarFetcher(new FakeFetcher("""{"data":{"person":{"name":"Mark"}}}"""), store);
+        await Drain(fetcher, new("{ person { name } }"), noHeaders);
+        var entry = store.Entries.Single();
+
+        await Assert.That(entry.Documents[0]).IsSameReferenceAs(entry.Documents[0]);
+    }
+
+    /// <summary>
+    /// The document is kept past the fetch, so it cannot depend on one the fetcher disposes once it
+    /// moves on. The built-in fetchers yield clones; a custom one need not.
+    /// </summary>
+    [Test]
+    public async Task ADocumentTheFetcherDisposesIsStillReadable()
+    {
+        var store = NewStore();
+        var fetcher = new SidecarFetcher(new DisposingFetcher(), store);
+
+        await Drain(fetcher, new("{ person { name } }"), noHeaders);
+
+        await Assert.That(store.Entries.Single().Documents.Single()).Contains("\"name\": \"Mark\"");
+    }
+
+    /// <summary>Yields an element of a document it disposes straight after.</summary>
+    sealed class DisposingFetcher :
+        IGraphQLFetcher
+    {
+        public async IAsyncEnumerable<JsonElement> FetchAsync(
+            GraphQLRequest request,
+            IReadOnlyDictionary<string, string> headers,
+            [EnumeratorCancellation] Cancel cancel)
+        {
+            await Task.Yield();
+            using var document = JsonDocument.Parse("""{"data":{"person":{"name":"Mark"}}}""");
+            yield return document.RootElement;
+        }
+    }
+
     [Test]
     public async Task DerivesKindAndAnonymousName()
     {

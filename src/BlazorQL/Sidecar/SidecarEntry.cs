@@ -10,7 +10,32 @@ namespace BlazorQL;
 public sealed class SidecarEntry
 {
     readonly Lock sync = new();
-    readonly List<string> documents = [];
+    readonly List<CapturedDocument> documents = [];
+
+    /// <summary>
+    /// A response as it arrived, pretty-printed the first time something reads it. Most entries
+    /// are never opened, introspection among them, and pretty-printing up front turned a 6 MB
+    /// schema into a 28 MB string held for as long as the entry was.
+    /// </summary>
+    sealed class CapturedDocument(JsonElement element)
+    {
+        string? pretty;
+
+        // A benign race: two readers at once may both format it, and either result is the same.
+        public string Pretty => pretty ??= Format(element);
+    }
+
+    static readonly JsonSerializerOptions prettyOptions = new()
+    {
+        WriteIndented = true
+    };
+
+    [UnconditionalSuppressMessage(
+        "Trimming",
+        "IL2026",
+        Justification = "JsonElement has a built-in converter, so nothing here is discovered by reflection.")]
+    internal static string Format(JsonElement element) =>
+        JsonSerializer.Serialize(element, prettyOptions);
     int documentCount;
     TimeSpan duration;
     bool completed;
@@ -41,15 +66,23 @@ public sealed class SidecarEntry
 
     public required IReadOnlyList<KeyValuePair<string, string>> Headers { get; init; }
 
-    /// <summary>The kept response documents, pretty-printed, oldest first.</summary>
+    /// <summary>
+    /// The kept response documents, pretty-printed, oldest first. Each is formatted the first time
+    /// it is read and kept from then on.
+    /// </summary>
     public IReadOnlyList<string> Documents
     {
         get
         {
+            CapturedDocument[] snapshot;
             lock (sync)
             {
-                return [.. documents];
+                snapshot = [.. documents];
             }
+
+            // Outside the lock: formatting a large response is the slow part, and a fetch still
+            // appending to this entry has no reason to wait for it.
+            return [.. snapshot.Select(_ => _.Pretty)];
         }
     }
 
@@ -120,32 +153,21 @@ public sealed class SidecarEntry
     }
 
     /// <summary>
-    /// Records that a document arrived, keeping its text only while under the cap.
-    /// <paramref name="render"/> is a function rather than the text because rendering one the cap
-    /// will drop is waste a long subscription would pay for on every event.
+    /// Records that a document arrived, keeping it only while under the cap. Kept as it arrived and
+    /// formatted only when read, so a document nobody opens costs no text at all.
     /// </summary>
-    internal void AddDocument(Func<string> render, int maxKept, TimeSpan elapsed)
+    internal void AddDocument(JsonElement document, int maxKept, TimeSpan elapsed)
     {
-        bool keep;
         lock (sync)
         {
             documentCount++;
             duration = elapsed;
-            keep = documents.Count < maxKept;
-        }
-
-        if (!keep)
-        {
-            return;
-        }
-
-        var json = render();
-        lock (sync)
-        {
-            // Re-checked: something else may have taken the last slot in between.
             if (documents.Count < maxKept)
             {
-                documents.Add(json);
+                // Kept past the fetch, so it must not depend on a document the fetcher may dispose
+                // once it moves on. Free for the built-in fetchers, which yield clones already: a
+                // clone's clone is itself.
+                documents.Add(new(document.Clone()));
             }
         }
     }
