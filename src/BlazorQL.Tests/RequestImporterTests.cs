@@ -112,6 +112,37 @@ public class RequestImporterTests
         await VerifyRequest(requests[0]);
     }
 
+    /// <summary>
+    /// A query that itself says <c>fetch(</c>, as a refetch field or one called fetch does, is not a
+    /// fetch snippet. Any paste containing it went to the snippet reader and came back without a query.
+    /// </summary>
+    [Test]
+    [Arguments("""{"query":"{ product(id: 1) { refetch(policy: NETWORK) { id } } }"}""")]
+    [Arguments("""{"query":"{ fetch(id: 1) { id } }"}""")]
+    [Arguments("https://x/graphql?query=%7B%20product(id%3A%201)%20%7B%20refetch(policy%3A%20NETWORK)%20%7B%20id%20%7D%20%7D%20%7D")]
+    [Arguments("x/graphql?query=%7B%20product(id%3A%201)%20%7B%20refetch(policy%3A%20NETWORK)%20%7B%20id%20%7D%20%7D%20%7D")]
+    public async Task AQueryThatSaysFetchIsNotAFetchSnippet(string pasted)
+    {
+        var (ok, requests, error) = RequestImporter.Import(pasted);
+
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Query).Contains("fetch(");
+    }
+
+    /// <summary>The snippet forms a person writes rather than copies still read as snippets.</summary>
+    [Test]
+    [Arguments("await ")]
+    [Arguments("const response = await window.")]
+    public async Task AFetchCallAfterOtherCodeIsStillASnippet(string before)
+    {
+        var (ok, requests, error) = RequestImporter.Import(before + fetchCall);
+
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Query).Contains("EnableUser");
+    }
+
     [Test]
     public async Task ABareJsonBodyImportsItsOperation()
     {

@@ -44,15 +44,18 @@ public static class RequestImporter
             return FromCaptured(PowerShellReader.Read(command));
         }
 
-        if (text.Contains("fetch(", StringComparison.Ordinal))
-        {
-            return FromCaptured(FetchSnippetReader.Read(text));
-        }
-
+        // A body or a url before a fetch snippet, which never starts like either: the query in one
+        // can itself say fetch(, as a field called refetch or fetch does.
         if (text[0] is '{' or '[')
         {
             var (payloads, error) = RequestBodyReader.Read(text);
             return Build(payloads, error, []);
+        }
+
+        if (!HasScheme(text) &&
+            CallsFetch(text))
+        {
+            return FromCaptured(FetchSnippetReader.Read(text));
         }
 
         if (LooksLikeUrl(text))
@@ -65,6 +68,31 @@ public static class RequestImporter
 
         return (false, [], unrecognised);
     }
+
+    /// <summary>
+    /// Whether the text calls fetch: <c>fetch(</c> with no name running into it, so
+    /// <c>await fetch(</c> and <c>window.fetch(</c> count and <c>refetch(</c> does not.
+    /// </summary>
+    static bool CallsFetch(string text)
+    {
+        var index = 0;
+        while ((index = text.IndexOf("fetch(", index, StringComparison.Ordinal)) >= 0)
+        {
+            if (index == 0 ||
+                !(char.IsLetterOrDigit(text[index - 1]) || text[index - 1] is '_' or '$'))
+            {
+                return true;
+            }
+
+            index++;
+        }
+
+        return false;
+    }
+
+    static bool HasScheme(string text) =>
+        text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+        text.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
 
     static (bool Ok, IReadOnlyList<ImportedRequest> Requests, string? Error) FromCaptured(CapturedRequest captured)
     {
@@ -225,8 +253,7 @@ public static class RequestImporter
 
     static bool LooksLikeUrl(string text)
     {
-        if (text.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            text.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (HasScheme(text))
         {
             return true;
         }
