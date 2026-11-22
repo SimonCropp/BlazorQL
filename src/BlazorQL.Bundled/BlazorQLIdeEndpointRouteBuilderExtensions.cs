@@ -96,8 +96,10 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
             return endpoint.WriteIndex(context);
         }
 
-        // The mount as routed, so a route group's prefix is kept. See IdeEndpoint.Mount.
-        var path = context.Request.PathBase + new PathString(endpoint.Mount(context).Path) + new PathString("/");
+        // The mount as routed, so a route group's prefix is kept (see IdeEndpoint.Mount), and as the
+        // page's base href, so a BasePathOverride sends the browser back under the proxy's prefix
+        // rather than to the path the app was asked for.
+        var path = endpoint.BaseHref(context, endpoint.Mount(context).Path);
         context.Response.Redirect(path + context.Request.QueryString);
         return Task.CompletedTask;
     }

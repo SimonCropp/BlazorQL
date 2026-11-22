@@ -52,7 +52,7 @@ Everything is configured through `MapBlazorQL`:
 | `StorageNamespace` | the app and mount | Namespaces the local-storage keys — `blazorql/Orders/blazorql` for an app named `Orders` at the default mount. localStorage is per origin rather than per path, so this is what keeps two IDEs a host has served from sharing tabs. The app is `IHostEnvironment.ApplicationName`; name one here to keep storage across an assembly rename. See [Storage](storage.md). |
 | `DefaultTheme` / `ForcedTheme` | System / null | `System`, `Light` or `Dark`. A forced theme hides the setting. |
 | `DocumentTitle` | `GraphQL IDE` | The browser tab title. |
-| `BasePathOverride` | null | Overrides the base path baked into the page. See *Behind a proxy*. |
+| `BasePathOverride` | null | Overrides the base path baked into the page, and the one the bare mount redirects to. See *Behind a proxy*. |
 | `MapUnknownPathsToIde` | false | Serves the IDE for unknown extensionless paths under the mount instead of answering 404. |
 | `WriteContentSecurityPolicy` | false | Sends the policy the IDE needs on the page. See *Content Security Policy*. |
 | `ConfigureContentSecurityPolicy` | null | Adds to or replaces those directives. |
