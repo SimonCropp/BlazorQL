@@ -949,6 +949,67 @@ public class QueryBuilderTests
         await Assert.That(VariablesAfter(before, after, "{ not json")).IsNull();
     }
 
+    // The tab's variables document is shared by every operation in it. A variable one operation stops
+    // declaring stays while another still reads it.
+    [Test]
+    public async Task AVariableAnotherOperationDeclaresStaysInTheVariables()
+    {
+        var before = """
+            query A($id: ID!) { user(id: $id) { id } }
+            query B($id: ID!) { user(id: $id) { name } }
+            """;
+        var after = QueryBuilder.ToggleVariable(schema, before, 0, Path("user"), "id")!;
+        await Assert.That(after).Contains("query B($id: ID!)");
+        await Assert.That(QueryBuilder.VariablesEdit(schema, before, after, 0)?.Invoke("""{"id": "9"}""") ?? """{"id": "9"}""")
+            .Contains("\"9\"");
+    }
+
+    [Test]
+    public async Task AVariableNoOperationDeclaresComesOutWithTwoOperations()
+    {
+        var before = """
+            query A($id: ID!) { user(id: $id) { id } }
+            query B { version }
+            """;
+        var after = QueryBuilder.ToggleVariable(schema, before, 0, Path("user"), "id")!;
+        await Assert.That(QueryBuilder.VariablesEdit(schema, before, after, 0)?.Invoke("""{"id": "9", "other": 1}"""))
+            .IsEqualTo(
+                """
+                {
+                  "other": 1
+                }
+                """.ReplaceLineEndings("\n"));
+    }
+
+    // Unchecking an operation's last field takes the operation out, which moves the next one into its
+    // place. That one's variables are not the edit's to add: only what the removed one declared goes.
+    [Test]
+    public async Task RemovingAnOperationComparesAgainstNothingRatherThanTheNextOne()
+    {
+        var before = """
+            query A($id: ID!) { user(id: $id) { id } }
+            query B($first: Int) { users(first: $first) { id } }
+            """;
+        var after = QueryBuilder.ToggleSelection(schema, before, 0, Path("user"))!;
+        await Assert.That(after).DoesNotContain("query A");
+        await Assert.That(QueryBuilder.VariablesEdit(schema, before, after, 0)?.Invoke("""{"id": "9"}"""))
+            .IsEqualTo("{}");
+    }
+
+    // Removing an operation keeps a variable the next one still reads.
+    [Test]
+    public async Task RemovingAnOperationKeepsAVariableAnotherDeclares()
+    {
+        var before = """
+            query A($id: ID!) { user(id: $id) { id } }
+            query B { version }
+            query C($id: ID!) { user(id: $id) { name } }
+            """;
+        var after = QueryBuilder.ToggleSelection(schema, before, 0, Path("user"))!;
+        await Assert.That(QueryBuilder.VariablesEdit(schema, before, after, 0)?.Invoke("""{"id": "9"}""") ?? """{"id": "9"}""")
+            .Contains("\"9\"");
+    }
+
     [Test]
     public async Task AnEditThatDeclaresNothingLeavesTheVariablesAlone() =>
         await Assert.That(QueryBuilder.VariablesEdit(schema, "query Q { version }", "query Q { version user(id: \"1\") { id } }", 0)).IsNull();
