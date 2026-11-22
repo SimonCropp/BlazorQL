@@ -6,9 +6,20 @@ sealed class Debouncer(int delayMs = 500) :
     IDisposable
 {
     CancelSource? pending;
+    bool disposed;
 
+    /// <summary>
+    /// Schedules the action, replacing whatever was waiting. Nothing once disposed: a caller still
+    /// running when its owner went away (a schema load landing, say) would otherwise restart the
+    /// timer, and the action would run against a disposed component.
+    /// </summary>
     public void Run(Func<Task> action)
     {
+        if (disposed)
+        {
+            return;
+        }
+
         pending?.Cancel();
         pending?.Dispose();
         pending = new();
@@ -59,6 +70,9 @@ sealed class Debouncer(int delayMs = 500) :
         pending = null;
     }
 
-    public void Dispose() =>
+    public void Dispose()
+    {
+        disposed = true;
         Cancel();
+    }
 }

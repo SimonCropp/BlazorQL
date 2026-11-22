@@ -2321,7 +2321,13 @@ public partial class BlazorQLIde :
     {
         callbacks.PaneResize -= OnPaneResize;
         callbacks.GlobalShortcut -= OnGlobalShortcut;
-        execution?.Cancel();
+        // A schema load or a run still in flight belongs to this component, so it stops, and is
+        // disowned too: one that lands anyway would otherwise parse a schema, build a validator
+        // and write to the response editor of a component that is gone, which throws on the
+        // disposed module and throws again from the catch that reports it.
+        schemaLoad?.Cancel();
+        schemaGeneration++;
+        AbandonRun();
         statePersist.Dispose();
         paneDebounce.Dispose();
         operationChangeDebounce.Dispose();

@@ -45,6 +45,46 @@ public class DebouncerTests
         await Assert.That(ran).IsFalse();
     }
 
+    /// <summary>
+    /// A caller still running when its owner went away, such as a schema load that lands after the
+    /// IDE was disposed, used to restart the timer, and the action then ran against a disposed
+    /// component.
+    /// </summary>
+    [Test]
+    public async Task RunAfterDisposeDoesNothing()
+    {
+        var ran = false;
+        var debouncer = new Debouncer(20);
+        debouncer.Dispose();
+
+        debouncer.Run(() =>
+        {
+            ran = true;
+            return Task.CompletedTask;
+        });
+        await Task.Delay(200);
+
+        await Assert.That(ran).IsFalse();
+    }
+
+    /// <summary>Cancel drops what is waiting without ending the debouncer, unlike Dispose.</summary>
+    [Test]
+    public async Task RunAfterCancelStillRuns()
+    {
+        var ran = false;
+        using var debouncer = new Debouncer(20);
+        debouncer.Cancel();
+
+        debouncer.Run(() =>
+        {
+            ran = true;
+            return Task.CompletedTask;
+        });
+
+        await WaitFor(() => ran);
+        await Assert.That(ran).IsTrue();
+    }
+
     [Test]
     public async Task CancelDropsAPendingAction()
     {
