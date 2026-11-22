@@ -154,6 +154,56 @@ public class DocExplorerTests
         await Assert.That(results).Contains("Named.name");
     }
 
+    /// <summary>
+    /// 200 types of ten fields each, every field matching "field": far more matches than the cap,
+    /// most of them in types the schema lists before the one that is open.
+    /// </summary>
+    static SchemaIndex ManyTypesSchema()
+    {
+        var fields = string.Join(
+            ", ",
+            Enumerable.Range(0, 10).Select(field =>
+                $$"""{"name": "field{{field}}", "type": {"kind": "SCALAR", "name": "String"}, "isDeprecated": false, "args": []}"""));
+        var types = Enumerable.Range(0, 200).Select(index =>
+            $$"""{"kind": "OBJECT", "name": "Type{{index}}", "fields": [""" + fields + "]}");
+        var json =
+            $$$"""
+              {"__schema": {
+                "queryType": {"name": "Type0"},
+                "types": [{{{string.Join(",\n", types)}}}, {"kind": "SCALAR", "name": "String"}],
+                "directives": []
+              }}
+              """;
+        using var document = JsonDocument.Parse(json);
+        return SchemaIndex.Parse(document.RootElement)!;
+    }
+
+    /// <summary>
+    /// The scan stopped at the cap in schema order, so once earlier types had filled it, the open
+    /// type's own matches, the ones searching from its page is for, were never reached.
+    /// </summary>
+    [Test]
+    public async Task SearchFindsTheOpenTypesMatchesPastTheCap()
+    {
+        using var context = new BunitContext();
+        var navigator = new DocExplorerNavigator();
+        var cut = context.Render<DocExplorer>(_ => _
+            .Add(_ => _.Schema, ManyTypesSchema())
+            .Add(_ => _.Navigator, navigator));
+        await cut.InvokeAsync(() => navigator.NavigateTo(new("Type", "Type150")));
+
+        cut.Find("[data-testid='doc-search'] input").Input("field");
+        cut.WaitForState(() => cut.FindAll(".blazorql-doc-search-result").Count > 0, TimeSpan.FromSeconds(5));
+
+        var results = cut.FindAll(".blazorql-doc-search-result").Select(_ => _.TextContent).ToList();
+        string[] expected = [.. Enumerable.Range(0, 10).Select(_ => $"Type150.field{_}")];
+        await Assert.That(results.Take(10)).IsEquivalentTo(expected, CollectionOrdering.Matching);
+        await Assert.That(cut.Markup).Contains("Other results");
+        // The cap still holds over the whole list.
+        await Assert.That(results.Count).IsEqualTo(100);
+        await Assert.That(results.Skip(10)).All(_ => !_.StartsWith("Type150.", StringComparison.Ordinal));
+    }
+
     [Test]
     public void SearchShowsTheEmptyState()
     {
