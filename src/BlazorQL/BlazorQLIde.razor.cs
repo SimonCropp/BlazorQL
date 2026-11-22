@@ -1708,6 +1708,18 @@ public partial class BlazorQLIde :
 
         var graphQLRequest = new GraphQLRequest(query, variables.Value, operationName);
         var merger = new IncrementalMerger();
+        // Every part merges as it arrives, but the document is rendered at most once a frame: each
+        // render serializes all of it and writes it to the editor, which per part made a long
+        // @stream or a busy subscription quadratic.
+        var throttle = new RenderThrottle(
+            TimeSpan.FromMilliseconds(16),
+            async () =>
+            {
+                if (generation == runGeneration)
+                {
+                    await SetResponse(merger.Render(), merger.PlainErrors);
+                }
+            });
         // Elapsed covers the full fetch; the status text is what the footer line shows. An HTTP
         // fetcher contributes its status code; elsewhere "OK" stands in for success.
         var stopwatch = Stopwatch.StartNew();
@@ -1722,9 +1734,10 @@ public partial class BlazorQLIde :
                 }
 
                 merger.Add(payload);
-                await SetResponse(merger.Render(), merger.PlainErrors);
+                await throttle.Changed();
             }
 
+            await throttle.Flush();
             if (merger.HasErrors)
             {
                 status = "error";
@@ -1734,10 +1747,12 @@ public partial class BlazorQLIde :
         {
             // Stopped by the user; whatever arrived stays on screen.
             status = "stopped";
+            await throttle.Flush();
         }
         catch (Exception exception)
         {
             status = "error";
+            throttle.Discard();
             await SetResponse(ErrorJson(exception.Message));
         }
         finally
