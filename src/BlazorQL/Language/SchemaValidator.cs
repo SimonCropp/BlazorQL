@@ -747,10 +747,16 @@ public sealed class SchemaValidator(SchemaIndex index)
         void Warn(ASTNode node, string message) =>
             Add(node, message, isError: false);
 
+        // Built at the first diagnostic, so a valid document never pays for it. Location's own
+        // conversion scans from the start of the text, once per diagnostic, which was quadratic
+        // when a document went red throughout.
+        TextPositions? positions;
+
         void Add(ASTNode node, string message, bool isError)
         {
-            var location = Location.FromLinearPosition(text, node.Location.Start);
-            diagnostics.Add(new(message, isError, location.Line, location.Column));
+            positions ??= new(text);
+            var (line, column) = positions.LineColumn(node.Location.Start);
+            diagnostics.Add(new(message, isError, line, column));
         }
     }
 }
