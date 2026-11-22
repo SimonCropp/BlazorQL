@@ -175,8 +175,89 @@ public static partial class QueryBuilder
                     _ => null
                 };
             default:
+                // A custom scalar's grammar is its server's, so the name is the only clue. One
+                // named as a number takes the text as one when the text is one: a Long written as
+                // "20" is refused. No range check, since that is the scalar's whole point.
+                switch (NumericScalar(named.Name))
+                {
+                    case NumericKind.Integer when IntPattern().IsMatch(trimmed):
+                        return new GraphQLIntValue(trimmed);
+                    case NumericKind.Decimal when IntPattern().IsMatch(trimmed):
+                        return new GraphQLIntValue(trimmed);
+                    case NumericKind.Decimal when FloatPattern().IsMatch(trimmed):
+                        return new GraphQLFloatValue(trimmed);
+                }
+
                 return new GraphQLStringValue(input);
         }
+    }
+
+    /// <summary>What a custom scalar's name says its literals are.</summary>
+    internal enum NumericKind
+    {
+        None,
+        Integer,
+        Decimal
+    }
+
+    static readonly HashSet<string> integerWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Int", "Integer", "Long", "Short"
+    };
+
+    static readonly HashSet<string> decimalWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Float", "Double", "Decimal"
+    };
+
+    /// <summary>Postgres's names, which Hasura exposes as they are, lowercase and whole.</summary>
+    static readonly HashSet<string> lowercaseIntegerNames = new(StringComparer.Ordinal)
+    {
+        "int", "integer", "bigint", "smallint", "tinyint", "long", "short"
+    };
+
+    static readonly HashSet<string> lowercaseDecimalNames = new(StringComparer.Ordinal)
+    {
+        "float", "double", "decimal", "numeric", "real"
+    };
+
+    /// <summary>
+    /// Whether a custom scalar is named as a number. Goes by the last word of a PascalCase name,
+    /// trailing digits aside: <c>Long</c>, <c>BigInt</c>, <c>UInt64</c>, <c>NonNegativeInt</c>,
+    /// <c>BigDecimal</c> and <c>PositiveFloat</c> are numbers, while <c>Point</c>,
+    /// <c>Interval</c>, <c>Longitude</c> and <c>PhoneNumber</c> are not. A lowercase name is taken
+    /// whole, which is how Hasura passes Postgres's types through: <c>bigint</c>, <c>numeric</c>,
+    /// <c>float8</c>.
+    /// </summary>
+    /// <remarks>
+    /// <c>Byte</c> is left a string: GraphQL.NET's is a number, graphql-scalars' is binary.
+    /// </remarks>
+    internal static NumericKind NumericScalar(string name)
+    {
+        var stem = name.TrimEnd("0123456789".ToCharArray());
+        if (stem.Length == 0)
+        {
+            return NumericKind.None;
+        }
+
+        if (!stem.Any(char.IsUpper))
+        {
+            return lowercaseIntegerNames.Contains(stem) ? NumericKind.Integer
+                : lowercaseDecimalNames.Contains(stem) ? NumericKind.Decimal
+                : NumericKind.None;
+        }
+
+        var wordStart = stem.Length - 1;
+        while (wordStart > 0 &&
+               !char.IsUpper(stem[wordStart]))
+        {
+            wordStart--;
+        }
+
+        var word = stem[wordStart..];
+        return integerWords.Contains(word) ? NumericKind.Integer
+            : decimalWords.Contains(word) ? NumericKind.Decimal
+            : NumericKind.None;
     }
 
     /// <summary>
@@ -645,7 +726,14 @@ public static partial class QueryBuilder
             "Int" => new GraphQLIntValue(0),
             "Float" => new GraphQLFloatValue("0.0"),
             "Boolean" => new GraphQLFalseBooleanValue(),
-            _ => new GraphQLStringValue("")
+            "String" or "ID" or null => new GraphQLStringValue(""),
+            // An empty string is no value of a numeric custom scalar, and is refused as one.
+            var custom => NumericScalar(custom) switch
+            {
+                NumericKind.Integer => new GraphQLIntValue(0),
+                NumericKind.Decimal => new GraphQLFloatValue("0.0"),
+                _ => new GraphQLStringValue("")
+            }
         };
     }
 

@@ -622,6 +622,90 @@ public class QueryBuilderTests
         await Assert.That(literal is null ? null : QueryBuilder.Print(literal)).IsEqualTo(expected);
     }
 
+    /// <summary>
+    /// Custom scalars the servers in common use define, numeric and not: GraphQL.NET's and Hot
+    /// Chocolate's, graphql-scalars', and Hasura's, which takes Postgres's lowercase names.
+    /// </summary>
+    static readonly SchemaIndex customScalars = ContextScannerTests.Parse(
+        $$"""
+        {
+          "__schema": {
+            "queryType": {"name": "Query"},
+            "types": [
+              {"kind": "OBJECT", "name": "Query", "fields": [
+                {"name": "pick", "type": {"kind": "SCALAR", "name": "String"}, "isDeprecated": false, "args": [
+                  {"name": "first", "type": {"kind": "SCALAR", "name": "Long"}, "isDeprecated": false}
+                ]}
+              ]},
+              {{string.Join(",\n      ", new[]
+              {
+                  "Long", "BigInt", "Short", "UInt", "ULong", "Int64", "SafeInt", "NonNegativeInt", "UnsignedLong",
+                  "bigint", "smallint", "int4", "Decimal", "BigDecimal", "PositiveFloat", "Double", "numeric", "float8",
+                  "String", "DateTime", "Point", "Longitude", "PhoneNumber", "Interval", "Byte", "UUID"
+              }.Select(_ => $$"""{"kind": "SCALAR", "name": "{{_}}"}"""))}}
+            ]
+          }
+        }
+        """);
+
+    /// <summary>
+    /// A custom scalar whose name says it is numeric takes a number, which is what its server parses:
+    /// <c>first: "20"</c> for a Long is refused. Whatever the name, text that is not a number stays a
+    /// string, and every other custom scalar keeps taking the text as a string.
+    /// </summary>
+    [Test]
+    [Arguments("Long", "20", "20")]
+    [Arguments("Long", "-9007199254740993", "-9007199254740993")]
+    [Arguments("BigInt", "123456789012345678901234567890", "123456789012345678901234567890")]
+    [Arguments("Short", "7", "7")]
+    [Arguments("UInt", "7", "7")]
+    [Arguments("ULong", "7", "7")]
+    [Arguments("Int64", "7", "7")]
+    [Arguments("SafeInt", "7", "7")]
+    [Arguments("NonNegativeInt", "7", "7")]
+    [Arguments("UnsignedLong", "7", "7")]
+    [Arguments("bigint", "7", "7")]
+    [Arguments("smallint", "7", "7")]
+    [Arguments("int4", "7", "7")]
+    [Arguments("Long", "1.5", "\"1.5\"")]
+    [Arguments("Long", "abc", "\"abc\"")]
+    [Arguments("Decimal", "19.99", "19.99")]
+    [Arguments("Decimal", "20", "20")]
+    [Arguments("BigDecimal", "1e400", "1e400")]
+    [Arguments("PositiveFloat", "0.5", "0.5")]
+    [Arguments("Double", "2.5", "2.5")]
+    [Arguments("numeric", "2.5", "2.5")]
+    [Arguments("float8", "2.5", "2.5")]
+    [Arguments("Decimal", "lots", "\"lots\"")]
+    [Arguments("DateTime", "2024", "\"2024\"")]
+    [Arguments("Point", "12", "\"12\"")]
+    [Arguments("Longitude", "12", "\"12\"")]
+    [Arguments("PhoneNumber", "5551234", "\"5551234\"")]
+    [Arguments("Interval", "12", "\"12\"")]
+    [Arguments("Byte", "12", "\"12\"")]
+    [Arguments("UUID", "12", "\"12\"")]
+    public async Task ANumericCustomScalarTakesANumber(string type, string input, string expected)
+    {
+        var literal = QueryBuilder.Literal(customScalars, new() {Kind = "SCALAR", Name = type}, input);
+
+        await Assert.That(QueryBuilder.Print(literal!)).IsEqualTo(expected);
+    }
+
+    /// <summary>The placeholder an argument is switched on with is a number too, not an empty string.</summary>
+    [Test]
+    [Arguments("Long", "0")]
+    [Arguments("bigint", "0")]
+    [Arguments("Decimal", "0.0")]
+    [Arguments("DateTime", "\"\"")]
+    public async Task ANumericCustomScalarsPlaceholderIsANumber(string type, string expected) =>
+        await Assert.That(QueryBuilder.Print(QueryBuilder.DefaultValue(customScalars, new() {Kind = "SCALAR", Name = type})))
+            .IsEqualTo(expected);
+
+    [Test]
+    public async Task SwitchingOnANumericCustomScalarArgumentWritesANumber() =>
+        await Assert.That(QueryBuilder.ToggleArgument(customScalars, "{ pick }", 0, Path("pick"), ["first"]))
+            .IsEqualTo("{ pick(first: 0) }");
+
     // A list is typed as its items separated by commas; one bad item refuses the lot.
     [Test]
     [Arguments("ID", "1, 2 ,3", """["1", "2", "3"]""")]

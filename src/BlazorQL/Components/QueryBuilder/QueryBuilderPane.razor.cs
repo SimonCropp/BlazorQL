@@ -168,7 +168,13 @@ public partial class QueryBuilderPane
         {
             "Int" => "numeric",
             "Float" => "decimal",
-            _ => null
+            "String" or "ID" or "Boolean" => null,
+            _ => QueryBuilder.NumericScalar(scalar) switch
+            {
+                QueryBuilder.NumericKind.Integer => "numeric",
+                QueryBuilder.NumericKind.Decimal => "decimal",
+                _ => null
+            }
         };
 
     /// <summary>
