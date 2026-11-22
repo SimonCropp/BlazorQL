@@ -9,11 +9,6 @@ namespace BlazorQL;
 public sealed class SidecarFetcher(IGraphQLFetcher inner, SidecarStore store) :
     IGraphQLFetcher
 {
-    static JsonSerializerOptions prettyOptions = new()
-    {
-        WriteIndented = true
-    };
-
     /// <summary>
     /// The wrapped fetcher, for callers that key behavior off the concrete transport (the IDE's
     /// footer reads <see cref="HttpFetcher.LastStatus"/> through this).
@@ -65,8 +60,7 @@ public sealed class SidecarFetcher(IGraphQLFetcher inner, SidecarStore store) :
                     throw;
                 }
 
-                var document = current;
-                entry.AddDocument(() => Pretty(document), store.Options.MaxDocumentsPerEntry, stopwatch.Elapsed);
+                entry.AddDocument(current, store.Options.MaxDocumentsPerEntry, stopwatch.Elapsed);
                 store.Notify();
                 yield return current;
             }
@@ -100,18 +94,11 @@ public sealed class SidecarFetcher(IGraphQLFetcher inner, SidecarStore store) :
             Query = request.Query,
             OperationName = request.OperationName,
             VariablesJson = request.Variables is { } variables
-                ? Pretty(variables)
+                ? SidecarEntry.Format(variables)
                 : null,
             Kind = operation?.Operation.ToString().ToLowerInvariant() ?? "query",
             Name = request.OperationName ?? operation?.Name?.StringValue ?? "<anonymous>",
             Headers = [.. headers]
         };
     }
-
-    [UnconditionalSuppressMessage(
-        "Trimming",
-        "IL2026",
-        Justification = "JsonElement has a built-in converter, so nothing here is discovered by reflection.")]
-    static string Pretty(JsonElement element) =>
-        JsonSerializer.Serialize(element, prettyOptions);
 }
