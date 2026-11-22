@@ -30,12 +30,15 @@ Wrap the fetcher the app already uses — `SidecarFetcher` decorates any `IGraph
 // The whole schema lives in the browser: GraphQL.NET executes it inside the WASM app itself, so
 // the sample deploys to static hosting with subscriptions intact. Both pages resolve this one
 // fetcher, and the sidecar decorator records every request — the sample app's and the query
-// explorer's alike — into the debug panel.
-builder.Services.AddSingleton<IGraphQLFetcher>(_ =>
+// explorer's alike — into the debug panel. Scoped, as the sidecar's store is, so under Blazor
+// Server each user's requests land in their own panel.
+builder.Services.AddScoped<IGraphQLFetcher>(_ =>
     new SidecarFetcher(new LocalSchemaFetcher(), _.GetRequiredService<SidecarStore>()));
 ```
-<sup><a href='/src/BlazorQL.Sample/Program.cs#L15-L22' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
+<sup><a href='/src/BlazorQL.Sample/Program.cs#L15-L23' title='Snippet source file'>snippet source</a> | <a href='#snippet-sampleFetcher' title='Start of snippet'>anchor</a></sup>
 <!-- endSnippet -->
+
+Register the wrapped fetcher scoped, as above. The sidecar's store is scoped: it holds every captured request's headers and responses, so under Blazor Server each circuit gets a store of its own rather than every user seeing everyone's traffic. A singleton fetcher would capture the root provider's store, which no panel reads. Under WebAssembly the app has a single scope, so scoped and singleton come to the same thing there.
 
 Render the panel once, anywhere on the page:
 
