@@ -1370,10 +1370,10 @@ public partial class BlazorQLIde :
             tab.Headers = await headersEditor.GetValue();
         }
 
-        if (responseEditor is not null)
-        {
-            tab.Response = await responseEditor.GetValue();
-        }
+        // Not the response: the editor is read-only, so its text is always the one SetResponse or
+        // LoadActiveTab recorded on the tab, and reading it back marshalled the whole response
+        // across the interop boundary on every switch, as a new string that then had its errors
+        // parsed all over again.
     }
 
     async Task LoadActiveTab()
@@ -1396,9 +1396,11 @@ public partial class BlazorQLIde :
             await headersEditor.SetValue(tab.Headers);
         }
 
-        if (responseEditor is not null)
+        // As bytes, the way SetResponse writes it: a string argument is JSON-escaped into the
+        // interop call, quote by quote, and a JSON response is mostly quotes.
+        if (responseModel is not null)
         {
-            await responseEditor.SetValue(tab.Response);
+            await module!.Invoke("setModelText", responseModelUri, Encoding.UTF8.GetBytes(tab.Response));
         }
 
         // The status line described the previous tab's run.
@@ -1927,8 +1929,7 @@ public partial class BlazorQLIde :
         tabs.Active.Response = text;
         if (errors is not null)
         {
-            responseErrorsFor = text;
-            responseErrors = errors;
+            responseErrors.AddOrUpdate(text, errors);
         }
 
         // Before the response editor has its model, the swap that gives it one reads the text
@@ -1966,20 +1967,14 @@ public partial class BlazorQLIde :
 
             // Cached against the text it was parsed from. This is read from the markup, so without
             // it the whole response is re-parsed on every render of the IDE — including each
-            // pointer-move render of a pane drag and each event of a subscription.
-            var text = tabs.Active.Response;
-            if (!ReferenceEquals(responseErrorsFor, text))
-            {
-                responseErrorsFor = text;
-                responseErrors = ResponseErrors.Parse(text);
-            }
-
-            return responseErrors;
+            // pointer-move render of a pane drag and each event of a subscription. One entry per
+            // response text rather than one slot, so switching back to a tab finds its errors
+            // still parsed; keyed weakly, so a response replaced or closed takes its entry with it.
+            return responseErrors.GetValue(tabs.Active.Response, ResponseErrors.Parse);
         }
     }
 
-    string? responseErrorsFor;
-    IReadOnlyList<ResponseError> responseErrors = [];
+    readonly ConditionalWeakTable<string, IReadOnlyList<ResponseError>> responseErrors = new();
 
     /// <summary>
     /// Takes the field an error points at out of the operation. Useful after a broad exploratory
