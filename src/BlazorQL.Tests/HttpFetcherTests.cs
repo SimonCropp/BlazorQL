@@ -112,6 +112,61 @@ public class HttpFetcherTests
         await Assert.That(fetcher.LastStatus!.StatusCode).IsEqualTo(502);
     }
 
+    /// <summary>
+    /// A body that only starts with JSON is not JSON. Go's net/http answers an unknown route with
+    /// "404 page not found", which read as the number 404 and showed as a successful response.
+    /// </summary>
+    [Test]
+    [Arguments("404 page not found")]
+    [Arguments("""{"data":null} trailing""")]
+    [Arguments("""{"data":null}{"data":null}""")]
+    public async Task ABodyThatOnlyStartsWithJsonThrows(string body)
+    {
+        var handler = new FakeHandler(_ => new(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent(body, Encoding.UTF8, "text/plain")
+        });
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => Collect(fetcher, new("{ id }")));
+
+        await Assert.That(exception!.Message).Contains("404").And.Contains(body);
+    }
+
+    /// <summary>Whitespace after the document is insignificant, the way a trailing newline is.</summary>
+    [Test]
+    public async Task TrailingWhitespaceIsStillJson()
+    {
+        var handler = new FakeHandler(_ => JsonResponse(HttpStatusCode.OK, "{\"data\":{\"id\":\"abc123\"}}\r\n  \n"));
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        var results = await Collect(fetcher, new("{ id }"));
+
+        await Assert.That(results[0].GetProperty("data").GetProperty("id").GetString()).IsEqualTo("abc123");
+    }
+
+    /// <summary>A server that writes a UTF-8 byte order mark first is still sending JSON.</summary>
+    [Test]
+    public async Task AByteOrderMarkIsSkipped()
+    {
+        var bytes = (byte[]) [0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes("""{"data":{"id":"abc123"}}""")];
+        var handler = new FakeHandler(_ => new(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(bytes)
+            {
+                Headers =
+                {
+                    ContentType = new("application/json")
+                }
+            }
+        });
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        var results = await Collect(fetcher, new("{ id }"));
+
+        await Assert.That(results[0].GetProperty("data").GetProperty("id").GetString()).IsEqualTo("abc123");
+    }
+
     static HttpResponseMessage JsonResponse(HttpStatusCode status, string body) =>
         new(status)
         {

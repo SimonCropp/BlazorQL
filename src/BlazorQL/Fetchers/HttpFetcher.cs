@@ -137,18 +137,27 @@ public sealed partial class HttpFetcher(HttpClient http, string url) :
     /// out of that again. GraphQL errors ride non-success statuses as ordinary JSON bodies; only a
     /// non-JSON body is a transport failure, and only that path pays for the text.
     /// </summary>
+    /// <remarks>
+    /// The whole body has to be the one document. Reading a single value and stopping took a body
+    /// that merely starts with JSON for JSON: Go's "404 page not found" came back as the number 404.
+    /// A leading UTF-8 byte order mark is skipped, which the JSON spec allows parsers to do.
+    /// </remarks>
     static JsonElement ParseDocument(MemoryStream buffered, HttpResponseMessage response)
     {
-        var bytes = buffered.GetBuffer().AsSpan(0, (int) buffered.Length);
+        var bytes = buffered.GetBuffer().AsMemory(0, (int) buffered.Length);
+        if (bytes.Span.StartsWith(Encoding.UTF8.Preamble))
+        {
+            bytes = bytes[Encoding.UTF8.Preamble.Length..];
+        }
+
         try
         {
-            var reader = new Utf8JsonReader(bytes);
-            using var document = JsonDocument.ParseValue(ref reader);
+            using var document = JsonDocument.Parse(bytes);
             return document.RootElement.Clone();
         }
         catch (JsonException)
         {
-            var preview = Encoding.UTF8.GetString(bytes[..Math.Min(bytes.Length, 500)]);
+            var preview = Encoding.UTF8.GetString(bytes.Span[..Math.Min(bytes.Length, 500)]);
             throw new InvalidOperationException($"The endpoint answered {(int) response.StatusCode} with a non-JSON body: {preview}");
         }
     }
