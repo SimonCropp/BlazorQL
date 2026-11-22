@@ -251,42 +251,58 @@ public partial class DocExplorer :
             return;
         }
 
-        var currentTypeName = (Current as DocTypeEntry)?.Type.Name;
+        // Matches rooted in the currently open type render first, as the implicit "within" group,
+        // and are collected first: the cap counts both groups, and a scan in schema order spent it
+        // on the types listed before the open one, which never got a match in.
+        var currentType = (Current as DocTypeEntry)?.Type;
         var total = 0;
+        if (currentType is not null &&
+            CollectMembers(currentType, within))
+        {
+            Publish();
+            return;
+        }
+
         foreach (var type in Schema.Types)
         {
-            if (type.Name.StartsWith("__", StringComparison.Ordinal))
+            if (type.Name.StartsWith("__", StringComparison.Ordinal) ||
+                type.Name == currentType?.Name)
             {
                 continue;
             }
 
-            // Matches rooted in the currently open type render first, as the implicit
-            // "within" group.
-            var bucket = type.Name == currentTypeName
-                ? within
-                : other;
-
-            if (type.Name != currentTypeName &&
-                Matches(type.Name, term) &&
-                Add(other, new(type), ref total))
+            if ((Matches(type.Name, term) && Add(other, new(type))) ||
+                CollectMembers(type, other))
             {
-                return;
+                break;
             }
+        }
 
+        Publish();
+
+        void Publish()
+        {
+            withinResults = within;
+            otherResults = other;
+        }
+
+        // The fields, arguments and input fields of one type that match. True once the cap is reached.
+        bool CollectMembers(IntrospectionType type, List<SearchMatch> bucket)
+        {
             foreach (var field in type.Fields ?? [])
             {
                 if (Matches(field.Name, term) &&
-                    Add(bucket, new(type, field.Name, field.Type), ref total))
+                    Add(bucket, new(type, field.Name, field.Type)))
                 {
-                    return;
+                    return true;
                 }
 
                 foreach (var argument in field.Args)
                 {
                     if (Matches(argument.Name, term) &&
-                        Add(bucket, new(type, field.Name, field.Type, argument.Name, argument.Type), ref total))
+                        Add(bucket, new(type, field.Name, field.Type, argument.Name, argument.Type)))
                     {
-                        return;
+                        return true;
                     }
                 }
             }
@@ -294,27 +310,19 @@ public partial class DocExplorer :
             foreach (var inputField in type.InputFields ?? [])
             {
                 if (Matches(inputField.Name, term) &&
-                    Add(bucket, new(type, inputField.Name, inputField.Type), ref total))
+                    Add(bucket, new(type, inputField.Name, inputField.Type)))
                 {
-                    return;
+                    return true;
                 }
             }
+
+            return false;
         }
 
-        withinResults = within;
-        otherResults = other;
-
-        bool Add(List<SearchMatch> bucket, SearchMatch match, ref int count)
+        bool Add(List<SearchMatch> bucket, SearchMatch match)
         {
             bucket.Add(match);
-            if (++count < searchResultCap)
-            {
-                return false;
-            }
-
-            withinResults = within;
-            otherResults = other;
-            return true;
+            return ++total >= searchResultCap;
         }
     }
 
