@@ -232,6 +232,66 @@ public class ExecutionTests :
     /// belongs to the tab that is no longer in front, and LoadActiveTab has already cleared the
     /// footer for the new one.
     /// </summary>
+    /// <summary>
+    /// The IDE holds each tab's response already, so a switch of tabs has no reason to read the
+    /// outgoing one back out of the editor, or to hand the incoming one over as a JSON-escaped
+    /// string: a large response paid both on every switch. Each tab still shows its own response.
+    /// </summary>
+    [Test]
+    public async Task SwitchingTabsDoesNotRoundTripTheResponse()
+    {
+        var page = await NewPageAsync();
+        await page.GoToAppAsync(BaseUrl);
+
+        await page.SetEditorValueAsync("{ id }");
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForFunctionAsync(
+            "() => monaco.editor.getModels().some(_ => _.uri.path.includes('response') && _.getValue().includes('abc123'))",
+            null,
+            new() {Timeout = 30_000});
+
+        await page.ClickAsync("[data-testid='tab-add']");
+        await page.SetEditorValueAsync("{ isTest }");
+        await page.ClickAsync("[data-testid='execute']");
+        await page.WaitForFunctionAsync(
+            "() => monaco.editor.getModels().some(_ => _.uri.path.includes('response') && _.getValue().includes('isTest'))",
+            null,
+            new() {Timeout = 30_000});
+
+        // Count every read and write made through the response editor from here on. On the editor
+        // instance, which BlazorMonaco's interop functions call through: those functions
+        // themselves cannot be swapped, because Blazor caches each one it has resolved.
+        await page.EvaluateAsync(
+            """
+            () => {
+                window.responseEditorCalls = 0;
+                const editor = blazorMonaco.editors.find(_ => _.editor.getModel()?.uri.path.includes('response')).editor;
+                for (const name of ['getValue', 'setValue']) {
+                    const original = editor[name].bind(editor);
+                    editor[name] = (...args) => {
+                        window.responseEditorCalls++;
+                        return original(...args);
+                    };
+                }
+            }
+            """);
+
+        var tabs = page.Locator(".blazorql-tab-button");
+        await tabs.Nth(0).ClickAsync();
+        await page.WaitForFunctionAsync(
+            "() => monaco.editor.getModels().some(_ => _.uri.path.includes('response') && _.getValue().includes('abc123'))",
+            null,
+            new() {Timeout = 10_000});
+        await tabs.Nth(1).ClickAsync();
+        await page.WaitForFunctionAsync(
+            "() => monaco.editor.getModels().some(_ => _.uri.path.includes('response') && _.getValue().includes('isTest') && !_.getValue().includes('abc123'))",
+            null,
+            new() {Timeout = 10_000});
+
+        await Assert.That(await page.EvaluateAsync<int>("() => window.responseEditorCalls")).IsEqualTo(0);
+        await Assert.That(ConsoleErrors()).IsEmpty();
+    }
+
     [Test]
     public async Task ARunAbandonedByASwitchOfTabsLeavesNoStatusBehind()
     {
