@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Routing.Patterns;
+
 /// <summary>
 /// Serves one mount of the IDE. Everything except index.html is written straight out of the
 /// assembly as brotli; index.html is rendered per base path and cached.
@@ -13,8 +15,64 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
     /// </summary>
     ConcurrentDictionary<string, RenderedIndex> pages = new(StringComparer.Ordinal);
 
-    /// <summary>What the consumer named, or the app and mount. See <see cref="ForMount"/>.</summary>
-    string storageNamespace = options.StorageNamespace ?? ForMount(application, prefix);
+    /// <summary>
+    /// The mount as routing matched it: its path, with each route parameter filled in from the
+    /// request, and its pattern, with each parameter left as written.
+    /// </summary>
+    /// <remarks>
+    /// Read from the endpoint rather than from the pattern MapBlazorQL was handed, because a route
+    /// group adds its prefix to the routes without touching PathBase:
+    /// <c>app.MapGroup("/admin").MapBlazorQL()</c> matches <c>/admin/blazorql</c>, and a base href
+    /// built from <c>/blazorql</c> alone sends every asset request outside the group. Both endpoints
+    /// of a mount resolve the same thing — the assets endpoint is the mount plus its catch-all,
+    /// which is no part of the mount. Without a routed endpoint (a test driving the handler
+    /// directly) the pattern MapBlazorQL was handed is all there is.
+    /// </remarks>
+    internal (string Path, string Pattern) Mount(HttpContext context)
+    {
+        if (context.GetEndpoint() is not RouteEndpoint {RoutePattern: var route})
+        {
+            return (prefix, prefix);
+        }
+
+        var segments = route.PathSegments;
+        var count = segments.Count;
+        if (count > 0 &&
+            segments[count - 1].Parts is [RoutePatternParameterPart {IsCatchAll: true, Name: "path"}])
+        {
+            count--;
+        }
+
+        var path = new StringBuilder();
+        var pattern = new StringBuilder();
+        for (var i = 0; i < count; i++)
+        {
+            path.Append('/');
+            pattern.Append('/');
+            foreach (var part in segments[i].Parts)
+            {
+                switch (part)
+                {
+                    case RoutePatternLiteralPart literal:
+                        path.Append(literal.Content);
+                        pattern.Append(literal.Content);
+                        break;
+
+                    case RoutePatternSeparatorPart separator:
+                        path.Append(separator.Content);
+                        pattern.Append(separator.Content);
+                        break;
+
+                    case RoutePatternParameterPart parameter:
+                        path.Append(context.Request.RouteValues[parameter.Name]);
+                        pattern.Append('{').Append(parameter.Name).Append('}');
+                        break;
+                }
+            }
+        }
+
+        return (path.ToString(), pattern.ToString());
+    }
 
     /// <summary>
     /// The storage namespace a mount takes when the consumer does not name one:
@@ -27,7 +85,9 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
     /// derive the same thing — so the app's own identity is what carries it, and the mount then
     /// separates two mounts within that app.
     /// <para>
-    /// The mount rather than the request path, because
+    /// The mount's pattern, so a route group's prefix is part of it and a group parameter stays as
+    /// written: two groups taking the default mount are two IDEs, but one group serving many
+    /// tenants is one. The mount rather than the request path, because
     /// <see cref="BlazorQLIdeOptions.MapUnknownPathsToIde"/> serves the same IDE from every
     /// extensionless path beneath it — deriving from the request would give one mount a different
     /// namespace per url the user happened to type. PathBase is out for the same reason: behind a
@@ -156,10 +216,11 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
                 ContentSecurityPolicy.Build(nonce, options.ConfigureContentSecurityPolicy);
         }
 
-        var baseHref = BaseHref(context);
+        var mount = Mount(context);
+        var baseHref = BaseHref(context, mount.Path);
         if (!pages.TryGetValue(baseHref, out var index))
         {
-            index = Render(baseHref);
+            index = Render(baseHref, options.StorageNamespace ?? ForMount(application, mount.Pattern));
             // Racing writers can carry the count a little past the cap, by no more than the number
             // of requests in flight. Locking to make it exact would cost more than the entries do.
             if (pages.Count < maxCachedPages)
@@ -183,20 +244,20 @@ sealed class IdeEndpoint(BlazorQLIdeOptions options, string prefix, string appli
         await response.Body.WriteAsync(page, context.RequestAborted);
     }
 
-    string BaseHref(HttpContext context)
+    string BaseHref(HttpContext context, string mountPath)
     {
         if (options.BasePathOverride is {Length: > 0} over)
         {
             return over.EndsWith('/') ? over : over + '/';
         }
 
-        var mount = context.Request.PathBase + new PathString(prefix);
+        var mount = context.Request.PathBase + new PathString(mountPath);
         // ToUriComponent percent-encodes, so a mount with a space or a non-ascii segment still
         // produces a valid href.
         return mount.HasValue ? mount.ToUriComponent() + "/" : "/";
     }
 
-    RenderedIndex Render(string baseHref)
+    RenderedIndex Render(string baseHref, string storageNamespace)
     {
         var config = new ClientConfig(
             options.Endpoint,

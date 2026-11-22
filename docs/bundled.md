@@ -70,6 +70,12 @@ The endpoint is resolved in the browser against the page it was served from, so 
 app.MapBlazorQL().RequireAuthorization("Admin");
 ```
 
+A route group works too, with the group's prefix (route parameters included) carried into the page's base href, the trailing-slash redirect, and the storage namespace, so two groups that each take the default mount keep their tabs and history apart:
+
+```csharp
+app.MapGroup("/admin").RequireAuthorization("Admin").MapBlazorQL();
+```
+
 This works with cookie authentication. It does **not** work with a bearer-only scheme: the
 WebAssembly application's own asset requests are ordinary browser fetches and carry no bearer token,
 so they would be rejected with 401.
