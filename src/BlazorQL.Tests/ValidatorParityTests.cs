@@ -145,6 +145,19 @@ public class ValidatorParityTests
         yield return Case("variable-in-an-unused-fragment",
             "query Q { test { isTest } } fragment F on Test { hasArgs(string: $nope) }");
 
+        // One real error, with a variable and a spread under the node it rejects. The unused-variable
+        // and unused-fragment rules are about the text, so neither should follow the real error.
+        yield return Case("variable-and-spread-under-unknown-field",
+            "query Q($v: String) { test { noSuchField(string: $v) { ...F } } } fragment F on Test { image }");
+        yield return Case("variable-in-unknown-argument", "query Q($v: String) { test { hasArgs(noSuchArg: $v) } }");
+        yield return Case("variable-in-unknown-directive", "query Q($v: Boolean) { test { isTest @noSuchDirective(if: $v) } }");
+        yield return Case("variable-and-spread-under-scalar-with-selection",
+            "query Q($v: String) { test { isTest { hasArgs(string: $v) ...F } } } fragment F on Test { image }");
+        yield return Case("variable-and-spread-under-unknown-type-condition",
+            "query Q($v: String) { test { ... on NoSuchType { hasArgs(string: $v) ...F } } } fragment F on Test { image }");
+        yield return Case("variable-in-fragment-on-unknown-type", "query Q($v: String) { ...F } fragment F on NoSuchType { hasArgs(string: $v) }");
+        yield return Case("variable-in-unknown-input-field", "query Q($v: String) { test { hasArgs(object: {noSuchField: $v}) } }");
+
         // Rules only GraphQL.NET has. These must land entirely in knownGaps, and BlazorQL must
         // report nothing — the assertion that keeps the gap list honest in both directions.
         yield return Case("fragment-cycle", "{ test { ...A } } fragment A on Test { ...B } fragment B on Test { ...A }");

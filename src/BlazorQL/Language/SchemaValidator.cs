@@ -53,8 +53,11 @@ public sealed class SchemaValidator(SchemaIndex index)
         Dictionary<string, References> byFragment = new(StringComparer.Ordinal);
         References current = new();
 
-        /// <summary>A variable reference, with what the position it sits in expects of it.</summary>
-        readonly record struct VariableUsage(GraphQLVariable Variable, TypeRef Expected, string? LocationDefault);
+        /// <summary>
+        /// A variable reference, with what the position it sits in expects of it. No expectation for
+        /// a reference under a rejected node, whose position has no type to compare against.
+        /// </summary>
+        readonly record struct VariableUsage(GraphQLVariable Variable, TypeRef? Expected, string? LocationDefault);
 
         /// <summary>What one operation or fragment definition refers to in its own body.</summary>
         sealed class References
@@ -134,11 +137,12 @@ public sealed class SchemaValidator(SchemaIndex index)
                     continue;
                 }
 
-                if (!Allowed(usage.Expected, definition, usage.LocationDefault))
+                if (usage.Expected is { } expected &&
+                    !Allowed(expected, definition, usage.LocationDefault))
                 {
                     Error(
                         usage.Variable,
-                        $"Variable \"${name}\" of type \"{Render(definition.Type)}\" used in position expecting type \"{usage.Expected.Display()}\".");
+                        $"Variable \"${name}\" of type \"{Render(definition.Type)}\" used in position expecting type \"{expected.Display()}\".");
                 }
             }
 
@@ -235,9 +239,12 @@ public sealed class SchemaValidator(SchemaIndex index)
             var type = fragment.TypeCondition.Type;
             var conditionName = type.Name.StringValue;
             var condition = index.Find(conditionName);
+            CheckDirectives(fragment.Directives);
+
             if (condition is null)
             {
                 Error(type, $"Unknown type \"{conditionName}\".");
+                RecordSelections(fragment.SelectionSet);
                 return;
             }
 
@@ -246,10 +253,10 @@ public sealed class SchemaValidator(SchemaIndex index)
                 Error(
                     type,
                     $"Fragment \"{fragment.FragmentName.Name.StringValue}\" cannot condition on non composite type \"{conditionName}\".");
+                RecordSelections(fragment.SelectionSet);
                 return;
             }
 
-            CheckDirectives(fragment.Directives);
             WalkSelections(fragment.SelectionSet, condition);
         }
 
@@ -298,6 +305,10 @@ public sealed class SchemaValidator(SchemaIndex index)
             if (parent.Name == index.QueryTypeName &&
                 name is "__schema" or "__type")
             {
+                // Not walked against the introspection types, but a variable passed to __type's
+                // name is still used.
+                RecordArguments(field.Arguments);
+                RecordSelections(field.SelectionSet);
                 return;
             }
 
@@ -310,6 +321,8 @@ public sealed class SchemaValidator(SchemaIndex index)
                     ? " Did you mean to use an inline fragment on one of its possible types?"
                     : "";
                 Error(field.Name, $"Cannot query field \"{name}\" on type \"{parent.Name}\".{hint}");
+                RecordArguments(field.Arguments);
+                RecordSelections(field.SelectionSet);
                 return;
             }
 
@@ -325,6 +338,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             var fieldType = index.Find(definition.Type.Unwrap().Name);
             if (fieldType is null)
             {
+                RecordSelections(field.SelectionSet);
                 return;
             }
 
@@ -352,6 +366,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                 Error(
                     field.Name,
                     $"Field \"{field.Name.StringValue}\" must not have a selection since type \"{typeName}\" has no subfields.");
+                RecordSelections(field.SelectionSet);
             }
         }
 
@@ -365,6 +380,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                 if (definition is null)
                 {
                     Error(argument.Name, $"Unknown argument \"{name}\" on field \"{where}\".");
+                    RecordValue(argument.Value);
                     continue;
                 }
 
@@ -423,6 +439,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             if (condition is null)
             {
                 Error(inline.TypeCondition.Type, $"Unknown type \"{conditionName}\".");
+                RecordSelections(inline.SelectionSet);
                 return;
             }
 
@@ -431,6 +448,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                 Error(
                     inline.TypeCondition.Type,
                     $"Fragment cannot condition on non composite type \"{conditionName}\".");
+                RecordSelections(inline.SelectionSet);
                 return;
             }
 
@@ -470,6 +488,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                 if (declared is null)
                 {
                     Error(directive.Name, $"Unknown directive \"@{name}\".");
+                    RecordArguments(directive.Arguments);
                     continue;
                 }
 
@@ -481,6 +500,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                         Error(
                             argument.Name,
                             $"Unknown argument \"{argument.Name.StringValue}\" on directive \"@{name}\".");
+                        RecordValue(argument.Value);
                         continue;
                     }
 
@@ -542,6 +562,7 @@ public sealed class SchemaValidator(SchemaIndex index)
 
             if (index.Find(expected.Name) is not {} type)
             {
+                RecordValue(value);
                 return;
             }
 
@@ -575,6 +596,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             if (value is not GraphQLEnumValue enumValue)
             {
                 Error(value, $"Enum \"{type.Name}\" cannot represent non-enum value.");
+                RecordValue(value);
                 return;
             }
 
@@ -599,6 +621,7 @@ public sealed class SchemaValidator(SchemaIndex index)
             if (value is not GraphQLObjectValue objectValue)
             {
                 Error(value, $"Expected value of type \"{type.Name}\", found a non-object value.");
+                RecordValue(value);
                 return;
             }
 
@@ -610,6 +633,7 @@ public sealed class SchemaValidator(SchemaIndex index)
                 if (definition is null)
                 {
                     Error(field.Name, $"Field \"{name}\" is not defined by type \"{type.Name}\".");
+                    RecordValue(field.Value);
                     continue;
                 }
 
@@ -655,6 +679,78 @@ public sealed class SchemaValidator(SchemaIndex index)
             if (!ok)
             {
                 Error(value, $"{type.Name} cannot represent a value of this kind.");
+                RecordValue(value);
+            }
+        }
+
+        // ---- What a rejected node refers to ----
+        //
+        // NoUnusedVariables, NoUndefinedVariables and NoUnusedFragments are about the text, and
+        // graphql-js answers them that way. So a node the schema rejects still has its variables and
+        // spreads recorded, without the type checks that have nothing to check against, or one real
+        // error is followed by "never used" for everything under it.
+
+        /// <summary>The variables a value holds, at any depth, used where no type is known.</summary>
+        void RecordValue(GraphQLValue? value)
+        {
+            switch (value)
+            {
+                case GraphQLVariable variable:
+                    current.Usages.Add(new(variable, null, null));
+                    break;
+
+                case GraphQLListValue list:
+                    foreach (var item in list.Values ?? [])
+                    {
+                        RecordValue(item);
+                    }
+
+                    break;
+
+                case GraphQLObjectValue objectValue:
+                    foreach (var field in objectValue.Fields ?? [])
+                    {
+                        RecordValue(field.Value);
+                    }
+
+                    break;
+            }
+        }
+
+        void RecordArguments(GraphQLArguments? arguments)
+        {
+            foreach (var argument in arguments?.Items ?? [])
+            {
+                RecordValue(argument.Value);
+            }
+        }
+
+        /// <summary>
+        /// A selection set under a rejected node. Its fields cannot be checked, having no parent type;
+        /// its directives can, being schema-wide, and its spreads are walked as anywhere else, so an
+        /// unknown fragment is still reported and a known one still counts as used.
+        /// </summary>
+        void RecordSelections(GraphQLSelectionSet? selections)
+        {
+            foreach (var selection in selections?.Selections ?? [])
+            {
+                switch (selection)
+                {
+                    case GraphQLField field:
+                        CheckDirectives(field.Directives);
+                        RecordArguments(field.Arguments);
+                        RecordSelections(field.SelectionSet);
+                        break;
+
+                    case GraphQLFragmentSpread spread:
+                        WalkSpread(spread);
+                        break;
+
+                    case GraphQLInlineFragment inline:
+                        CheckDirectives(inline.Directives);
+                        RecordSelections(inline.SelectionSet);
+                        break;
+                }
             }
         }
 

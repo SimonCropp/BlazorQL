@@ -536,6 +536,48 @@ public class SchemaValidatorTests
         await Assert.That(ValuesSchemaWarnings("{ paint(color: GRAY) }"))
             .Contains(_ => _.Contains("The enum value Color.GRAY is deprecated. Use RED."));
 
+    /// <summary>
+    /// A rejected node's children still count. Whether a variable or a fragment is used is a
+    /// question about the text, and graphql-js answers it that way, so one real error must not be
+    /// followed by "never used" for everything under it.
+    /// </summary>
+    [Test]
+    [Arguments("unknown field", """query Q($v: String) { nope(string: $v) { ...F } } fragment F on Person { name }""", "Cannot query field \"nope\"")]
+    [Arguments("unknown argument", """query Q($v: String) { hasArgs(nope: $v) }""", "Unknown argument \"nope\"")]
+    [Arguments("unknown directive", """query Q($v: String) { person { name @nope(arg: $v) ...F } } fragment F on Person { name }""", "Unknown directive \"@nope\"")]
+    [Arguments("unknown directive argument", """query Q($v: String) { person { name @repeat(nope: $v) } }""", "Unknown argument \"nope\" on directive")]
+    [Arguments("scalar with a selection", """query Q($v: String) { person { name { x(arg: $v) ...F } } } fragment F on Person { name }""", "must not have a selection")]
+    [Arguments("unknown inline type condition", """query Q($v: String) { person { ... on Nope { x(arg: $v) ...F } } } fragment F on Person { name }""", "Unknown type \"Nope\"")]
+    [Arguments("unknown fragment type condition", """query Q($v: String) { ...F } fragment F on Nope { x(arg: $v) }""", "Unknown type \"Nope\"")]
+    [Arguments("unknown input field", """query Q($v: String) { hasArgs(input: {nope: $v}) }""", "Field \"nope\" is not defined by type \"PetInput\"")]
+    public async Task ARejectedNodesReferencesStillCount(string shape, string query, string error)
+    {
+        _ = shape;
+        var errors = Errors(query).ToList();
+
+        await Assert.That(errors).Contains(_ => _.Contains(error));
+        await Assert.That(errors).DoesNotContain(_ => _.Contains("never used"));
+    }
+
+    /// <summary>
+    /// And recorded the way they would be anywhere else: a variable under a rejected node that is
+    /// not declared is still undefined, and a spread of a fragment that does not exist still unknown.
+    /// </summary>
+    [Test]
+    public async Task UnderARejectedNodeAnUndefinedVariableAndAnUnknownFragmentAreStillReported()
+    {
+        var errors = Errors("{ nope(arg: $missing) { ...Gone } }").ToList();
+
+        await Assert.That(errors).Contains(_ => _.Contains("Variable \"$missing\" is not defined."));
+        await Assert.That(errors).Contains(_ => _.Contains("Unknown fragment \"Gone\"."));
+    }
+
+    /// <summary>The variable is used, so it is not unused; its type is unknown, so it is not mismatched either.</summary>
+    [Test]
+    public async Task AVariableUnderAnUnknownFieldIsNotJudgedForType() =>
+        await Assert.That(Errors("query Q($v: Int) { nope(arg: $v) }"))
+            .IsEquivalentTo(["Cannot query field \"nope\" on type \"Query\"."]);
+
     /// <summary>Diagnostics carry one-based line and column, which is what Monaco marks with.</summary>
     [Test]
     public async Task ReportsAOneBasedPosition()
