@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -32,7 +33,7 @@ public abstract class BundledFixture
     protected string BaseUrl { get; private set; } = null!;
 
     /// <summary>Where the IDE is mounted, no trailing slash. Empty mounts it at the root.</summary>
-    protected string IdeUrl => BaseUrl + Mount.TrimEnd('/');
+    protected string IdeUrl => BaseUrl + Group + Mount.TrimEnd('/');
 
     /// <summary>
     /// What the mount names the app when it derives a storage namespace. Read from the host rather
@@ -46,6 +47,11 @@ public abstract class BundledFixture
 
     /// <summary>The pattern passed to MapBlazorQL.</summary>
     protected virtual string Mount => "/blazorql";
+
+    /// <summary>
+    /// A route group the IDE is mapped inside, no trailing slash. Empty maps it on the app itself.
+    /// </summary>
+    protected virtual string Group => "";
 
     /// <summary>
     /// Mount through the overload that takes only the configuration, leaving the pattern to the
@@ -128,13 +134,16 @@ public abstract class BundledFixture
         }
 
         MapSchema(app);
+        IEndpointRouteBuilder endpoints = Group.Length > 0
+            ? app.MapGroup(Group)
+            : app;
         if (MountAtDefault)
         {
-            app.MapBlazorQL(Configure);
+            endpoints.MapBlazorQL(Configure);
         }
         else
         {
-            app.MapBlazorQL(Mount, Configure);
+            endpoints.MapBlazorQL(Mount, Configure);
         }
 
         await app.StartAsync();

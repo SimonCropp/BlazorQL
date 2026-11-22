@@ -159,6 +159,29 @@ public class SubPathBundledIdeTests :
         await Assert.That(ConsoleErrors()).IsEmpty();
     }
 }
+/// <summary>
+/// The IDE mapped inside a route group, the ordinary way to put it behind a policy. A group adds
+/// to the routes and leaves PathBase alone, so a base href built from the mount pattern alone
+/// points every asset outside the group.
+/// </summary>
+[Category("Browser")]
+public class RouteGroupBundledIdeTests :
+    BundledFixture
+{
+    protected override string Group => "/admin";
+
+    protected override void Configure(BlazorQLIdeOptions options) =>
+        options.Endpoint = "/graphql";
+
+    [Test]
+    public async Task BootsInsideARouteGroup()
+    {
+        var page = await OpenIdeAsync();
+
+        await Assert.That(page.Url).Contains("/admin/blazorql/");
+        await Assert.That(ConsoleErrors()).IsEmpty();
+    }
+}
 /// <summary>The degenerate mount, which breaks naive prefix arithmetic.</summary>
 [Category("Browser")]
 public class RootMountBundledIdeTests :

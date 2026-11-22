@@ -66,7 +66,7 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
         var root = endpoints.MapMethods(
             prefix.Length == 0 ? "/" : prefix,
             [HttpMethods.Get, HttpMethods.Head],
-            context => Root(context, endpoint, prefix));
+            context => Root(context, endpoint));
 
         // A double-star catch-all, because {*path} does not round-trip slashes unescaped.
         var assets = endpoints.MapMethods(
@@ -89,14 +89,15 @@ public static class BlazorQLIdeEndpointRouteBuilderExtensions
     /// The redirect is worth keeping for the unslashed form: it puts location.pathname inside the
     /// base href, and share links are built from it.
     /// </remarks>
-    static Task Root(HttpContext context, IdeEndpoint endpoint, string prefix)
+    static Task Root(HttpContext context, IdeEndpoint endpoint)
     {
         if (context.Request.Path.Value?.EndsWith('/') == true)
         {
             return endpoint.WriteIndex(context);
         }
 
-        var path = context.Request.PathBase + new PathString(prefix) + new PathString("/");
+        // The mount as routed, so a route group's prefix is kept. See IdeEndpoint.Mount.
+        var path = context.Request.PathBase + new PathString(endpoint.Mount(context).Path) + new PathString("/");
         context.Response.Redirect(path + context.Request.QueryString);
         return Task.CompletedTask;
     }
