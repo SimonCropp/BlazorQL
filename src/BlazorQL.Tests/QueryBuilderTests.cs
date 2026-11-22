@@ -990,6 +990,97 @@ public class QueryBuilderTests
                 }
                 """);
 
+    // ---- Orphaned variables ----
+
+    /// <summary>
+    /// Unchecking an inline fragment's last field takes the fragment out, directives and all. A
+    /// variable only its directive read is left declared and unused, which the server refuses.
+    /// </summary>
+    [Test]
+    public async Task EmptyingADirectedInlineFragmentDropsTheVariableItsDirectiveRead() =>
+        await Assert.That(Toggle(
+                """query Q($show: Boolean!) { viewer { name ... on User @include(if: $show) { id } } }""",
+                "viewer", "...User", "id"))
+            .IsEqualTo("""query Q { viewer { name } }""");
+
+    /// <summary>
+    /// An edit inside a fragment definition reaches every operation that spreads it. The variable a
+    /// removed field read is declared by the operation, not the fragment.
+    /// </summary>
+    [Test]
+    public async Task RemovingAFieldInAFragmentDropsTheOperationsVariable() =>
+        await Assert.That(QueryBuilder.ToggleSelection(
+                schema,
+                """
+                query Q($first: Int) { viewer { ...F } }
+                fragment F on User { name friends(first: $first) { edges { node { id } } } }
+                """,
+                1,
+                Path("friends")))
+            .IsEqualTo(
+                """
+                query Q { viewer { ...F } }
+                fragment F on User { name }
+                """);
+
+    /// <summary>Every operation spreading the fragment, each dropping only its own orphan.</summary>
+    [Test]
+    public async Task RemovingAFieldInAFragmentDropsTheVariableFromEachOperationSpreadingIt() =>
+        await Assert.That(QueryBuilder.ToggleSelection(
+                schema,
+                """
+                query A($first: Int) { viewer { ...F } }
+                query B($first: Int, $id: ID!) { user(id: $id) { ...F } }
+                fragment F on User { name friends(first: $first) { edges { node { id } } } }
+                """,
+                2,
+                Path("friends")))
+            .IsEqualTo(
+                """
+                query A { viewer { ...F } }
+                query B($id: ID!) { user(id: $id) { ...F } }
+                fragment F on User { name }
+                """);
+
+    /// <summary>
+    /// Turning an input object into a variable replaces the object, and the variables it held with
+    /// it, so their declarations go too.
+    /// </summary>
+    [Test]
+    public async Task TurningAnObjectIntoAVariableDropsTheVariablesItHeld()
+    {
+        var edited = QueryBuilder.ToggleVariable(
+            schema,
+            """query Q($n: String) { users(filter: {name: $n, required: ""}) { id } }""",
+            0,
+            Path("users"),
+            "filter");
+
+        await Assert.That(edited).DoesNotContain("$n");
+        await Assert.That(edited).Contains("$filter: UserFilter");
+    }
+
+    /// <summary>A variable declared ahead of the field that will read it is work in progress, and stays.</summary>
+    [Test]
+    public async Task AVariableNotYetReadIsLeftDeclared() =>
+        await Assert.That(Toggle("""query Q($later: Int) { viewer { name id } }""", "viewer", "id"))
+            .IsEqualTo("""query Q($later: Int) { viewer { name } }""");
+
+    /// <summary>One still read elsewhere stays too, here by a fragment the operation spreads.</summary>
+    [Test]
+    public async Task AVariableStillReadByAFragmentIsLeftDeclared() =>
+        await Assert.That(Toggle(
+                """
+                query Q($first: Int) { viewer { friends(first: $first) { edges { node { id } } } ...F } }
+                fragment F on User { friends(first: $first) { edges { node { id } } } }
+                """,
+                "viewer", "friends"))
+            .IsEqualTo(
+                """
+                query Q($first: Int) { viewer { ...F } }
+                fragment F on User { friends(first: $first) { edges { node { id } } } }
+                """);
+
     // ---- Variables document ----
 
     string? VariablesAfter(string before, string after, string variables) =>
