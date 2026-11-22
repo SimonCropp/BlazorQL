@@ -45,6 +45,46 @@ public partial class QueryBuilderPane
     // The value inputs whose last entry was not a literal of their type, by input path.
     readonly HashSet<string> invalid = [];
 
+    SchemaIndex? renderedSchema;
+    string? renderedQuery;
+
+    /// <summary>
+    /// Set when the parent rendered with neither the schema nor the text changed, which is most of
+    /// the time: the IDE renders on every keystroke debounce, every pane-drag frame and every
+    /// subscription event. The schema and the callbacks always count as changed parameters, so
+    /// without this every one of those rebuilt every row of the tree, with fresh titles, paths and
+    /// click handlers, each handler re-registered on the JS side.
+    /// </summary>
+    bool parentRenderChangedNothing;
+
+    protected override void OnParametersSet()
+    {
+        // By reference: the tab's text is a new string whenever it changes, and the same one
+        // otherwise. The callbacks need no render to take effect, since they are read when they fire.
+        parentRenderChangedNothing =
+            ReferenceEquals(Schema, renderedSchema) &&
+            ReferenceEquals(Query, renderedQuery);
+        renderedSchema = Schema;
+        renderedQuery = Query;
+    }
+
+    /// <summary>Only renders the pane asked for itself, or that a new schema or text brought.</summary>
+    protected override bool ShouldRender()
+    {
+        if (parentRenderChangedNothing)
+        {
+            parentRenderChangedNothing = false;
+            return false;
+        }
+
+        return true;
+    }
+
+    // The first render does not ask ShouldRender, so a flag left by the first parameters is
+    // dropped here rather than swallowing the next render the pane asks for.
+    protected override void OnAfterRender(bool firstRender) =>
+        parentRenderChangedNothing = false;
+
     DocumentInfo Parsed
     {
         get

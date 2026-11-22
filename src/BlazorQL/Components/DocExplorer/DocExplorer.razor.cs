@@ -101,8 +101,38 @@ public partial class DocExplorer :
         }
     }
 
+    /// <summary>
+    /// Set when the parent rendered with nothing this explorer draws from changed, which is most of
+    /// the time: the IDE renders on every keystroke debounce, every pane-drag frame and every
+    /// subscription event. The schema always counts as a changed parameter, being a reference type,
+    /// so without this every one of those re-rendered the open page, its every type link included.
+    /// </summary>
+    bool parentRenderChangedNothing;
+
+    /// <summary>
+    /// Only renders the explorer asked for itself, or that a new schema brought. The callbacks need
+    /// no render to take effect, since they are read when they fire.
+    /// </summary>
+    protected override bool ShouldRender()
+    {
+        if (parentRenderChangedNothing)
+        {
+            parentRenderChangedNothing = false;
+            return false;
+        }
+
+        return true;
+    }
+
+    // The first render does not ask ShouldRender, so the flag the first parameters set has to be
+    // dropped here, or it would swallow the next render the explorer asks for.
+    protected override void OnAfterRender(bool firstRender) =>
+        parentRenderChangedNothing = false;
+
     protected override Task OnParametersSetAsync()
     {
+        parentRenderChangedNothing = ReferenceEquals(Schema, lastSchema);
+
         // A reloaded schema resets the stack to the root; rebuilding the old stack against the new
         // schema is not attempted.
         if (!ReferenceEquals(Schema, lastSchema))
