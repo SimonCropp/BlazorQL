@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Field "noSuchField" is not defined by type "TestInput".
+  ],
+  graphQLDotNet: [
+    [5.6.1 ArgumentsOfCorrectTypeError] Argument 'object' has invalid value. In field 'noSuchField': Unknown field.
+  ],
+  query: query Q($v: String) { test { hasArgs(object: {noSuchField: $v}) } }
+}

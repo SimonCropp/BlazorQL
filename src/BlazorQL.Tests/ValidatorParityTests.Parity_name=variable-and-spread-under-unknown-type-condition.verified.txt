@@ -1,0 +1,9 @@
+﻿{
+  blazorQL: [
+    Unknown type "NoSuchType".
+  ],
+  graphQLDotNet: [
+    [5.5.1.2 KnownTypeNamesError] Unknown type NoSuchType.
+  ],
+  query: query Q($v: String) { test { ... on NoSuchType { hasArgs(string: $v) ...F } } } fragment F on Test { image }
+}
