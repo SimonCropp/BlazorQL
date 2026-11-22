@@ -245,7 +245,7 @@ public static partial class QueryBuilder
 
         if (existing.Count > 0)
         {
-            return Remove(text, definition, chain, existing);
+            return Remove(text, chain, existing);
         }
 
         ASTNode? selection = step.IsFragment
@@ -279,7 +279,7 @@ public static partial class QueryBuilder
 
         if (existing.Count > 0)
         {
-            return Remove(text, definition, chain, existing);
+            return Remove(text, chain, existing);
         }
 
         return Apply(text, [Insert(text, chain[0], owner, new GraphQLFragmentSpread(new(new(fragment))))]);
@@ -302,9 +302,7 @@ public static partial class QueryBuilder
             return Apply(text, [AddInput(text, slot, DefaultValue(schema, slot.Member.Type))]);
         }
 
-        var read = new HashSet<string>(StringComparer.Ordinal);
-        FieldRemover.CollectUsed(slot.Value, read);
-        return DropOrphanedVariables(Apply(text, [RemoveInput(text, slot)]), definition, read);
+        return DropOrphanedVariables(text, Apply(text, [RemoveInput(text, slot)]));
     }
 
     /// <summary>
@@ -330,9 +328,7 @@ public static partial class QueryBuilder
             return null;
         }
 
-        var read = new HashSet<string>(StringComparer.Ordinal);
-        FieldRemover.CollectUsed(slot.Value, read);
-        return DropOrphanedVariables(Apply(text, [new(start, end, printed)]), definition, read);
+        return DropOrphanedVariables(text, Apply(text, [new(start, end, printed)]));
     }
 
     /// <summary>
@@ -358,8 +354,7 @@ public static partial class QueryBuilder
             var name = variable.Name.StringValue;
             var declared = operation.Variables?.Items.FirstOrDefault(_ => _.Variable.Name.StringValue == name);
             var literal = Print(declared?.DefaultValue ?? DefaultValue(schema, member.Type));
-            var restored = Apply(text, [new(value.Location.Start, value.Location.End, literal)]);
-            return DropOrphanedVariables(restored, definition, [name]);
+            return DropOrphanedVariables(text, Apply(text, [new(value.Location.Start, value.Location.End, literal)]));
         }
 
         var variableName = VariableName(operation, field, argument);
@@ -371,12 +366,15 @@ public static partial class QueryBuilder
             declaration += $" = {Print(value)}";
         }
 
-        return Apply(
+        // An input object can itself hold variables, which go with it.
+        return DropOrphanedVariables(
             text,
-            [
-                new(value.Location.Start, value.Location.End, "$" + variableName),
-                Declare(text, operation, declaration)
-            ]);
+            Apply(
+                text,
+                [
+                    new(value.Location.Start, value.Location.End, "$" + variableName),
+                    Declare(text, operation, declaration)
+                ]));
     }
 
     /// <summary>
@@ -890,42 +888,8 @@ public static partial class QueryBuilder
     /// Takes nodes out of the set the chain ends in, and then the declarations of the variables only
     /// they read.
     /// </summary>
-    static string Remove(string text, int definition, List<Located> chain, IReadOnlyList<ASTNode> nodes)
-    {
-        var read = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var node in nodes)
-        {
-            CollectUsed(node, read);
-        }
-
-        var edited = Apply(text, RemoveSplices(text, chain, nodes, out var removedDefinition));
-        // A definition taken out whole took its declarations with it, and its index now names another.
-        if (removedDefinition)
-        {
-            return edited;
-        }
-
-        return DropOrphanedVariables(edited, definition, read);
-    }
-
-    static void CollectUsed(ASTNode node, HashSet<string> read)
-    {
-        switch (node)
-        {
-            case GraphQLField field:
-                FieldRemover.CollectUsed(field.Arguments, read);
-                FieldRemover.CollectUsed(field.Directives, read);
-                FieldRemover.CollectUsed(field.SelectionSet, read);
-                break;
-            case GraphQLInlineFragment inline:
-                FieldRemover.CollectUsed(inline.Directives, read);
-                FieldRemover.CollectUsed(inline.SelectionSet, read);
-                break;
-            case GraphQLFragmentSpread spread:
-                FieldRemover.CollectUsed(spread.Directives, read);
-                break;
-        }
-    }
+    static string Remove(string text, List<Located> chain, IReadOnlyList<ASTNode> nodes) =>
+        DropOrphanedVariables(text, Apply(text, RemoveSplices(text, chain, nodes)));
 
     /// <summary>
     /// The splices that take nodes out of the set the chain ends in. Emptying a set cannot leave its
@@ -933,9 +897,8 @@ public static partial class QueryBuilder
     /// members were not, the validator says what it lacks, and running fills it in — an emptied inline
     /// fragment goes with what it held, and an emptied operation or fragment goes entirely.
     /// </summary>
-    static List<Splice> RemoveSplices(string text, List<Located> chain, IReadOnlyList<ASTNode> nodes, out bool removedDefinition)
+    static List<Splice> RemoveSplices(string text, List<Located> chain, IReadOnlyList<ASTNode> nodes)
     {
-        removedDefinition = false;
         var owner = chain[^1];
         var set = owner.Set!;
         if (nodes.Count < set.Selections.Count)
@@ -955,9 +918,8 @@ public static partial class QueryBuilder
 
                 return [new(start, set.Location.End, "")];
             case GraphQLInlineFragment inline:
-                return RemoveSplices(text, chain[..^1], [inline], out removedDefinition);
+                return RemoveSplices(text, chain[..^1], [inline]);
             default:
-                removedDefinition = true;
                 return [RemoveDefinition(text, owner.Node)];
         }
     }
@@ -1304,40 +1266,89 @@ public static partial class QueryBuilder
     }
 
     /// <summary>
-    /// Takes out the declarations of the variables an edit took the last use of. Only those: one
-    /// written ahead of the field that will read it is work in progress rather than an orphan, and is
-    /// none of the builder's business. A use in any fragment counts, since the operation may spread it.
+    /// Takes out the declarations of the variables an edit took the last use of: for each operation,
+    /// those it read before the edit and reads no longer. Only those: one written ahead of the field
+    /// that will read it is work in progress rather than an orphan, and is none of the builder's
+    /// business. A use in any fragment counts, since the operation may spread it.
     /// </summary>
-    static string DropOrphanedVariables(string text, int definition, IReadOnlyCollection<string> names)
+    /// <remarks>
+    /// Worked out from the two documents rather than from what each edit says it removed, which is
+    /// how three edits left orphans behind: emptying an inline fragment takes its directives with it,
+    /// an edit inside a fragment definition reaches the operations that spread it, and an input
+    /// object turned into a variable takes the variables it held.
+    /// <para>
+    /// Operations are matched by their order among operations, which a fragment taken out whole
+    /// does not change. An operation taken out whole took its declarations with it; the rest are
+    /// then not matched at all.
+    /// </para>
+    /// </remarks>
+    static string DropOrphanedVariables(string before, string after)
     {
-        // One at a time, re-parsed in between: two neighbours cut together would each claim the
-        // separator between them.
-        foreach (var name in names)
+        if (ParseDocument(before) is not { } beforeDocument ||
+            ParseDocument(after) is not { } afterDocument)
         {
-            text = DropOrphanedVariable(text, definition, name);
+            return after;
         }
 
-        return text;
+        var beforeOperations = beforeDocument.Definitions.OfType<GraphQLOperationDefinition>().ToList();
+        var afterOperations = afterDocument.Definitions.OfType<GraphQLOperationDefinition>().ToList();
+        if (beforeOperations.Count != afterOperations.Count)
+        {
+            return after;
+        }
+
+        var beforeFragments = FragmentUses(beforeDocument);
+        var afterFragments = FragmentUses(afterDocument);
+        List<(int Operation, string Name)> orphans = [];
+        for (var i = 0; i < afterOperations.Count; i++)
+        {
+            var lost = Uses(beforeOperations[i], beforeFragments);
+            lost.ExceptWith(Uses(afterOperations[i], afterFragments));
+            orphans.AddRange(lost.Select(_ => (i, _)));
+        }
+
+        // One at a time, re-parsed in between: two neighbours cut together would each claim the
+        // separator between them.
+        foreach (var (operation, name) in orphans)
+        {
+            after = DropOrphanedVariable(after, operation, name);
+        }
+
+        return after;
     }
 
-    static string DropOrphanedVariable(string text, int definition, string name)
+    /// <summary>Every variable read anywhere in a fragment definition.</summary>
+    static HashSet<string> FragmentUses(GraphQLDocument document)
+    {
+        var used = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var fragment in document.Definitions.OfType<GraphQLFragmentDefinition>())
+        {
+            FieldRemover.CollectUsed(fragment.Directives, used);
+            FieldRemover.CollectUsed(fragment.SelectionSet, used);
+        }
+
+        return used;
+    }
+
+    static HashSet<string> Uses(GraphQLOperationDefinition operation, HashSet<string> fragmentUses)
+    {
+        var used = new HashSet<string>(fragmentUses, StringComparer.Ordinal);
+        FieldRemover.CollectUsed(operation.SelectionSet, used);
+        FieldRemover.CollectUsed(operation.Directives, used);
+        return used;
+    }
+
+    /// <summary>Takes out the nth operation's declaration of the variable, if it has one and reads it nowhere.</summary>
+    static string DropOrphanedVariable(string text, int operationIndex, string name)
     {
         if (ParseDocument(text) is not { } document ||
-            document.Definitions.ElementAtOrDefault(definition) is not GraphQLOperationDefinition {Variables: { } variables} operation ||
+            document.Definitions.OfType<GraphQLOperationDefinition>().ElementAtOrDefault(operationIndex) is not {Variables: { } variables} operation ||
             variables.Items.FirstOrDefault(_ => _.Variable.Name.StringValue == name) is not { } declaration)
         {
             return text;
         }
 
-        var used = new HashSet<string>(StringComparer.Ordinal);
-        FieldRemover.CollectUsed(operation.SelectionSet, used);
-        FieldRemover.CollectUsed(operation.Directives, used);
-        foreach (var fragment in document.Definitions.OfType<GraphQLFragmentDefinition>())
-        {
-            FieldRemover.CollectUsed(fragment.SelectionSet, used);
-        }
-
-        if (used.Contains(name))
+        if (Uses(operation, FragmentUses(document)).Contains(name))
         {
             return text;
         }
