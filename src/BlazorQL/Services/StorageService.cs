@@ -81,6 +81,27 @@ public sealed class StorageService(IStorageBackend backend, string ns = "blazorq
         return backend.Set(FullKey(key), value);
     }
 
+    /// <summary>
+    /// Stores the value, and when the store refuses it, asks <paramref name="makeRoom"/> to free
+    /// some space and tries again, for as long as it frees any. False when it still does not fit.
+    /// </summary>
+    /// <remarks>
+    /// Browser storage is about 5 MB per origin, and a write past it is refused rather than throwing,
+    /// so a caller that ignored the answer simply stopped saving.
+    /// </remarks>
+    public bool SetMakingRoom(string key, string value, Func<bool> makeRoom)
+    {
+        while (!Set(key, value))
+        {
+            if (!makeRoom())
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     public void Remove(string key) =>
         backend.Remove(FullKey(key));
 

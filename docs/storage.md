@@ -18,7 +18,11 @@ The app is `IHostEnvironment.ApplicationName`, which is the entry assembly's nam
 | `blazorql:docExplorerFlex` / `editorFlex` / `secondaryEditorFlex` | Pane sizes. |
 | `blazorql:queries` / `favorites` | History and favorites. |
 
-Writes are debounced (~500 ms). Quota failures are swallowed — a debug convenience never fails the app.
+Writes are debounced (~500 ms). localStorage holds about 5 MB per origin, and a write past that is refused rather than thrown, so the IDE makes room instead of failing:
+
+- History drops its oldest non-favorite items until the rest fits. A query, variables or headers longer than 100,000 characters are not recorded at all.
+- The tab state outranks history: refused for space, it has history evict its oldest items until it fits.
+- If the tab state still does not fit, the status line says the tabs were not saved, rather than the IDE quietly no longer saving them. Nothing throws either way.
 
 
 ## Why persist-headers is opt-in
