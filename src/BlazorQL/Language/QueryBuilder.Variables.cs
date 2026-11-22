@@ -24,17 +24,28 @@ public static partial class QueryBuilder
     /// A variable the document already carries keeps the value it has, since that is one somebody
     /// typed. The edit is left alone too where the document is not a JSON object, rather than throwing
     /// away whatever half-written text is there.
+    /// <para>
+    /// The document is the tab's, shared by every operation in it, so a variable comes out only when no
+    /// operation left declares it. An edit that takes the whole operation out — unchecking its last
+    /// field — leaves it declaring nothing, rather than comparing against the operation that moved into
+    /// its place.
+    /// </para>
     /// </remarks>
     public static Func<string, string?>? VariablesEdit(SchemaIndex schema, string before, string after, int definition)
     {
-        var previous = Declarations(before, definition);
-        var current = Declarations(after, definition);
+        var beforeDocument = ParseDocument(before);
+        var afterDocument = ParseDocument(after);
+        var previous = Declarations(beforeDocument, definition);
+        var current = afterDocument?.Definitions.Count < beforeDocument?.Definitions.Count
+            ? []
+            : Declarations(afterDocument, definition);
+        var declared = AllDeclarations(afterDocument);
         var added = current
             .Where(_ => !previous.ContainsKey(_.Key))
             .Select(_ => (_.Key, Value: VariableValue(schema, _.Value)))
             .ToList();
         var removed = previous.Keys
-            .Where(_ => !current.ContainsKey(_))
+            .Where(_ => !declared.Contains(_))
             .ToList();
         if (added.Count == 0 &&
             removed.Count == 0)
@@ -63,10 +74,10 @@ public static partial class QueryBuilder
         };
     }
 
-    static Dictionary<string, GraphQLVariableDefinition> Declarations(string text, int definition)
+    static Dictionary<string, GraphQLVariableDefinition> Declarations(GraphQLDocument? document, int definition)
     {
         var found = new Dictionary<string, GraphQLVariableDefinition>(StringComparer.Ordinal);
-        if (Parse(text, definition) is GraphQLOperationDefinition operation)
+        if (document?.Definitions.ElementAtOrDefault(definition) is GraphQLOperationDefinition operation)
         {
             foreach (var declaration in operation.Variables?.Items ?? [])
             {
@@ -76,6 +87,14 @@ public static partial class QueryBuilder
 
         return found;
     }
+
+    /// <summary>Every variable any operation in the document declares.</summary>
+    static HashSet<string> AllDeclarations(GraphQLDocument? document) =>
+        (document?.Definitions ?? [])
+        .OfType<GraphQLOperationDefinition>()
+        .SelectMany(_ => _.Variables?.Items ?? [])
+        .Select(_ => _.Variable.Name.StringValue)
+        .ToHashSet(StringComparer.Ordinal);
 
     static JsonObject? ReadVariables(string text)
     {
