@@ -95,6 +95,9 @@ static class ContextScanner
         var inVariableDefinitions = false;
         var variableAwaitingType = false;
 
+        // The named type of the variable being defined, which an object default is a value of.
+        string? variableTypeName = null;
+
         // Set while the last token consumed was a directive name, so a "(" opens that directive's
         // arguments and not the enclosing field's.
         PendingDirective? pendingDirective = null;
@@ -152,6 +155,14 @@ static class ContextScanner
 
             if (ch == '@')
             {
+                // A directive straight after the ellipsis: an inline fragment with no type
+                // condition, which selects from the type it sits in.
+                if (afterEllipsis)
+                {
+                    afterEllipsis = false;
+                    pendingRoot = EnclosingTypeName(frames, pendingRoot);
+                }
+
                 afterAt = true;
                 i++;
                 continue;
@@ -193,7 +204,7 @@ static class ContextScanner
                 var name = text[start..i];
                 HandleName(schema, frames, name, variables,
                     ref pendingRoot, ref afterEllipsis, ref afterOn, ref afterAt, ref afterDollar,
-                    ref inVariableDefinitions, ref variableAwaitingType, out pendingDirective);
+                    ref inVariableDefinitions, ref variableAwaitingType, ref variableTypeName, out pendingDirective);
                 continue;
             }
 
@@ -201,6 +212,24 @@ static class ContextScanner
             {
                 case '{':
                     afterOn = false;
+                    // A brace straight after the ellipsis: the bare inline fragment, the same type.
+                    if (afterEllipsis)
+                    {
+                        afterEllipsis = false;
+                        pendingRoot = EnclosingTypeName(frames, pendingRoot);
+                    }
+
+                    if (inVariableDefinitions && frames.Count == 0)
+                    {
+                        // A variable's object default, which is a value of the variable's type and
+                        // nothing to do with the operation's selection or its root.
+                        frames.Push(new(FrameKind.InputObject)
+                        {
+                            Type = schema.Find(variableTypeName)
+                        });
+                        break;
+                    }
+
                     OpenBrace(schema, frames, ref pendingRoot);
                     break;
 
@@ -226,8 +255,10 @@ static class ContextScanner
                     else if (frames.TryPeek(out var enclosing) &&
                              enclosing is {Kind: FrameKind.Selection, LastField: not null})
                     {
+                        // The type the field belongs to, which an argument reference names.
                         var arguments = new Frame(FrameKind.Arguments)
                         {
+                            Type = enclosing.Type,
                             LastField = enclosing.LastField
                         };
                         frames.Push(arguments);
@@ -251,7 +282,9 @@ static class ContextScanner
                     break;
 
                 case ':':
-                    if (inVariableDefinitions)
+                    // At the definitions' own level; a colon inside an object default is an input
+                    // field's.
+                    if (inVariableDefinitions && frames.Count == 0)
                     {
                         variableAwaitingType = true;
                     }
@@ -263,10 +296,14 @@ static class ContextScanner
                     break;
 
                 case '[':
+                    // The list is the value of whatever the enclosing frame is at: inside an input
+                    // object that is the input field, not the argument the object is the value of.
                     frames.Push(new(FrameKind.List)
                     {
                         CurrentArgument = frames.TryPeek(out var enclosingList)
-                            ? enclosingList.CurrentArgument
+                            ? enclosingList.Kind == FrameKind.InputObject
+                                ? enclosingList.CurrentInputField
+                                : enclosingList.CurrentArgument
                             : null
                     });
                     break;
@@ -304,6 +341,7 @@ static class ContextScanner
         ref bool afterDollar,
         ref bool inVariableDefinitions,
         ref bool variableAwaitingType,
+        ref string? variableTypeName,
         out PendingDirective? pendingDirective)
     {
         if (afterAt)
@@ -336,6 +374,7 @@ static class ContextScanner
         if (variableAwaitingType)
         {
             variableAwaitingType = false;
+            variableTypeName = name;
             return;
         }
 
@@ -438,6 +477,15 @@ static class ContextScanner
         }
     }
 
+    /// <summary>
+    /// The type an inline fragment with no type condition selects from: the selection it sits in.
+    /// Outside a selection there is no such fragment, and whatever was pending stays.
+    /// </summary>
+    static string? EnclosingTypeName(Stack<Frame> frames, string? pendingRoot) =>
+        frames.TryPeek(out var frame) && frame.Kind == FrameKind.Selection
+            ? frame.Type?.Name ?? missingRoot
+            : pendingRoot;
+
     static void OpenBrace(SchemaIndex schema, Stack<Frame> frames, ref string? pendingRoot)
     {
         if (frames.Count == 0)
@@ -513,7 +561,8 @@ static class ContextScanner
             return Result(ScanMode.FragmentSpread);
         }
 
-        if (inVariableDefinitions)
+        // Inside an object default the frames say what is on offer, as anywhere else a value is.
+        if (inVariableDefinitions && frames.Count == 0)
         {
             return Result(variableAwaitingType ? ScanMode.VariableType : ScanMode.None);
         }
