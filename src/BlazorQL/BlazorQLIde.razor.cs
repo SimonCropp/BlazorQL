@@ -658,17 +658,6 @@ public partial class BlazorQLIde :
         return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// The editor is read-only, so every change to it came from <see cref="SetResponse"/> or
-    /// <see cref="LoadActiveTab"/>, both of which have already recorded the text. All this has to
-    /// do is let the response-action buttons notice.
-    /// </summary>
-    Task OnResponseContentChanged(ModelContentChangedEvent _)
-    {
-        responseChangeDebounce.Run(() => InvokeAsync(StateHasChanged));
-        return Task.CompletedTask;
-    }
-
     void ScheduleDiagnostics() =>
         diagnosticsDebounce.Run(() => InvokeAsync(RunDiagnostics));
 
@@ -1921,10 +1910,13 @@ public partial class BlazorQLIde :
     /// </param>
     ValueTask SetResponse(string text, IReadOnlyList<ResponseError>? errors = null)
     {
-        // Recorded here rather than read back out of monaco by OnResponseContentChanged: the round
-        // trip marshals the whole document across the interop boundary for a string this side
-        // already holds, and a subscription pays it per event.
+        // Recorded here, and the response editor has no content-change handler: it is read-only,
+        // so this and LoadActiveTab are the only writers. A handler had BlazorMonaco stringify
+        // every change, the whole response included, and send it across the interop boundary for
+        // a string this side already holds; a subscription paid that per event.
         tabs.Active.Response = text;
+        // The response actions appear with the first response, a moment later rather than per part.
+        responseChangeDebounce.Run(() => InvokeAsync(StateHasChanged));
         if (errors is not null)
         {
             responseErrorsFor = text;
