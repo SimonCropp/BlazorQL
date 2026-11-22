@@ -79,10 +79,39 @@ public sealed partial class HistoryStore
         }
     }
 
+    /// <summary>
+    /// Writes both lists. When the store refuses the ordinary items for space, the oldest of them go
+    /// until the rest fits, so what is stored is always what a reload would show rather than
+    /// whatever last managed to fit. Favorites are never evicted; they are the user's choice.
+    /// </summary>
     void Save()
     {
-        storage.Set("queries", JsonSerializer.Serialize(new([.. items]), HistoryJson.Default.PersistedQueries));
         storage.Set("favorites", JsonSerializer.Serialize(new([.. favorites]), HistoryJson.Default.PersistedFavorites));
+        // Serialized again after each eviction, since what is written has to be what is left.
+        while (!storage.Set("queries", SerializeItems()) &&
+               items.Count > 0)
+        {
+            items.RemoveAt(items.Count - 1);
+        }
+    }
+
+    string SerializeItems() =>
+        JsonSerializer.Serialize(new([.. items]), HistoryJson.Default.PersistedQueries);
+
+    /// <summary>
+    /// Evicts the oldest ordinary item, for a write that matters more (the tab state) and has been
+    /// refused for space. False when there is none left to evict.
+    /// </summary>
+    public bool MakeRoom()
+    {
+        if (items.Count == 0)
+        {
+            return false;
+        }
+
+        items.RemoveAt(items.Count - 1);
+        storage.Set("queries", SerializeItems());
+        return true;
     }
 
     /// <summary>
@@ -91,8 +120,12 @@ public sealed partial class HistoryStore
     /// </summary>
     public void Record(string query, string? variables, string? headers, string? operationName)
     {
+        // Variables and headers are held to the same limit as the query: a pasted file's worth of
+        // either is noise too, and nothing else stops a few of them filling the storage quota.
         if (string.IsNullOrWhiteSpace(query) ||
             query.Length > maxQueryLength ||
+            variables?.Length > maxQueryLength ||
+            headers?.Length > maxQueryLength ||
             !queryParses(query))
         {
             return;

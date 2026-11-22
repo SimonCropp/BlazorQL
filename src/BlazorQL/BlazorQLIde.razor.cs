@@ -876,7 +876,16 @@ public partial class BlazorQLIde :
             return;
         }
 
-        storage.Set("tabState", tabs.Serialize(persistHeaders));
+        // The tab state is what a reload restores, so it outranks history for the storage quota:
+        // refused for space, it has the oldest history items evicted until it fits. If even that
+        // is not enough, saying so beats silently no longer saving.
+        if (!storage.SetMakingRoom("tabState", tabs.Serialize(persistHeaders), () => history?.MakeRoom() ?? false))
+        {
+            statusLine = "Tabs not saved: browser storage is full.";
+            StateHasChanged();
+            return;
+        }
+
         var tab = tabs.Active;
         storage.Set("query", tab.Query);
         storage.Set("variables", tab.Variables);
