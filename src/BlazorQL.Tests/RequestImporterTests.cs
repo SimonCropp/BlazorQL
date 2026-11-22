@@ -125,6 +125,45 @@ public class RequestImporterTests
         await Assert.That(tokens[^1]).IsEqualTo("query=evil\r\n & calc !");
     }
 
+    /// <summary>
+    /// Eight hex digits do not fit an int: <c>\UFFFFFFFF</c> came out as -1, which slipped past the
+    /// range check and threw. Parsing runs on every keystroke in the import dialog, so typing one
+    /// out was enough. Past the last code point there is no character to decode to, so it is the
+    /// replacement character, the way any invalid sequence is shown.
+    /// </summary>
+    [Test]
+    [Arguments(@"\UFFFFFFFF")]
+    [Arguments(@"\U80000000")]
+    [Arguments(@"\U00110000")]
+    public async Task AnEscapePastTheLastCodePointIsTheReplacementCharacter(string escape)
+    {
+        var tokens = ShellTokenizer.TokenizeBash($"curl 'https://x/graphql' -H $'x-a: {escape}'");
+
+        await Assert.That(tokens[^1]).IsEqualTo("x-a: �");
+    }
+
+    /// <summary>The whole import holds to "nothing here throws" for one too.</summary>
+    [Test]
+    public async Task AnImportCarryingAnOutOfRangeEscapeDoesNotThrow()
+    {
+        var (ok, _, _) = RequestImporter.Import(
+            """curl 'https://x/graphql' -H $'x-a: \UFFFFFFFF' --data-raw '{"query":"{ id }"}'""");
+
+        await Assert.That(ok).IsTrue();
+    }
+
+    [Test]
+    [Arguments(@"\U0001F600", "😀")]
+    [Arguments(@"\U0010FFFF", "\U0010FFFF")]
+    [Arguments(@"é", "é")]
+    [Arguments(@"\x41", "A")]
+    public async Task AnEscapeInRangeIsItsCharacter(string escape, string expected)
+    {
+        var tokens = ShellTokenizer.TokenizeBash($"curl 'https://x/graphql' -H $'x-a: {escape}'");
+
+        await Assert.That(tokens[^1]).IsEqualTo($"x-a: {expected}");
+    }
+
     /// <summary>Chrome's syntax for a header it captured with no value at all.</summary>
     [Test]
     public async Task ABareHeaderNameWithATrailingSemicolonIsNotAFailure()
