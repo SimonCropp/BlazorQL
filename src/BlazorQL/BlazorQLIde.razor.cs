@@ -1101,6 +1101,12 @@ public partial class BlazorQLIde :
 #pragma warning disable BL0012
     async Task RefetchSchema()
     {
+        // Boot loads the schema itself, and the headers a load reads are not there yet.
+        if (!hydrated)
+        {
+            return;
+        }
+
         refetching = true;
         StateHasChanged();
         try
@@ -1119,6 +1125,13 @@ public partial class BlazorQLIde :
 
     Task CycleTheme()
     {
+        // The stored theme is about to replace whatever this would set, and there is nowhere to
+        // store it yet.
+        if (!hydrated)
+        {
+            return Task.CompletedTask;
+        }
+
         themes.Cycle();
         PersistTheme();
         return ApplyTheme();
@@ -1145,6 +1158,13 @@ public partial class BlazorQLIde :
 
     void TogglePlugin(PluginKind plugin)
     {
+        // A pane opened before the tab state loads renders over an empty tab store, which throws;
+        // and the stored choice of pane is about to replace it anyway.
+        if (!hydrated)
+        {
+            return;
+        }
+
         visiblePlugin = visiblePlugin == plugin
             ? null
             : plugin;
@@ -1279,6 +1299,13 @@ public partial class BlazorQLIde :
 
     async Task AddTab()
     {
+        // As with duplicating: before the editors exist there is no tab to save first, and the
+        // stored tabs are about to replace the strip.
+        if (operationEditor is null)
+        {
+            return;
+        }
+
         AbandonRun();
         pickerOpen = false;
         await SaveActiveTab();
@@ -1599,7 +1626,13 @@ public partial class BlazorQLIde :
             return;
         }
 
-        var query = await operationEditor!.GetValue();
+        // The toolbar renders at boot's first await, well before the editors exist.
+        if (operationEditor is null)
+        {
+            return;
+        }
+
+        var query = await operationEditor.GetValue();
         var operations = DocumentInfo.Parse(query).Operations;
         if (operations.Count > 1)
         {
@@ -2194,20 +2227,24 @@ public partial class BlazorQLIde :
         SchedulePersist();
     }
 
+    // The dialogs wait for boot too: settings would show values the stored ones are about to
+    // replace, and an import would open tabs the stored ones are about to replace. Short keys has
+    // nothing to wait for, and waits only so that every control behaves alike during boot.
+
     void OpenSettings() =>
-        settingsOpen = true;
+        settingsOpen = hydrated;
 
     void CloseSettings() =>
         settingsOpen = false;
 
     void OpenShortKeys() =>
-        shortKeysOpen = true;
+        shortKeysOpen = hydrated;
 
     void CloseShortKeys() =>
         shortKeysOpen = false;
 
     void OpenImport() =>
-        importOpen = true;
+        importOpen = operationEditor is not null;
 
     void CloseImport() =>
         importOpen = false;
