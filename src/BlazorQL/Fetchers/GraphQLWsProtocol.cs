@@ -21,13 +21,18 @@ static class GraphQLWsProtocol
 
         while (true)
         {
+            // The receive is not handed the caller's token: cancelling a pending receive aborts a
+            // ClientWebSocket, and the complete frame below then has no socket to go out on. The
+            // wait is cancelled instead, and the receive left to end when the socket is closed.
+            var receive = socket.ReceiveAsync(Cancel.None);
             string? frame;
             try
             {
-                frame = await socket.ReceiveAsync(cancel);
+                frame = await receive.WaitAsync(cancel);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
             {
+                Observe(receive);
                 // The subscription is live; tell the server it ended before walking away.
                 await SendCompleteBestEffort(socket);
                 throw;
@@ -35,7 +40,9 @@ static class GraphQLWsProtocol
 
             if (frame is null)
             {
-                yield break;
+                // Only complete or error ends a subscription. A close before either is the
+                // connection ending under it, which is not the same as the stream finishing.
+                throw new InvalidOperationException("The connection closed before the subscription completed.");
             }
 
             JsonElement? next = null;
@@ -66,6 +73,17 @@ static class GraphQLWsProtocol
             }
         }
     }
+
+    /// <summary>
+    /// Observes a receive nothing is waiting on any more. Closing the socket ends it, usually with an
+    /// exception, which would otherwise surface as an unobserved task exception.
+    /// </summary>
+    static void Observe(Task receive) =>
+        receive.ContinueWith(
+            static _ => _.Exception,
+            Cancel.None,
+            TaskContinuationOptions.OnlyOnFaulted | TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
 
     static async Task AwaitAck(IWsSocket socket, Cancel cancel)
     {

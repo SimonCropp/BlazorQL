@@ -1,3 +1,5 @@
+using System.Net.WebSockets;
+
 /// <summary>
 /// The graphql-transport-ws state machine over a scripted socket: init/ack/subscribe framing, next
 /// payloads until complete, pings answered with pongs, keep-alives ignored, error frames thrown,
@@ -63,6 +65,77 @@ public class GraphQLWsProtocolTests
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => Collect(socket, new("subscription { message }"), noHeaders));
 
         await Assert.That(exception!.Message).Contains("connection_ack");
+    }
+
+    /// <summary>
+    /// Only complete or error ends a subscription. A socket that closes after events have arrived
+    /// has lost its server, and reporting that as a clean finish hid it.
+    /// </summary>
+    [Test]
+    public async Task ClosingBeforeCompleteThrows()
+    {
+        var socket = new ScriptedSocket(
+            """{"type":"connection_ack"}""",
+            """{"id":"1","type":"next","payload":{"data":{"message":"Hi"}}}""");
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => Collect(socket, new("subscription { message }"), noHeaders));
+
+        await Assert.That(exception!.Message).Contains("closed before the subscription completed");
+    }
+
+    /// <summary>
+    /// Cancelling a pending receive aborts a ClientWebSocket, so a receive handed the caller's token
+    /// took the socket down before the complete frame could go out on it.
+    /// </summary>
+    [Test]
+    public async Task CancelDoesNotAbortTheSocketBeforeComplete()
+    {
+        using var cancelSource = new CancelSource();
+        var socket = new AbortOnCancelSocket(cancelSource);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => Collect(socket, new("subscription { message }"), noHeaders, cancelSource.Token));
+
+        await Assert.That(socket.Aborted).IsFalse();
+        await Assert.That(socket.Sent[^1]).IsEqualTo("""{"id":"1","type":"complete"}""");
+    }
+
+    /// <summary>
+    /// Behaves the way ClientWebSocket does: acks, then cancels the caller's token and waits, and if
+    /// the token a receive was handed is cancelled, aborts, after which nothing can be sent.
+    /// </summary>
+    sealed class AbortOnCancelSocket(CancelSource cancelSource) :
+        IWsSocket
+    {
+        bool acked;
+
+        public bool Aborted { get; private set; }
+
+        public List<string> Sent { get; } = [];
+
+        public Task SendAsync(string json, Cancel cancel)
+        {
+            if (Aborted)
+            {
+                throw new WebSocketException("The socket was aborted.");
+            }
+
+            Sent.Add(json);
+            return Task.CompletedTask;
+        }
+
+        public async Task<string?> ReceiveAsync(Cancel cancel)
+        {
+            if (!acked)
+            {
+                acked = true;
+                return """{"type":"connection_ack"}""";
+            }
+
+            await using var registration = cancel.Register(() => Aborted = true);
+            await cancelSource.CancelAsync();
+            await Task.Delay(Timeout.Infinite, cancel);
+            return null;
+        }
     }
 
     [Test]

@@ -55,6 +55,177 @@ public class HttpFetcherTests
         await Assert.That(results[2].GetProperty("hasNext").GetBoolean()).IsFalse();
     }
 
+    /// <summary>
+    /// GraphQL Yoga's framing: each part ends with "\r\n---" and nothing more, and the line break
+    /// after the delimiter comes only with the next part. A part is complete once its delimiter has
+    /// arrived, so it has to be handed over then rather than when the next part starts — or the
+    /// initial payload of a @defer waits for the deferred one, and @defer does nothing visible.
+    /// </summary>
+    [Test]
+    public async Task AYogaPartArrivesBeforeTheNextOneStarts()
+    {
+        var initial = """{"data":{"fast":"now"},"hasNext":true}""";
+        var deferred = """{"incremental":[{"data":{"slow":"later"},"path":[]}],"hasNext":false}""";
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var body = new GatedStream(
+            gate.Task,
+            "\r\n---" +
+            "\r\nContent-Type: application/json; charset=utf-8\r\n" +
+            $"Content-Length: {initial.Length}\r\n\r\n" +
+            initial + "\r\n---",
+            "\r\nContent-Type: application/json; charset=utf-8\r\n" +
+            $"Content-Length: {deferred.Length}\r\n\r\n" +
+            deferred + "\r\n---" +
+            "--\r\n");
+        var handler = new FakeHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(body)
+            };
+            response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/mixed; boundary=\"-\"");
+            return response;
+        });
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        await using var parts = fetcher.FetchAsync(new("{ fast ... @defer { slow } }"), new Dictionary<string, string>(), Cancel.None).GetAsyncEnumerator();
+
+        // The first part, while the server is still working on the second.
+        var first = await parts.MoveNextAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+        await Assert.That(first).IsTrue();
+        await Assert.That(parts.Current.GetProperty("data").GetProperty("fast").GetString()).IsEqualTo("now");
+
+        gate.SetResult();
+        await Assert.That(await parts.MoveNextAsync()).IsTrue();
+        await Assert.That(parts.Current.GetProperty("hasNext").GetBoolean()).IsFalse();
+        await Assert.That(await parts.MoveNextAsync()).IsFalse();
+    }
+
+    /// <summary>
+    /// The boundary quoted or not, a part without headers, transport padding after a delimiter, and
+    /// preamble before the first: the edges of RFC 2046 a server is entitled to use.
+    /// </summary>
+    [Test]
+    public async Task MultipartFramingVariantsAllRead()
+    {
+        var body =
+            "preamble to ignore\r\n" +
+            "--gc0p4Jq0M2Yt08jU534c0p  \r\n" +
+            "\r\n" +
+            """{"data":{"a":1},"hasNext":true}""" + "\r\n" +
+            "--gc0p4Jq0M2Yt08jU534c0p\r\n" +
+            "content-type: application/json\r\n" +
+            "\r\n" +
+            """{"hasNext":false}""" + "\r\n" +
+            "--gc0p4Jq0M2Yt08jU534c0p--\r\n" +
+            "epilogue to ignore";
+        var handler = new FakeHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(body)
+            };
+            response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/mixed; boundary=gc0p4Jq0M2Yt08jU534c0p");
+            return response;
+        });
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        var results = await Collect(fetcher, new("{ a }"));
+
+        await Assert.That(results).Count().IsEqualTo(2);
+        await Assert.That(results[0].GetProperty("data").GetProperty("a").GetInt32()).IsEqualTo(1);
+        await Assert.That(results[1].GetProperty("hasNext").GetBoolean()).IsFalse();
+    }
+
+    /// <summary>
+    /// A part larger than the read buffer, delivered a few bytes at a time, so the delimiter search
+    /// has to carry across reads and the buffer has to grow.
+    /// </summary>
+    [Test]
+    public async Task APartSplitAcrossManySmallReadsStillReads()
+    {
+        var large = new string('x', 40_000);
+        var text =
+            "---\r\n\r\n" +
+            $$"""{"data":{"text":"{{large}}"},"hasNext":true}""" + "\r\n" +
+            "---\r\n\r\n" +
+            """{"hasNext":false}""" + "\r\n" +
+            "-----\r\n";
+        var handler = new FakeHandler(_ =>
+        {
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StreamContent(new TrickleStream(Encoding.UTF8.GetBytes(text), 7))
+            };
+            response.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/mixed; boundary=\"-\"");
+            return response;
+        });
+        var fetcher = new HttpFetcher(new(handler), url);
+
+        var results = await Collect(fetcher, new("{ text }"));
+
+        await Assert.That(results).Count().IsEqualTo(2);
+        await Assert.That(results[0].GetProperty("data").GetProperty("text").GetString()).IsEqualTo(large);
+    }
+
+    /// <summary>Hands out its first chunk at once and the rest only once the gate opens, the way a server still resolving does.</summary>
+    sealed class GatedStream(Task gate, string first, string rest) :
+        Stream
+    {
+        byte[] pending = Encoding.UTF8.GetBytes(first);
+        bool released;
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, Cancel cancel = default)
+        {
+            if (pending.Length == 0)
+            {
+                if (released)
+                {
+                    return 0;
+                }
+
+                await gate.WaitAsync(cancel);
+                released = true;
+                pending = Encoding.UTF8.GetBytes(rest);
+            }
+
+            var count = Math.Min(buffer.Length, pending.Length);
+            pending.AsSpan(0, count).CopyTo(buffer.Span);
+            pending = pending[count..];
+            return count;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Cancel cancel) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancel).AsTask();
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            ReadAsync(buffer, offset, count, Cancel.None).GetAwaiter().GetResult();
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    /// <summary>Returns at most <paramref name="size"/> bytes per read.</summary>
+    sealed class TrickleStream(byte[] bytes, int size) :
+        MemoryStream(bytes)
+    {
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, Cancel cancel = default) =>
+            base.ReadAsync(buffer[..Math.Min(buffer.Length, size)], cancel);
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, Cancel cancel) =>
+            base.ReadAsync(buffer, offset, Math.Min(count, size), cancel);
+
+        public override int Read(byte[] buffer, int offset, int count) =>
+            base.Read(buffer, offset, Math.Min(count, size));
+    }
+
     [Test]
     public async Task SendsAcceptAndCustomHeadersAndCamelCaseBody()
     {
