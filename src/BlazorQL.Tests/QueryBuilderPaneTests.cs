@@ -339,6 +339,65 @@ public class QueryBuilderPaneTests
             """);
     }
 
+    // ---- Rendering only when something changed ----
+
+    /// <summary>
+    /// The IDE renders on every keystroke debounce, pane-drag frame and subscription event, and the
+    /// schema always counts as a changed parameter. With the same schema and text there is nothing
+    /// new to draw, so the tree, every row and click handler of it, is not rebuilt.
+    /// </summary>
+    [Test]
+    public async Task AParentRenderWithNothingChangedIsSkipped()
+    {
+        await using var context = new BunitContext();
+        var host = Render(context, "{ users { id name } }");
+        var renders = host.Pane.RenderCount;
+
+        host.Pane.Render();
+        host.Pane.Render();
+
+        await Assert.That(host.Pane.RenderCount).IsEqualTo(renders);
+    }
+
+    [Test]
+    public async Task NewTextRenders()
+    {
+        await using var context = new BunitContext();
+        var host = Render(context, "{ version }");
+        var renders = host.Pane.RenderCount;
+
+        host.Text = "{ viewer { id } }";
+        host.Refresh();
+
+        await Assert.That(host.Pane.RenderCount).IsEqualTo(renders + 1);
+        await Assert.That(Checked(host, Field("viewer"))).IsEqualTo("true");
+    }
+
+    [Test]
+    public async Task ANewSchemaRenders()
+    {
+        await using var context = new BunitContext();
+        var host = Render(context, "{ version }");
+        var renders = host.Pane.RenderCount;
+
+        host.Pane.Render(_ => _.Add(pane => pane.Schema, BuilderSchema.Create()));
+
+        await Assert.That(host.Pane.RenderCount).IsEqualTo(renders + 1);
+    }
+
+    /// <summary>The pane's own state still draws: starting an operation changes no text at all.</summary>
+    [Test]
+    public async Task ThePanesOwnEventsStillRender()
+    {
+        await using var context = new BunitContext();
+        var host = Render(context, "query Q { version }\n");
+        host.Pane.Render();
+
+        await host.Find("[data-testid='builder-add'][data-kind='mutation']").ClickAsync(new());
+
+        await Assert.That(host.Pane.FindAll("[data-testid='builder-pending']")).IsNotEmpty();
+    }
+
     [Test]
     public async Task Snapshot()
     {

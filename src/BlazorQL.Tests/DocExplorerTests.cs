@@ -137,6 +137,42 @@ public class DocExplorerTests
             TimeSpan.FromSeconds(5));
     }
 
+    /// <summary>
+    /// The IDE renders on every keystroke debounce, pane-drag frame and subscription event. With
+    /// the same schema the open page has nothing new to draw, so it, and every type link on it, is
+    /// not rebuilt.
+    /// </summary>
+    [Test]
+    public async Task AParentRenderWithTheSameSchemaIsSkipped()
+    {
+        await using var context = new BunitContext();
+        var cut = Render(context);
+        NavigateToType(cut, "Query");
+        var renders = cut.RenderCount;
+
+        cut.Render();
+        cut.Render();
+
+        await Assert.That(cut.RenderCount).IsEqualTo(renders);
+        await Assert.That(cut.Markup).Contains("hasArgs");
+    }
+
+    /// <summary>A new schema still resets to the root, and the explorer's own navigation still draws.</summary>
+    [Test]
+    public async Task ANewSchemaAndNavigationStillRender()
+    {
+        await using var context = new BunitContext();
+        var cut = Render(context);
+        NavigateToType(cut, "Query");
+        await Assert.That(cut.FindAll("[data-testid='doc-back']")).IsNotEmpty();
+
+        cut.Render(_ => _.Add(explorer => explorer.Schema, LoadSchema()));
+
+        await Assert.That(cut.FindAll("[data-testid='doc-back']")).IsEmpty();
+        NavigateToType(cut, "Person");
+        await Assert.That(cut.Markup).Contains("friends");
+    }
+
     [Test]
     public async Task SearchBucketsTheCurrentTypeFirst()
     {
