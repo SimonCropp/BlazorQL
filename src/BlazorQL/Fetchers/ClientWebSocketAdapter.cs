@@ -23,15 +23,24 @@ sealed class ClientWebSocketAdapter(ClientWebSocket socket) :
             {
                 result = await socket.ReceiveAsync(new(buffer), cancel);
             }
-            catch (WebSocketException)
+            catch (WebSocketException exception)
             {
-                // An abruptly dropped connection reads as a close.
-                return null;
+                // A dropped connection is a failure, not a close: reading it as one ended a
+                // subscription that had lost its server as though it had finished.
+                throw new InvalidOperationException($"The connection dropped: {exception.Message}", exception);
             }
 
             if (result.MessageType == WebSocketMessageType.Close)
             {
-                return null;
+                // Only a normal closure is the server being done. Anything else (1011 for a server
+                // error, the protocol's own 4400 and up) is the server saying why it stopped.
+                if (result.CloseStatus is null or WebSocketCloseStatus.NormalClosure)
+                {
+                    return null;
+                }
+
+                throw new InvalidOperationException(
+                    $"The server closed the connection: {(int) result.CloseStatus} {result.CloseStatusDescription}".TrimEnd());
             }
 
             builder.Write(buffer, 0, result.Count);

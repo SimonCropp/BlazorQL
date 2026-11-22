@@ -2,10 +2,10 @@ using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Security.Cryptography;
 /// <summary>
-/// The websocket fetcher against a real socket, over a server that goes silent — which is the case
-/// worth having: closing a websocket politely means waiting for the peer's close frame, and this
-/// close happens inside the enumerator's disposal, which the run awaits before it hands the stop
-/// button back.
+/// The websocket fetcher against a real socket, which is where the behaviour that matters lives:
+/// a server that goes silent (closing politely means waiting for the peer's close frame, inside the
+/// enumerator's disposal, which the run awaits before it hands the stop button back), a connection
+/// that drops or closes with an error, and a stop that has to reach the server.
 /// </summary>
 public class GraphQLWsFetcherTests
 {
@@ -17,21 +17,15 @@ public class GraphQLWsFetcherTests
     [Test]
     public async Task AFinishedSubscriptionUnwindsThoughTheServerNeverAnswersTheClose()
     {
-        using var server = new SilentWebSocketServer();
-
-        var fetcher = new GraphQLWsFetcher($"ws://127.0.0.1:{server.Port}/graphql");
-
-        var run = Task.Run(
-            async () =>
+        // And then nothing: no frames, no close, and the connection stays up.
+        using var server = new ScriptedWebSocketServer(
+            async (socket, _, life) =>
             {
-                List<string?> messages = [];
-                await foreach (var payload in fetcher.FetchAsync(new("subscription { message }"), noHeaders, Cancel.None))
-                {
-                    messages.Add(payload.GetProperty("data").GetProperty("message").GetString());
-                }
-
-                return messages;
+                await Send(socket, """{"id":"1","type":"complete"}""");
+                await Task.Delay(Timeout.Infinite, life);
             });
+
+        var run = Task.Run(() => Messages(server, Cancel.None));
 
         var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(20)));
 
@@ -39,24 +33,138 @@ public class GraphQLWsFetcherTests
         await Assert.That(await run).IsEquivalentTo(oneMessage, CollectionOrdering.Matching);
     }
 
+    /// <summary>
+    /// A connection lost mid-subscription is a failure. Reading it as a close ended the run as
+    /// though the stream had finished, with nothing to say the server had gone.
+    /// </summary>
+    [Test]
+    public async Task ADroppedConnectionFailsTheSubscription()
+    {
+        using var server = new ScriptedWebSocketServer(
+            (_, client, _) =>
+            {
+                // No close frame: the TCP connection just goes.
+                client.Client.LingerState = new(true, 0);
+                client.Close();
+                return Task.CompletedTask;
+            });
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => Messages(server, Cancel.None));
+
+        await Assert.That(exception!.Message).Contains("The connection dropped");
+    }
+
+    /// <summary>A close that is not a normal closure carries the server's reason, and is a failure.</summary>
+    [Test]
+    public async Task AnErrorCloseFailsTheSubscriptionWithItsCode()
+    {
+        using var server = new ScriptedWebSocketServer(
+            (socket, _, _) =>
+                socket.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "resolver crashed", Cancel.None));
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => Messages(server, Cancel.None));
+
+        await Assert.That(exception!.Message).Contains("1011").And.Contains("resolver crashed");
+    }
+
+    /// <summary>
+    /// Stopping a live subscription tells the server it ended. Cancelling the pending receive
+    /// aborted the socket first, so the complete frame never reached the server.
+    /// </summary>
+    [Test]
+    public async Task StoppingSendsCompleteToTheServer()
+    {
+        var received = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var server = new ScriptedWebSocketServer(
+            async (socket, _, _) =>
+            {
+                try
+                {
+                    received.TrySetResult(await Receive(socket));
+                }
+                catch (Exception exception)
+                {
+                    received.TrySetResult($"no frame: {exception.GetType().Name}");
+                }
+            });
+        using var stop = new CancelSource();
+
+        await Assert.ThrowsAsync<OperationCanceledException>(
+            async () =>
+            {
+                await foreach (var _ in Fetcher(server).FetchAsync(new("subscription { message }"), noHeaders, stop.Token))
+                {
+                    await stop.CancelAsync();
+                }
+            });
+
+        var frame = await received.Task.WaitAsync(TimeSpan.FromSeconds(20));
+        await Assert.That(frame).IsEqualTo("""{"id":"1","type":"complete"}""");
+    }
+
+    static GraphQLWsFetcher Fetcher(ScriptedWebSocketServer server) =>
+        new($"ws://127.0.0.1:{server.Port}/graphql");
+
+    static async Task<List<string?>> Messages(ScriptedWebSocketServer server, Cancel cancel)
+    {
+        List<string?> messages = [];
+        await foreach (var payload in Fetcher(server).FetchAsync(new("subscription { message }"), noHeaders, cancel))
+        {
+            messages.Add(payload.GetProperty("data").GetProperty("message").GetString());
+        }
+
+        return messages;
+    }
+
+    static ValueTask Send(WebSocket socket, string json) =>
+        socket.SendAsync(
+            Encoding.UTF8.GetBytes(json).AsMemory(),
+            WebSocketMessageType.Text,
+            endOfMessage: true,
+            Cancel.None);
+
+    /// <summary>The next text message. A close frame instead is a failure, since every caller waits on a message.</summary>
+    static async Task<string> Receive(WebSocket socket)
+    {
+        var buffer = new byte[4096];
+        using var message = new MemoryStream();
+        while (true)
+        {
+            var result = await socket.ReceiveAsync(new(buffer), Cancel.None);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                throw new InvalidOperationException("The client closed instead.");
+            }
+
+            message.Write(buffer, 0, result.Count);
+            if (result.EndOfMessage)
+            {
+                return Encoding.UTF8.GetString(message.ToArray());
+            }
+        }
+    }
+
     static readonly string?[] oneMessage = ["Hi"];
 
     static readonly Dictionary<string, string> noHeaders = [];
 
     /// <summary>
-    /// A graphql-transport-ws server that acks, answers one subscribe with one event, and then says
-    /// nothing ever again — not even a close frame, and without dropping the connection. Written
-    /// over a raw TcpListener because the handshake is a dozen lines and the alternatives are
-    /// platform-specific.
+    /// A graphql-transport-ws server that acks, answers one subscribe with one event, and then runs
+    /// the test's script against the socket and the raw connection under it. Written over a raw
+    /// TcpListener because the handshake is a dozen lines and the alternatives are
+    /// platform-specific — and because dropping the connection without a close frame needs the
+    /// connection itself.
     /// </summary>
-    sealed class SilentWebSocketServer :
+    sealed class ScriptedWebSocketServer :
         IDisposable
     {
         readonly TcpListener listener;
         readonly CancelSource life = new();
+        readonly Func<WebSocket, TcpClient, Cancel, Task> script;
 
-        public SilentWebSocketServer()
+        public ScriptedWebSocketServer(Func<WebSocket, TcpClient, Cancel, Task> script)
         {
+            this.script = script;
             listener = new(IPAddress.Loopback, 0);
             listener.Start();
             Port = ((IPEndPoint) listener.LocalEndpoint).Port;
@@ -86,9 +194,10 @@ public class GraphQLWsFetcherTests
                 await Send(socket, """{"type":"connection_ack"}""");
                 await Receive(socket);
                 await Send(socket, """{"id":"1","type":"next","payload":{"data":{"message":"Hi"}}}""");
-                await Send(socket, """{"id":"1","type":"complete"}""");
 
-                // And now nothing: no frames, no close, and the connection stays up.
+                await script(socket, client, life.Token);
+                // Held open until the test is done with it, so the end of the script is not
+                // itself a drop.
                 await Task.Delay(Timeout.Infinite, life.Token);
             }
             catch (OperationCanceledException)
@@ -96,7 +205,7 @@ public class GraphQLWsFetcherTests
             }
             catch (Exception exception)
             {
-                Console.Out.WriteLine($"Silent server stopped: {exception.Message}");
+                Console.Out.WriteLine($"Test server stopped: {exception.Message}");
             }
         }
 
@@ -126,26 +235,6 @@ public class GraphQLWsFetcherTests
                 $"Sec-WebSocket-Accept: {accept}\r\n\r\n");
             await stream.WriteAsync(response);
             await stream.FlushAsync();
-        }
-
-        static ValueTask Send(WebSocket socket, string json) =>
-            socket.SendAsync(
-                Encoding.UTF8.GetBytes(json).AsMemory(),
-                WebSocketMessageType.Text,
-                endOfMessage: true,
-                Cancel.None);
-
-        static async Task Receive(WebSocket socket)
-        {
-            var buffer = new byte[4096];
-            while (true)
-            {
-                var result = await socket.ReceiveAsync(new(buffer), Cancel.None);
-                if (result.EndOfMessage)
-                {
-                    return;
-                }
-            }
         }
 
         public void Dispose()

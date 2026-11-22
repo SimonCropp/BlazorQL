@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 namespace BlazorQL;
 
 /// <summary>
@@ -62,7 +64,7 @@ public sealed partial class HttpFetcher(HttpClient http, string url) :
         var contentType = response.Content.Headers.ContentType;
         if (string.Equals(contentType?.MediaType, "multipart/mixed", StringComparison.OrdinalIgnoreCase))
         {
-            if (!response.Content.TryGetMultipartBoundary(out var boundary))
+            if (Boundary(contentType!) is not { } boundary)
             {
                 throw new InvalidOperationException("The multipart/mixed response declares no boundary.");
             }
@@ -70,17 +72,17 @@ public sealed partial class HttpFetcher(HttpClient http, string url) :
             var stream = await response.Content.ReadAsStreamAsync(cancel);
             await using (stream)
             {
-                using var reader = new MultipartReader(boundary, stream);
-                while (await reader.ReadNextSectionAsync(cancel) is { } section)
+                await foreach (var part in MultipartParts.Read(stream, boundary, cancel))
                 {
-                    using var buffered = new MemoryStream();
-                    await section.Body.CopyToAsync(buffered, cancel);
-                    if (IsBlank(buffered))
+                    using (part)
                     {
-                        continue;
-                    }
+                        if (IsBlank(part))
+                        {
+                            continue;
+                        }
 
-                    yield return ParseDocument(buffered, response);
+                        yield return ParseDocument(part, response);
+                    }
                 }
             }
 
@@ -116,6 +118,28 @@ public sealed partial class HttpFetcher(HttpClient http, string url) :
     // Commas and whitespace are both insignificant between tokens, so "@ defer" is the same directive.
     [GeneratedRegex(@"@[\s,]*(defer|stream)\b")]
     private static partial Regex IncrementalDirective();
+
+    /// <summary>
+    /// The content type's boundary parameter, unquoted — <c>boundary="-"</c> is the boundary
+    /// <c>-</c>. Null when there is none.
+    /// </summary>
+    static string? Boundary(MediaTypeHeaderValue contentType)
+    {
+        var value = contentType.Parameters
+            .FirstOrDefault(_ => string.Equals(_.Name, "boundary", StringComparison.OrdinalIgnoreCase))
+            ?.Value;
+        if (value is null)
+        {
+            return null;
+        }
+
+        if (value is ['"', .., '"'])
+        {
+            value = value[1..^1];
+        }
+
+        return value.Length == 0 ? null : value;
+    }
 
     /// <summary>Whether a buffered part holds nothing but whitespace — a boundary's trailing newline.</summary>
     static bool IsBlank(MemoryStream buffered)
