@@ -150,16 +150,44 @@ public class RequestImporterTests
     }
 
     /// <summary>
-    /// Clients build these urls with encodeURIComponent, which leaves a plus alone — so decoding one
-    /// as form encoding would turn data into whitespace.
+    /// encodeURIComponent writes a plus sign as <c>%2B</c>, and that is still a plus once decoded.
     /// </summary>
     [Test]
-    public async Task APlusSignInAUrlIsNotASpace()
+    public async Task AnEncodedPlusSignInAUrlIsAPlus()
     {
         var (_, requests, _) = RequestImporter.Import(
             "https://host/graphql?query=query%20A%7Bid%7D&variables=%7B%22at%22%3A%222026-07-30T04%3A26%3A09%2B10%3A00%22%7D");
 
         await Assert.That(requests[0].Variables).Contains("+10:00");
+    }
+
+    /// <summary>
+    /// A raw plus only comes from form-style encoding (URLSearchParams, an HTML form, jQuery, Java's
+    /// URLEncoder), where it is a space. Read as a plus, every space in the query was a syntax error.
+    /// </summary>
+    [Test]
+    public async Task ARawPlusSignInAUrlIsASpace()
+    {
+        var (ok, requests, error) = RequestImporter.Import(
+            "https://x/graphql?query=query+GetUser+%7B+user+%7B+id+%7D+%7D&operationName=GetUser");
+
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Query).Contains("query GetUser");
+    }
+
+    /// <summary>A form-encoded body is read by the same rules, so a curl posting one imports too.</summary>
+    [Test]
+    public async Task AFormEncodedBodyWithPlusSignsImports()
+    {
+        var (ok, requests, error) = RequestImporter.Import(
+            "curl 'https://x/graphql' -H 'content-type: application/x-www-form-urlencoded' --data-raw 'query=query+GetUser+%7B+user+%7B+id+%7D+%7D&variables=%7B%22at%22%3A%2210%2B2%22%7D'");
+
+        await Assert.That(error).IsNull();
+        await Assert.That(ok).IsTrue();
+        await Assert.That(requests[0].Query).Contains("query GetUser");
+        // An encoded plus in the same body is still a plus.
+        await Assert.That(requests[0].Variables).Contains("10+2");
     }
 
     [Test]

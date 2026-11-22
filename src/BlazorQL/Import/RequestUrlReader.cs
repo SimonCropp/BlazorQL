@@ -1,7 +1,9 @@
 /// <summary>
-/// Reads the GraphQL payload a GET puts in its query string. Percent-decoding only: clients build
-/// these with encodeURIComponent, which leaves a plus sign alone, so treating one as a space (the
-/// way form decoding would) corrupts every value that contains one.
+/// Reads the GraphQL payload a GET puts in its query string, or a form-encoded body. A plus sign is
+/// a space and the rest is percent-decoded, the way form decoding reads it. That is safe for every
+/// encoder in use: encodeURIComponent writes a plus as <c>%2B</c>, so a raw one only ever comes from
+/// form-style encoding (URLSearchParams, an HTML form, jQuery, Java's URLEncoder), where it means a
+/// space.
 /// </summary>
 static class RequestUrlReader
 {
@@ -28,8 +30,8 @@ static class RequestUrlReader
                 continue;
             }
 
-            var name = Uri.UnescapeDataString(pair[..equals]);
-            var value = Uri.UnescapeDataString(pair[(equals + 1)..]);
+            var name = Decode(pair[..equals]);
+            var value = Decode(pair[(equals + 1)..]);
             switch (name)
             {
                 case "query":
@@ -56,4 +58,8 @@ static class RequestUrlReader
 
         return (new(query, RequestBodyReader.Meaningful(variables), operationName), null);
     }
+
+    // The plus first: an encoded one, %2B, decodes to a plus after it.
+    static string Decode(string component) =>
+        Uri.UnescapeDataString(component.Replace('+', ' '));
 }
