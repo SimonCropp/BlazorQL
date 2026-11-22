@@ -97,6 +97,84 @@ public class IdeEndpointTests
     }
 
     /// <summary>
+    /// A root-relative endpoint names a route of the app, the way MapGraphQL("/graphql") does, so it
+    /// is under the app's path base — an IIS virtual directory or UsePathBase — and not at the
+    /// origin's root.
+    /// </summary>
+    [Test]
+    public async Task ARootRelativeEndpointIsUnderThePathBase()
+    {
+        var options = new BlazorQLIdeOptions
+        {
+            SubscriptionEndpoint = "/graphql/ws"
+        };
+        var endpoint = new IdeEndpoint(options, "/blazorql", "Orders");
+
+        var page = await Render(endpoint, "/app");
+
+        await Assert.That(page).Contains("""
+            "endpoint":"/app/graphql","subscriptionEndpoint":"/app/graphql/ws"
+            """);
+    }
+
+    [Test]
+    public async Task WithoutAPathBaseTheEndpointIsAsWritten() =>
+        await Assert.That(await Render(new(new(), "/blazorql", "Orders"), "")).Contains("""
+            "endpoint":"/graphql"
+            """);
+
+    /// <summary>An absolute url, protocol-relative included, names a host of its own.</summary>
+    [Test]
+    [Arguments("https://api.example.com/graphql")]
+    [Arguments("wss://api.example.com/graphql")]
+    [Arguments("//api.example.com/graphql")]
+    public async Task AnAbsoluteEndpointIsAsWritten(string url)
+    {
+        var options = new BlazorQLIdeOptions
+        {
+            Endpoint = url
+        };
+
+        await Assert.That(await Render(new(options, "/blazorql", "Orders"), "/app")).Contains($"""
+            "endpoint":"{url}"
+            """);
+    }
+
+    /// <summary>
+    /// Behind a proxy that strips a prefix without saying so, the request's path base is empty; the
+    /// override is what knows the public path, and the app's is the override less the mount.
+    /// </summary>
+    [Test]
+    public async Task ARootRelativeEndpointIsUnderTheBasePathOverride()
+    {
+        var options = new BlazorQLIdeOptions
+        {
+            BasePathOverride = "/api/blazorql/"
+        };
+
+        await Assert.That(await Render(new(options, "/blazorql", "Orders"), "")).Contains("""
+            "endpoint":"/api/graphql"
+            """);
+    }
+
+    /// <summary>
+    /// An override that does not end in the mount says nothing about where the app is, so the
+    /// endpoint stays under the request's path base.
+    /// </summary>
+    [Test]
+    public async Task AnOverrideNotEndingInTheMountLeavesThePathBase()
+    {
+        var options = new BlazorQLIdeOptions
+        {
+            BasePathOverride = "/ide/"
+        };
+
+        await Assert.That(await Render(new(options, "/blazorql", "Orders"), "/app")).Contains("""
+            "endpoint":"/app/graphql"
+            """);
+    }
+
+    /// <summary>
     /// A mount serving every extensionless path under it still has the one namespace: deriving from
     /// the request path would move a session's storage whenever the user typed a different url.
     /// </summary>

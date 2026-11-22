@@ -10,6 +10,11 @@ public sealed class BlazorQLIdeOptions
     /// Where the IDE posts queries and mutations. Root-relative (the default) or absolute. A ws://
     /// or wss:// url makes the whole session run over graphql-transport-ws.
     /// </summary>
+    /// <remarks>
+    /// Root-relative is relative to the app, the way routes are: under a path base or an IIS virtual
+    /// directory <c>/app</c>, <c>/graphql</c> is <c>/app/graphql</c>. Give an absolute url to reach
+    /// anywhere else on the origin.
+    /// </remarks>
     public string Endpoint { get; set; } = "/graphql";
 
     /// <summary>

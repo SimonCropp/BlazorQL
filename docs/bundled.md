@@ -58,8 +58,11 @@ Everything is configured through `MapBlazorQL`:
 | `ConfigureContentSecurityPolicy` | null | Adds to or replaces those directives. |
 | `Nonce` | null | `Func<HttpContext, string?>` supplying a CSP nonce to stamp on every script element, for an app already running a nonce-based policy. The IDE does not need one. See *Content Security Policy*. |
 
-The endpoint is resolved in the browser against the page it was served from, so a root-relative
-`/graphql` follows the app wherever it is hosted.
+A root-relative endpoint is relative to the app, the way its routes are, so `/graphql` follows the
+app wherever it is hosted: under `UsePathBase("/app")` or an IIS virtual directory it is
+`/app/graphql`, and behind a `BasePathOverride` that ends in the mount it is under the override. The
+origin is resolved in the browser, against the page it was served from. To reach a path outside the
+app, give an absolute url.
 
 
 ## Authorization
