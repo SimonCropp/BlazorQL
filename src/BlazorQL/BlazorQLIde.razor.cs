@@ -1007,8 +1007,17 @@ public partial class BlazorQLIde :
             // An endpoint behind an Authorization header has no schema without it, so
             // introspection goes out with whatever the headers editor holds, as GraphiQL does.
             var (headers, _) = await CurrentHeaders();
-            var payload = await Introspect(draftAdditions: true, headers, cancelSource.Token);
-            var schema = payload is null ? null : SchemaIndex.Parse(payload.Value);
+            var portableKey = PortableIntrospectionKey();
+            JsonElement? payload = null;
+            SchemaIndex? schema = null;
+
+            // An endpoint already known to reject the draft additions goes straight to the
+            // portable query, so every load does not leave a failed request in the server's logs.
+            if (!PortableRemembered(portableKey))
+            {
+                payload = await Introspect(draftAdditions: true, headers, cancelSource.Token);
+                schema = payload is null ? null : SchemaIndex.Parse(payload.Value);
+            }
 
             if (schema is null)
             {
@@ -1020,6 +1029,12 @@ public partial class BlazorQLIde :
                 {
                     payload = portable;
                     schema = SchemaIndex.Parse(portable.Value);
+                    if (schema is not null &&
+                        portableKey is not null &&
+                        !PortableRemembered(portableKey))
+                    {
+                        storage?.Set(portableKey, DateTimeOffset.UtcNow.ToString("O", CultureInfo.InvariantCulture));
+                    }
                 }
             }
 
@@ -1057,6 +1072,45 @@ public partial class BlazorQLIde :
                 schemaLoad = null;
             }
         }
+    }
+
+    /// <summary>
+    /// How long an endpoint that rejected the draft additions is asked only the portable query.
+    /// Finite, so a server that later enables them is noticed without clearing storage.
+    /// </summary>
+    internal static readonly TimeSpan PortableIntrospectionLifetime = TimeSpan.FromDays(7);
+
+    /// <summary>
+    /// The storage key remembering that this endpoint rejected the draft additions, or null when
+    /// the transport is not HTTP and so has no url to remember it by.
+    /// </summary>
+    string? PortableIntrospectionKey()
+    {
+        var request = new GraphQLRequest(IntrospectionQuery(draftAdditions: true));
+        if (Transport(Fetcher, request) is HttpFetcher http)
+        {
+            return $"portableIntrospection:{http.Url}";
+        }
+
+        return null;
+    }
+
+    bool PortableRemembered(string? key)
+    {
+        if (key is null ||
+            storage?.Get(key) is not { } stored ||
+            !DateTimeOffset.TryParse(stored, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var since))
+        {
+            return false;
+        }
+
+        if (DateTimeOffset.UtcNow - since < PortableIntrospectionLifetime)
+        {
+            return true;
+        }
+
+        storage.Remove(key);
+        return false;
     }
 
     /// <summary>The first document the fetcher yields for an introspection request, or null.</summary>
