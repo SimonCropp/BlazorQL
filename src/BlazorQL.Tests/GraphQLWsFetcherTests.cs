@@ -98,7 +98,9 @@ public class GraphQLWsFetcherTests
                 }
             });
 
-        var frame = await received.Task.WaitAsync(TimeSpan.FromSeconds(20), stop.Token);
+        // Not stop's token: it is cancelled by now, so it would fail the wait whenever the frame
+        // had yet to land rather than waiting for it.
+        var frame = await received.Task.WaitAsync(TimeSpan.FromSeconds(20));
         await Assert.That(frame).IsEqualTo("""{"id":"1","type":"complete"}""");
     }
 
