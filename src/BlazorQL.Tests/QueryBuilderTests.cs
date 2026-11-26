@@ -999,9 +999,9 @@ public class QueryBuilderTests
     [Test]
     public async Task EmptyingADirectedInlineFragmentDropsTheVariableItsDirectiveRead() =>
         await Assert.That(Toggle(
-                """query Q($show: Boolean!) { viewer { name ... on User @include(if: $show) { id } } }""",
+                "query Q($show: Boolean!) { viewer { name ... on User @include(if: $show) { id } } }",
                 "viewer", "...User", "id"))
-            .IsEqualTo("""query Q { viewer { name } }""");
+            .IsEqualTo("query Q { viewer { name } }");
 
     /// <summary>
     /// An edit inside a fragment definition reaches every operation that spreads it. The variable a
@@ -1063,8 +1063,8 @@ public class QueryBuilderTests
     /// <summary>A variable declared ahead of the field that will read it is work in progress, and stays.</summary>
     [Test]
     public async Task AVariableNotYetReadIsLeftDeclared() =>
-        await Assert.That(Toggle("""query Q($later: Int) { viewer { name id } }""", "viewer", "id"))
-            .IsEqualTo("""query Q($later: Int) { viewer { name } }""");
+        await Assert.That(Toggle("query Q($later: Int) { viewer { name id } }", "viewer", "id"))
+            .IsEqualTo("query Q($later: Int) { viewer { name } }");
 
     /// <summary>One still read elsewhere stays too, here by a fragment the operation spreads.</summary>
     [Test]

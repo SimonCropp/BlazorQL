@@ -98,12 +98,12 @@ public class StorageQuotaTests
     {
         var backend = new QuotaBackend(10_000);
         var storage = new StorageService(backend);
-        storage.Set("filler", new string('f', 9_000));
+        storage.Set("filler", new('f', 9_000));
 
         var attempts = 0;
         var stored = storage.SetMakingRoom(
             "tabState",
-            new string('t', 5_000),
+            new('t', 5_000),
             () =>
             {
                 attempts++;
@@ -123,6 +123,6 @@ public class StorageQuotaTests
     {
         var storage = new StorageService(new QuotaBackend(100));
 
-        await Assert.That(storage.SetMakingRoom("tabState", new string('t', 500), () => false)).IsFalse();
+        await Assert.That(storage.SetMakingRoom("tabState", new('t', 500), () => false)).IsFalse();
     }
 }

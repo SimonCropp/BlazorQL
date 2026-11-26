@@ -1,5 +1,3 @@
-using Microsoft.JSInterop;
-
 /// <summary>
 /// The IDE going away with introspection still in flight, as it does when the user navigates off
 /// the page during a slow schema load. The load belonged to the component, so it has to stop, and
@@ -35,7 +33,7 @@ public class IdeDisposeTests
             started.TrySetResult();
             await release.Task;
             using var document = JsonDocument.Parse(
-                File.ReadAllText(Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json)));
+                await File.ReadAllTextAsync(Path.Combine(AppContext.BaseDirectory, ProjectFiles.DocExplorerTests_schema_json), cancel));
             yield return document.RootElement.Clone();
         }
     }

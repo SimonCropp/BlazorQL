@@ -229,7 +229,7 @@ public class RequestImporterTests
     [Test]
     [Arguments(@"\U0001F600", "😀")]
     [Arguments(@"\U0010FFFF", "\U0010FFFF")]
-    [Arguments(@"é", "é")]
+    [Arguments("é", "é")]
     [Arguments(@"\x41", "A")]
     public async Task AnEscapeInRangeIsItsCharacter(string escape, string expected)
     {

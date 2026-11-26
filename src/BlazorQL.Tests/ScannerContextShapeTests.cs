@@ -297,7 +297,7 @@ public class ScannerContextShapeTests
         var (text, caret) = Unmark(marked);
 
         await Assert.That(SchemaReferenceResolver.Resolve(schema, text, caret))
-            .IsEqualTo(new SchemaReference("Argument", "Query", "issues", argument));
+            .IsEqualTo(new("Argument", "Query", "issues", argument));
     }
 
     [Test]
@@ -306,7 +306,7 @@ public class ScannerContextShapeTests
         var (text, caret) = Unmark("""mutation { createThing(inp|ut: {name: "x"}) { title } }""");
 
         await Assert.That(SchemaReferenceResolver.Resolve(schema, text, caret))
-            .IsEqualTo(new SchemaReference("Argument", "Mutation", "createThing", "input"));
+            .IsEqualTo(new("Argument", "Mutation", "createThing", "input"));
     }
 
     /// <summary>The field case, which already worked.</summary>
@@ -316,7 +316,7 @@ public class ScannerContextShapeTests
         var (text, caret) = Unmark("{ iss|ues(states: [OPEN]) { title } }");
 
         await Assert.That(SchemaReferenceResolver.Resolve(schema, text, caret))
-            .IsEqualTo(new SchemaReference("Field", "Query", "issues"));
+            .IsEqualTo(new("Field", "Query", "issues"));
     }
 
     /// <summary>A directive's argument is not the field's, so it does not navigate as one.</summary>

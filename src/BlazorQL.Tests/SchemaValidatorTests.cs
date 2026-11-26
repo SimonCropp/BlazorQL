@@ -542,14 +542,14 @@ public class SchemaValidatorTests
     /// followed by "never used" for everything under it.
     /// </summary>
     [Test]
-    [Arguments("unknown field", """query Q($v: String) { nope(string: $v) { ...F } } fragment F on Person { name }""", "Cannot query field \"nope\"")]
-    [Arguments("unknown argument", """query Q($v: String) { hasArgs(nope: $v) }""", "Unknown argument \"nope\"")]
-    [Arguments("unknown directive", """query Q($v: String) { person { name @nope(arg: $v) ...F } } fragment F on Person { name }""", "Unknown directive \"@nope\"")]
-    [Arguments("unknown directive argument", """query Q($v: String) { person { name @repeat(nope: $v) } }""", "Unknown argument \"nope\" on directive")]
-    [Arguments("scalar with a selection", """query Q($v: String) { person { name { x(arg: $v) ...F } } } fragment F on Person { name }""", "must not have a selection")]
-    [Arguments("unknown inline type condition", """query Q($v: String) { person { ... on Nope { x(arg: $v) ...F } } } fragment F on Person { name }""", "Unknown type \"Nope\"")]
-    [Arguments("unknown fragment type condition", """query Q($v: String) { ...F } fragment F on Nope { x(arg: $v) }""", "Unknown type \"Nope\"")]
-    [Arguments("unknown input field", """query Q($v: String) { hasArgs(input: {nope: $v}) }""", "Field \"nope\" is not defined by type \"PetInput\"")]
+    [Arguments("unknown field", "query Q($v: String) { nope(string: $v) { ...F } } fragment F on Person { name }", "Cannot query field \"nope\"")]
+    [Arguments("unknown argument", "query Q($v: String) { hasArgs(nope: $v) }", "Unknown argument \"nope\"")]
+    [Arguments("unknown directive", "query Q($v: String) { person { name @nope(arg: $v) ...F } } fragment F on Person { name }", "Unknown directive \"@nope\"")]
+    [Arguments("unknown directive argument", "query Q($v: String) { person { name @repeat(nope: $v) } }", "Unknown argument \"nope\" on directive")]
+    [Arguments("scalar with a selection", "query Q($v: String) { person { name { x(arg: $v) ...F } } } fragment F on Person { name }", "must not have a selection")]
+    [Arguments("unknown inline type condition", "query Q($v: String) { person { ... on Nope { x(arg: $v) ...F } } } fragment F on Person { name }", "Unknown type \"Nope\"")]
+    [Arguments("unknown fragment type condition", "query Q($v: String) { ...F } fragment F on Nope { x(arg: $v) }", "Unknown type \"Nope\"")]
+    [Arguments("unknown input field", "query Q($v: String) { hasArgs(input: {nope: $v}) }", "Field \"nope\" is not defined by type \"PetInput\"")]
     public async Task ARejectedNodesReferencesStillCount(string shape, string query, string error)
     {
         _ = shape;

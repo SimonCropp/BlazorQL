@@ -46,8 +46,7 @@ public class PortableIntrospectionTests :
         var introspections = new ConcurrentQueue<bool>();
         page.Request += (_, request) =>
         {
-            if (request.Method == "POST" &&
-                request.PostData is { } data &&
+            if (request is { Method: "POST", PostData: { } data } &&
                 data.Contains("IntrospectionQuery", StringComparison.Ordinal))
             {
                 introspections.Enqueue(data.Contains("isRepeatable", StringComparison.Ordinal));

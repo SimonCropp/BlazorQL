@@ -1,5 +1,3 @@
-using Microsoft.JSInterop;
-
 /// <summary>
 /// The IDE between its first render and the end of boot. The chrome (sidebar, toolbar, tab strip)
 /// renders at the first await, while the JS module is still being imported, so it can be clicked

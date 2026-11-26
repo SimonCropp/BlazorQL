@@ -320,7 +320,7 @@ public class HttpFetcherTests
     [Test]
     public async Task AByteOrderMarkIsSkipped()
     {
-        var bytes = (byte[]) [0xEF, 0xBB, 0xBF, .. Encoding.UTF8.GetBytes("""{"data":{"id":"abc123"}}""")];
+        var bytes = (byte[]) [0xEF, 0xBB, 0xBF, .. """{"data":{"id":"abc123"}}"""u8.ToArray()];
         var handler = new FakeHandler(_ => new(HttpStatusCode.OK)
         {
             Content = new ByteArrayContent(bytes)

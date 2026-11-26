@@ -19,10 +19,8 @@ public sealed class SidecarEntry
     /// </summary>
     sealed class CapturedDocument(JsonElement element)
     {
-        string? pretty;
-
         // A benign race: two readers at once may both format it, and either result is the same.
-        public string Pretty => pretty ??= Format(element);
+        public string Pretty => field ??= Format(element);
     }
 
     static readonly JsonSerializerOptions prettyOptions = new()

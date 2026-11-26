@@ -98,7 +98,7 @@ public class GraphQLWsFetcherTests
                 }
             });
 
-        var frame = await received.Task.WaitAsync(TimeSpan.FromSeconds(20));
+        var frame = await received.Task.WaitAsync(TimeSpan.FromSeconds(20), stop.Token);
         await Assert.That(frame).IsEqualTo("""{"id":"1","type":"complete"}""");
     }
 

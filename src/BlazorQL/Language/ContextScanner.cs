@@ -644,7 +644,7 @@ static class ContextScanner
 
             var wordStart = i;
             i = NameEnd(text, i);
-            if (!text.AsSpan(wordStart, i - wordStart).SequenceEqual("fragment"))
+            if (text.AsSpan(wordStart, i - wordStart) is not "fragment")
             {
                 continue;
             }
