@@ -6,7 +6,7 @@
          failure that should surface. Disconnects are caught where they are expected
          (JsModule.DisposeAsync). -->
     <NoWarn>CS1591;NU1608;NU1109;PolyfillTargetsForNuget;BL0016</NoWarn>
-    <Version>2.0.0</Version>
+    <Version>2.0.1</Version>
     <LangVersion>14.0</LangVersion>
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <Description>BlazorQL is an in-browser GraphQL IDE for Blazor: a GraphiQL alternative with schema-aware editing, docs, history, tabs, and subscriptions.</Description>
